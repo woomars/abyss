@@ -4,6 +4,7 @@ import { StrokeTracker } from './StrokeTracker.js';
 import { MovementController } from './MovementController.js';
 import { Camera } from './Camera.js';
 import { EnemyManager } from './EnemyManager.js';
+import { CombatController } from './CombatController.js';
 
 // Assembles all game systems. No DOM access here.
 export class Game {
@@ -20,6 +21,9 @@ export class Game {
     this.enemies = new EnemyManager(config.enemies, this.arena, rng);
     this.camera = new Camera(config.camera, rng);
     this.camera.snapTo(this.player.pos);
+    this.combat = new CombatController(config.combat, {
+      player: this.player, movement: this.movement, enemies: this.enemies, camera: this.camera, events, rng,
+    });
     this.pendingStroke = null;
     events.on('stroke', (s) => this.queueStroke(s));
   }
@@ -38,6 +42,7 @@ export class Game {
     const s = this.pendingStroke;
     if (!s) return null;
     this.pendingStroke = null;
+    this.combat.onStroke(s);
     this.movement.setDirection(s.dir, { burst: true });
     return s;
   }
@@ -47,8 +52,9 @@ export class Game {
     this.time += dt;
     this.player.savePrev();
     this.applyPendingStroke();
-    this.movement.update(dt);
-    this.enemies.update(dt, this.player.pos, this.viewRect());
+    this.combat.update(dt);
+    if (!this.combat.inCombat) this.movement.update(dt);
+    this.enemies.update(dt, this.player.pos, this.viewRect(), this.combat.inputDir);
     this.camera.update(dt, this.player);
   }
 

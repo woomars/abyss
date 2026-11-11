@@ -23,11 +23,18 @@ export class EnemyManager {
     return e;
   }
 
-  update(dt, playerPos, viewRect) {
+  update(dt, playerPos, viewRect, heading = null) {
     for (const e of this.list) e.update(dt, playerPos, this.arena);
     this.separate();
-    for (let i = this.list.length - 1; i >= 0; i--) if (!this.list[i].alive) this.list.splice(i, 1);
-    this.spawn(dt, playerPos, viewRect);
+    const far = this.cfg.despawnDistance;
+    for (let i = this.list.length - 1; i >= 0; i--) {
+      const e = this.list[i];
+      // the player outruns enemies: recycle stragglers left far behind (off-screen only)
+      const tooFar = far > 0 && !e.dying && !this.inRect(e.pos, viewRect, 0) &&
+        Math.hypot(e.pos.x - playerPos.x, e.pos.y - playerPos.y) > far;
+      if (!e.alive || tooFar) this.list.splice(i, 1);
+    }
+    this.spawn(dt, playerPos, viewRect, heading);
   }
 
   separate() {
@@ -56,7 +63,7 @@ export class EnemyManager {
     for (const e of list) e.pos = this.arena.resolveCircle(e.pos, e.radius).pos;
   }
 
-  spawn(dt, playerPos, viewRect) {
+  spawn(dt, playerPos, viewRect, heading) {
     const c = this.cfg;
     const count = this.list.filter((e) => e.targetable).length;
     if (count >= c.targetCount) return;
@@ -66,7 +73,7 @@ export class EnemyManager {
 
     const [gMin, gMax] = c.groupSize;
     const group = this.rng() < c.groupChance ? gMin + Math.floor(this.rng() * (gMax - gMin + 1)) : 1;
-    const center = this.pickSpawnPoint(viewRect);
+    const center = this.pickSpawnPoint(viewRect, heading);
     if (!center) return;
     for (let i = 0; i < group; i++) {
       const type = this.pickType();
@@ -87,16 +94,24 @@ export class EnemyManager {
     return p.x > r.x - margin && p.x < r.x + r.w + margin && p.y > r.y - margin && p.y < r.y + r.h + margin;
   }
 
-  pickSpawnPoint(viewRect) {
-    const m = this.cfg.spawnMargin;
+  pickSpawnPoint(viewRect, heading) {
+    const c = this.cfg;
+    const m = c.spawnMargin;
     const pad = 40;
-    for (let tries = 0; tries < 30; tries++) {
-      // sample a ring just outside the view so enemies arrive quickly
-      const ang = this.rng() * Math.PI * 2;
-      const cx = viewRect.x + viewRect.w / 2, cy = viewRect.y + viewRect.h / 2;
-      const rx = viewRect.w / 2 + m + this.rng() * 250, ry = viewRect.h / 2 + m + this.rng() * 250;
-      const p = { x: cx + Math.cos(ang) * rx, y: cy + Math.sin(ang) * ry };
-      if (p.x < pad || p.y < pad || p.x > this.arena.width - pad || p.y > this.arena.height - pad) continue;
+    const ahead = heading && this.rng() < c.spawnAheadChance;
+    const base = heading ? Math.atan2(heading.y, heading.x) : 0;
+    const cx = viewRect.x + viewRect.w / 2, cy = viewRect.y + viewRect.h / 2;
+    for (let tries = 0; tries < 40; tries++) {
+      // sample a ring just outside the view, mostly where the player is heading
+      const ang = ahead && tries < 20
+        ? base + (this.rng() * 2 - 1) * c.spawnAheadDeg * Math.PI / 180
+        : this.rng() * Math.PI * 2;
+      const rx = viewRect.w / 2 + m + this.rng() * 120, ry = viewRect.h / 2 + m + this.rng() * 120;
+      // near arena edges the ring leaves the room: clamp back inside (along the wall)
+      const p = {
+        x: Math.min(this.arena.width - pad, Math.max(pad, cx + Math.cos(ang) * rx)),
+        y: Math.min(this.arena.height - pad, Math.max(pad, cy + Math.sin(ang) * ry)),
+      };
       if (this.inRect(p, viewRect, m * 0.5)) continue;
       return p;
     }

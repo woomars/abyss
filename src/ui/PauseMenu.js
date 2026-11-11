@@ -37,7 +37,14 @@ export class PauseMenu {
 
     this.rotate = document.createElement('div');
     this.rotate.className = 'overlay rotate-notice hidden';
-    this.rotate.innerHTML = '<div class="panel"><div class="rotate-icon">⟲</div><h2>가로로 돌려 주세요</h2></div>';
+    this.rotate.innerHTML = `
+      <div class="rotate-card">
+        <div class="brand">ABYSS</div>
+        <div class="tagline">긋는 방향으로 돌진하고, 연달아 베어 넘겨라</div>
+        <div class="blade"></div>
+        <div class="rotate-icon">⟲</div>
+        <h2>가로로 돌려 주세요</h2>
+      </div>`;
     root.appendChild(this.rotate);
 
     this.renderToggles();

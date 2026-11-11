@@ -72,8 +72,23 @@ html, body {
 }
 .panel button.primary { background: #3a2f45; border-color: #c9a86a; }
 .panel button.danger { background: #4a1c1c; border-color: #a8443c; }
-.rotate-notice { z-index: 10; }
-.rotate-icon { font-size: 44px; text-align: center; color: #c9a86a; }
+.rotate-notice {
+  z-index: 10;
+  background: radial-gradient(ellipse at 50% 35%, #2a1430 0%, #0b0710 55%, #050308 100%);
+}
+.rotate-card { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px; text-align: center; }
+.rotate-card .brand {
+  font-size: 56px; font-weight: 800; letter-spacing: 10px; color: #e8d9a8;
+  text-shadow: 0 0 18px rgba(201, 168, 106, 0.55), 0 2px 0 #3a2410;
+}
+.rotate-card .tagline { font-size: 14px; color: #b3a8c4; }
+.rotate-card .blade {
+  width: 180px; height: 3px; margin: 18px 0; border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #fff3c4, #c9a86a, transparent);
+  box-shadow: 0 0 12px #ffd28a; transform: rotate(-18deg);
+}
+.rotate-card h2 { margin: 0; font-size: 17px; color: #e8d9a8; }
+.rotate-icon { font-size: 40px; text-align: center; color: #c9a86a; }
 
 /* debug panel (?debug=1) */
 .debug {

@@ -6,8 +6,9 @@ const LINK_MAX_TIME = 0.15;
 // Auto-attack state machine: move -> dash -> (strike) -> link -> dash ... -> move.
 // Attack-first: once a target is chosen the character leaves its line to rush and chain.
 export class CombatController {
-  constructor(cfg, { player, movement, enemies, camera, events, rng }) {
+  constructor(cfg, { player, movement, enemies, camera, events, rng, viewRect = null }) {
     this.cfg = cfg; // config.combat (live)
+    this.viewRect = viewRect; // () => world rect on screen; off-screen enemies are never targeted
     this.player = player;
     this.movement = movement;
     this.enemies = enemies;
@@ -26,6 +27,17 @@ export class CombatController {
   }
 
   get state() { return this._state; }
+
+  // targetable enemies fully inside the visible screen
+  candidates() {
+    const list = this.enemies.targetable();
+    if (!this.viewRect) return list;
+    const r = this.viewRect();
+    return list.filter((e) => {
+      const m = e.radius;
+      return e.pos.x >= r.x + m && e.pos.x <= r.x + r.w - m && e.pos.y >= r.y + m && e.pos.y <= r.y + r.h - m;
+    });
+  }
   get inCombat() { return this._state !== 'move'; }
 
   onStroke({ dir, isNew }) {
@@ -45,7 +57,7 @@ export class CombatController {
     if (this._state === 'move') {
       if (this.retryTimer > 0) return;
       const c = this.cfg;
-      const t = selectAttackTarget(this.player.pos, this.inputDir, this.enemies.targetable(), { range: c.dashRange, coneDeg: c.attackConeDeg });
+      const t = selectAttackTarget(this.player.pos, this.inputDir, this.candidates(), { range: c.dashRange, coneDeg: c.attackConeDeg });
       if (!t) return;
       this.excludeIds.clear();
       this.chainIndex = 0;
@@ -131,7 +143,7 @@ export class CombatController {
 
   findChainTarget() {
     const ch = this.cfg.chain;
-    return selectChainTarget(this.player.pos, this.inputDir, this.enemies.targetable(), {
+    return selectChainTarget(this.player.pos, this.inputDir, this.candidates(), {
       range: ch.range, minDistance: ch.minDistance, coneDeg: ch.coneDeg, excludeIds: this.excludeIds,
     });
   }

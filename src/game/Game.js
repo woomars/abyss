@@ -5,6 +5,8 @@ import { MovementController } from './MovementController.js';
 import { Camera } from './Camera.js';
 import { EnemyManager } from './EnemyManager.js';
 import { CombatController } from './CombatController.js';
+import { HitStop } from './HitStop.js';
+import { EffectManager } from './EffectManager.js';
 
 // Assembles all game systems. No DOM access here.
 export class Game {
@@ -23,9 +25,20 @@ export class Game {
     this.camera.snapTo(this.player.pos);
     this.combat = new CombatController(config.combat, {
       player: this.player, movement: this.movement, enemies: this.enemies, camera: this.camera, events, rng,
+      viewRect: () => this.viewRect(),
     });
+    this.hitStop = new HitStop(config.feedback);
+    this.effects = new EffectManager(config, events, rng);
     this.pendingStroke = null;
     events.on('stroke', (s) => this.queueStroke(s));
+    events.on('hit', (h) => this.onHit(h));
+  }
+
+  onHit(h) {
+    const kind = h.crit ? 'crit' : h.strong ? 'strong' : 'normal';
+    this.hitStop.trigger(kind);
+    const shake = this.config.camera.shake[kind];
+    if (shake) this.camera.addShake(shake);
   }
 
   center() {
@@ -47,15 +60,18 @@ export class Game {
     return s;
   }
 
-  update(dt) {
+  update(realDt) {
     if (this.paused) return;
+    const dt = this.hitStop.update(realDt);
     this.time += dt;
     this.player.savePrev();
-    this.applyPendingStroke();
+    // input that arrives during hit stop is applied once it ends
+    if (!this.hitStop.active) this.applyPendingStroke();
     this.combat.update(dt);
     if (!this.combat.inCombat) this.movement.update(dt);
     this.enemies.update(dt, this.player.pos, this.viewRect(), this.combat.inputDir);
     this.camera.update(dt, this.player);
+    this.effects.update(realDt, this.player, this.combat.inCombat);
   }
 
   // world-space rectangle currently visible on screen

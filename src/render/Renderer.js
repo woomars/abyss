@@ -63,8 +63,140 @@ export class Renderer {
 
   // hook points extended by later tasks
   drawWorld(game, alpha) {
+    const fx = game.effects;
+    this.drawLinks(fx);
     this.drawEnemies(game.enemies, alpha);
+    this.drawAfterimages(fx, game.player);
+    this.drawWinds(fx);
     this.drawPlayer(game.player, alpha);
+    this.drawSlashes(fx);
+    this.drawRings(fx);
+    this.drawParticles(fx);
+    this.drawNumbers(fx);
+  }
+
+  drawAfterimages(fx, player) {
+    const ctx = this.ctx;
+    const r = player.radius;
+    const n = fx.afterimages.length;
+    for (let i = 0; i < n; i++) {
+      const a = fx.afterimages[i];
+      const k = (i + 1) / (n + 1) * Math.max(0, 1 - a.age / 0.12);
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(a.angle);
+      ctx.globalAlpha = 0.35 * k;
+      ctx.fillStyle = '#c9a86a';
+      ctx.beginPath();
+      ctx.moveTo(r * 1.3, 0); ctx.lineTo(-r * 0.9, r * 0.85); ctx.lineTo(-r * 0.5, 0); ctx.lineTo(-r * 0.9, -r * 0.85);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  drawWinds(fx) {
+    const ctx = this.ctx;
+    ctx.lineCap = 'round';
+    fx.winds.forEachActive((w) => {
+      const k = w.life / w.max;
+      const back = w.angle + Math.PI;
+      ctx.strokeStyle = `rgba(220,220,235,${0.5 * k})`;
+      ctx.lineWidth = 2;
+      for (let i = -1; i <= 1; i++) {
+        const off = i * 10;
+        const px = w.x + Math.cos(w.angle + Math.PI / 2) * off, py = w.y + Math.sin(w.angle + Math.PI / 2) * off;
+        const len = 30 + 25 * (1 - k);
+        ctx.beginPath();
+        ctx.moveTo(px + Math.cos(back) * 12, py + Math.sin(back) * 12);
+        ctx.lineTo(px + Math.cos(back) * len, py + Math.sin(back) * len);
+        ctx.stroke();
+      }
+    });
+  }
+
+  drawSlashes(fx) {
+    const ctx = this.ctx;
+    fx.slashes.forEachActive((s) => {
+      const k = s.life / s.max;
+      const grow = 0.75 + 0.25 * (1 - k);
+      const r = s.radius * grow;
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.angle);
+      ctx.globalAlpha = k;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, -s.arc / 2, s.arc / 2);
+      ctx.arc(0, 0, r * 0.55, s.arc / 2, -s.arc / 2, true);
+      ctx.closePath();
+      ctx.fillStyle = s.strong ? 'rgba(255,200,120,0.55)' : 'rgba(240,235,220,0.35)';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, 0, r, -s.arc / 2, s.arc / 2);
+      ctx.strokeStyle = s.strong ? '#ffd28a' : '#ffffff';
+      ctx.lineWidth = s.strong ? 5 : 3;
+      ctx.stroke();
+      ctx.restore();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  drawRings(fx) {
+    const ctx = this.ctx;
+    fx.rings.forEachActive((r) => {
+      const k = r.life / r.max;
+      ctx.globalAlpha = k;
+      ctx.strokeStyle = r.color;
+      ctx.lineWidth = 4 * k + 1;
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, r.r0 + (r.r1 - r.r0) * (1 - k), 0, Math.PI * 2);
+      ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  drawParticles(fx) {
+    const ctx = this.ctx;
+    fx.particles.forEachActive((p) => {
+      if (!this.isVisible(p, 10)) return;
+      ctx.globalAlpha = Math.max(0, p.life / p.max);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  drawLinks(fx) {
+    const ctx = this.ctx;
+    ctx.lineCap = 'round';
+    fx.links.forEachActive((l) => {
+      const k = l.life / l.max;
+      ctx.strokeStyle = `rgba(150,200,255,${0.7 * k})`;
+      ctx.lineWidth = 2 + 4 * k;
+      ctx.beginPath();
+      ctx.moveTo(l.x0, l.y0);
+      ctx.lineTo(l.x1, l.y1);
+      ctx.stroke();
+    });
+  }
+
+  drawNumbers(fx) {
+    const ctx = this.ctx;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    fx.numbers.forEachActive((n) => {
+      const k = n.life / n.max;
+      const pop = n.crit ? 1 + 0.6 * Math.max(0, (k - 0.75) / 0.25) : 1;
+      ctx.globalAlpha = Math.min(1, k * 2);
+      ctx.font = `bold ${Math.round((n.crit ? 26 : 17) * pop)}px system-ui, sans-serif`;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#000000';
+      ctx.strokeText(String(n.value), n.x, n.y);
+      ctx.fillStyle = n.crit ? '#ffb347' : '#f4f0e6';
+      ctx.fillText(String(n.value), n.x, n.y);
+    });
+    ctx.globalAlpha = 1;
   }
 
   drawEnemies(mgr, alpha) {
@@ -100,6 +232,27 @@ export class Renderer {
   }
   drawScreen(game) {
     this.drawTrail(game);
+    this.drawCombo(game.effects.combo);
+  }
+
+  drawCombo(combo) {
+    if (combo.count < 2) return;
+    const ctx = this.ctx;
+    const k = Math.min(1, combo.timer / 0.5);
+    ctx.globalAlpha = k;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 34px system-ui, sans-serif';
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#000';
+    const x = this.cssW - 24, y = this.cssH * 0.38;
+    ctx.strokeText(String(combo.count), x, y);
+    ctx.fillStyle = '#ffd28a';
+    ctx.fillText(String(combo.count), x, y);
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.fillStyle = '#c9a86a';
+    ctx.fillText('COMBO', x, y + 26);
+    ctx.globalAlpha = 1;
   }
 
   // fading finger trail (screen space) — feedback that the stroke registered

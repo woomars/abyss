@@ -63,7 +63,40 @@ export class Renderer {
 
   // hook points extended by later tasks
   drawWorld(game, alpha) {
+    this.drawEnemies(game.enemies, alpha);
     this.drawPlayer(game.player, alpha);
+  }
+
+  drawEnemies(mgr, alpha) {
+    const ctx = this.ctx;
+    for (const e of mgr.all()) {
+      const r = e.radius;
+      if (!this.isVisible(e.pos, r * 2)) continue;
+      const { x, y } = lerpPos(e.prevPos, e.pos, alpha);
+      let size = r * 1.6;
+      let a = 1;
+      if (e.dying) {
+        const k = Math.max(0, e.deathTimer / e.root.deathTime);
+        a = k;
+        size *= 0.6 + 0.4 * k;
+      }
+      // stagger wobble
+      const wob = e.staggerTime > 0 && !e.dying ? Math.sin(e.staggerTime * 60) * 2 : 0;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = e.flashTime > 0 ? '#ffffff' : e.tcfg.color;
+      ctx.fillRect(x - size / 2 + wob, y - size / 2, size, size);
+      ctx.strokeStyle = e.isElite ? '#e0a050' : '#2b2e36';
+      ctx.lineWidth = e.isElite ? 3 : 2;
+      ctx.strokeRect(x - size / 2 + wob, y - size / 2, size, size);
+      ctx.globalAlpha = 1;
+      if (e.isElite && !e.dying) {
+        const w = r * 2.2, h = 5;
+        ctx.fillStyle = '#20141a';
+        ctx.fillRect(x - w / 2, y - size / 2 - 12, w, h);
+        ctx.fillStyle = '#d0453f';
+        ctx.fillRect(x - w / 2, y - size / 2 - 12, w * (e.hp / e.maxHp), h);
+      }
+    }
   }
   drawScreen(game) {
     this.drawTrail(game);

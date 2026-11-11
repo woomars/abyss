@@ -3,6 +3,7 @@ import { Player } from './Player.js';
 import { StrokeTracker } from './StrokeTracker.js';
 import { MovementController } from './MovementController.js';
 import { Camera } from './Camera.js';
+import { EnemyManager } from './EnemyManager.js';
 
 // Assembles all game systems. No DOM access here.
 export class Game {
@@ -16,6 +17,7 @@ export class Game {
     this.player = new Player(config.movement, this.center());
     this.strokes = new StrokeTracker(config.input, events);
     this.movement = new MovementController(config.movement, this.player, this.arena, events);
+    this.enemies = new EnemyManager(config.enemies, this.arena, rng);
     this.camera = new Camera(config.camera, rng);
     this.camera.snapTo(this.player.pos);
     this.pendingStroke = null;
@@ -46,6 +48,13 @@ export class Game {
     this.player.savePrev();
     this.applyPendingStroke();
     this.movement.update(dt);
+    this.enemies.update(dt, this.player.pos, this.viewRect());
     this.camera.update(dt, this.player);
+  }
+
+  // world-space rectangle currently visible on screen
+  viewRect() {
+    const c = this.camera;
+    return { x: c.pos.x - c.viewW / 2, y: c.pos.y - c.viewH / 2, w: c.viewW, h: c.viewH };
   }
 }

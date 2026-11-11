@@ -12,5 +12,6 @@
     "elite": { "hp": 90, "attack": 25, "speed": 55, "radius": 26, "knockbackResist": 0.75, "color": "#b0413e" }
   },
   "separation": 0.6,
+  "knockbackDecay": 8,
   "deathTime": 0.35
 }

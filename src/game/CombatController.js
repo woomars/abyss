@@ -23,8 +23,12 @@ export class CombatController {
     this.linkPoint = null;
     this.linkTime = 0;
     this.retryTimer = 0;
+    this.armTimer = 0; // > 0: a recent swipe allows ONE dash+chain sequence
+    this.normalTimer = 0; // cooldown of the in-place normal attack
     this.inputDir = { x: player.heading.x, y: player.heading.y };
   }
+
+  get armed() { return this.armTimer > 0; }
 
   get state() { return this._state; }
 
@@ -44,6 +48,7 @@ export class CombatController {
     this.inputDir = { x: dir.x, y: dir.y };
     if (isNew) {
       this.retryTimer = 0;
+      this.armTimer = this.cfg.rushWindow;
       if (this.inCombat) this.finish();
     }
   }
@@ -54,11 +59,16 @@ export class CombatController {
 
   update(dt) {
     if (this.retryTimer > 0) this.retryTimer -= dt;
+    if (this.armTimer > 0) this.armTimer -= dt;
+    if (this.normalTimer > 0) this.normalTimer -= dt;
     if (this._state === 'move') {
-      if (this.retryTimer > 0) return;
       const c = this.cfg;
+      // no recent swipe: no dash, only an in-place normal attack on enemies within reach
+      if (!this.armed) { this.normalAttack(); return; }
+      if (this.retryTimer > 0) return;
       const t = selectAttackTarget(this.player.pos, this.inputDir, this.candidates(), { range: c.dashRange, coneDeg: c.attackConeDeg });
-      if (!t) return;
+      if (!t) { this.normalAttack(); return; }
+      this.armTimer = 0; // one swipe = one dash+chain sequence
       this.excludeIds.clear();
       this.chainIndex = 0;
       this.camera.setMode('combat');
@@ -94,6 +104,18 @@ export class CombatController {
     }
   }
 
+  // in-place fan slash while moving; never interrupts movement
+  normalAttack() {
+    if (this.normalTimer > 0) return;
+    const c = this.cfg;
+    const p = this.player;
+    const dir = p.heading;
+    const hits = slashHits(p.pos, dir, this.candidates(), { radius: c.slashRadius, arcDeg: c.slashArcDeg, maxTargets: c.maxTargets });
+    if (!hits.length) return;
+    this.normalTimer = c.normalAttackInterval;
+    this.applySlash(dir, hits, 0, false);
+  }
+
   strike() {
     const c = this.cfg;
     const p = this.player;
@@ -103,13 +125,22 @@ export class CombatController {
     const dir = d > 1e-6 ? { x: dx / d, y: dy / d } : { x: this.inputDir.x, y: this.inputDir.y };
     const hits = slashHits(p.pos, dir, this.enemies.targetable(), { radius: c.slashRadius, arcDeg: c.slashArcDeg, maxTargets: c.maxTargets });
     if (!hits.includes(t)) hits.unshift(t);
-    const last = this.chainIndex >= c.chain.count;
-    this.events.emit('slash', { pos: { x: p.pos.x, y: p.pos.y }, dir, radius: c.slashRadius, arcDeg: c.slashArcDeg, chainIndex: this.chainIndex, strong: last });
+    this.applySlash(dir, hits, this.chainIndex, this.chainIndex >= c.chain.count);
+    // slash through: continue a little past the target
+    this.linkPoint = { x: t.pos.x + dir.x * c.overshoot, y: t.pos.y + dir.y * c.overshoot };
+    this.linkTime = 0;
+    this._state = 'link';
+  }
+
+  applySlash(dir, hits, chainIndex, last) {
+    const c = this.cfg;
+    const p = this.player;
+    this.events.emit('slash', { pos: { x: p.pos.x, y: p.pos.y }, dir, radius: c.slashRadius, arcDeg: c.slashArcDeg, chainIndex, strong: last });
     for (const e of hits) {
       const crit = this.rng() < c.critChance;
       const strong = last;
       const kind = crit ? 'crit' : strong ? 'strong' : 'normal';
-      const mult = (this.chainIndex > 0 ? c.chain.damageMultiplier : 1) * (crit ? c.critMultiplier : 1);
+      const mult = (chainIndex > 0 ? c.chain.damageMultiplier : 1) * (crit ? c.critMultiplier : 1);
       const damage = Math.round(c.attackDamage * mult);
       let kdx = e.pos.x - p.pos.x, kdy = e.pos.y - p.pos.y;
       const kd = Math.hypot(kdx, kdy);
@@ -117,13 +148,9 @@ export class CombatController {
       const { killed } = e.takeHit({ damage, knockDir, knockback: c.knockback[kind], stagger: c.stagger[kind] });
       this.excludeIds.add(e.id);
       const pos = { x: e.pos.x, y: e.pos.y };
-      this.events.emit('hit', { enemy: e, damage, crit, strong, chainIndex: this.chainIndex, pos, dir: knockDir });
+      this.events.emit('hit', { enemy: e, damage, crit, strong, chainIndex, pos, dir: knockDir });
       if (killed) this.events.emit('kill', { enemy: e, pos, dir: knockDir, crit });
     }
-    // slash through: continue a little past the target
-    this.linkPoint = { x: t.pos.x + dir.x * c.overshoot, y: t.pos.y + dir.y * c.overshoot };
-    this.linkTime = 0;
-    this._state = 'link';
   }
 
   updateLink(dt) {

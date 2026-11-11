@@ -5,6 +5,7 @@ import { Events } from './core/Events.js';
 import { createRng } from './core/rng.js';
 import { Renderer } from './render/Renderer.js';
 import { bindInput } from './systems/InputBinder.js';
+import { AudioSystem } from './systems/AudioSystem.js';
 
 async function boot() {
   const config = await loadConfig((p) => fetch(p, { cache: 'no-cache' }).then((r) => {
@@ -26,7 +27,10 @@ async function boot() {
   resize();
 
   document.addEventListener('contextmenu', (e) => e.preventDefault());
-  bindInput(canvas, game.strokes, {});
+  const audio = new AudioSystem(events, rng);
+  bindInput(canvas, game.strokes, { onFirstPointer: () => audio.unlock() });
+  // some browsers re-suspend audio; retry on every touch
+  canvas.addEventListener('pointerdown', () => audio.unlock());
 
   const loop = new GameLoop({
     step: 1 / 60,
@@ -37,7 +41,7 @@ async function boot() {
   const tick = (t) => { loop.frame(t / 1000); requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
 
-  window.__abyss = { game, config, renderer, loop, events };
+  window.__abyss = { game, config, renderer, loop, events, audio };
 }
 
 boot().catch((err) => {

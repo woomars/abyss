@@ -13,5 +13,7 @@
   "stagger": { "normal": 0.12, "strong": 0.25, "crit": 0.35 },
   "chain": { "count": 3, "range": 140, "minDistance": 35, "coneDeg": 90, "damageMultiplier": 1.0, "linkDelay": 0.04 },
   "dashMaxTime": 0.35,
-  "retryDelay": 0.2
+  "retryDelay": 0.2,
+  "rushWindow": 0.6,
+  "normalAttackInterval": 0.35
 }

@@ -1,0 +1,17 @@
+{
+  "arena": {
+    "width": 3000,
+    "height": 2000,
+    "pillars": [
+      { "x": 900, "y": 700, "w": 120, "h": 120 },
+      { "x": 1900, "y": 1200, "w": 160, "h": 90 },
+      { "x": 2300, "y": 500, "w": 90, "h": 200 }
+    ]
+  },
+  "playerRadius": 16,
+  "cruiseSpeed": 220,
+  "burstSpeed": 560,
+  "burstDuration": 0.5,
+  "burstDecay": 0.25,
+  "visualTurnTime": 0.05
+}

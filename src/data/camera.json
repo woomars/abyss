@@ -1,0 +1,11 @@
+{
+  "viewHeight": 540,
+  "maxDpr": 2,
+  "followTime": 0.12,
+  "returnTime": 0.20,
+  "combatFollowTime": 0.45,
+  "lookAhead": 70,
+  "lookAheadTurnTime": 0.25,
+  "freeRadiusFrac": 0.28,
+  "shake": { "strong": 4, "crit": 9, "decay": 0.18 }
+}

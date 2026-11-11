@@ -1,0 +1,9 @@
+{
+  "hitStopMs": { "normal": 20, "strong": 45, "crit": 60 },
+  "hitStopScale": 0.05,
+  "comboWindow": 2.0,
+  "damageNumberLife": 0.7,
+  "afterimageCount": 6,
+  "trailLife": 0.25,
+  "particles": { "hit": 8, "kill": 14, "max": 400 }
+}

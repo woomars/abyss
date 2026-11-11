@@ -1,6 +1,6 @@
 import { Pool } from '../core/Pool.js';
 
-const SLASH_LIFE = 0.14;
+const SLASH_LIFE = 0.2;
 const RING_LIFE = 0.28;
 const LINK_LIFE = 0.22;
 const WIND_LIFE = 0.18;
@@ -14,7 +14,8 @@ export class EffectManager {
     this.particles = new Pool(() => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: '#fff' }), f.particles.max);
     this.numbers = new Pool(() => ({ x: 0, y: 0, value: 0, crit: false, life: 0, max: 1 }), 64);
     this.rings = new Pool(() => ({ x: 0, y: 0, r0: 0, r1: 0, life: 0, max: 1, color: '#fff' }), 32);
-    this.slashes = new Pool(() => ({ x: 0, y: 0, angle: 0, radius: 0, arc: 0, life: 0, max: 1, strong: false }), 32);
+    this.slashes = new Pool(() => ({ x: 0, y: 0, angle: 0, radius: 0, arc: 0, life: 0, max: 1, strong: false, sweep: 1 }), 32);
+    this.nextSweep = 1; // blade swings alternate clockwise / counter-clockwise
     this.links = new Pool(() => ({ x0: 0, y0: 0, x1: 0, y1: 0, life: 0, max: 1, index: 0 }), 32);
     this.winds = new Pool(() => ({ x: 0, y: 0, angle: 0, life: 0, max: 1 }), 16);
     this.afterimages = []; // {x, y, angle, age}
@@ -46,6 +47,8 @@ export class EffectManager {
     const s = this.slashes.acquire();
     s.x = pos.x; s.y = pos.y; s.angle = Math.atan2(dir.y, dir.x);
     s.radius = radius; s.arc = arcDeg * Math.PI / 180; s.strong = strong;
+    s.sweep = this.nextSweep;
+    this.nextSweep = -this.nextSweep;
     s.life = s.max = SLASH_LIFE;
   }
 

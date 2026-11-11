@@ -118,27 +118,53 @@ export class Renderer {
     });
   }
 
+  // Fan slash drawn as a swinging blade (like the spin skill): the blade sweeps across the arc
+  // during the first part of the effect, leaving a fading trail, then the trail fades out.
   drawSlashes(fx) {
     const ctx = this.ctx;
+    const SWING = 0.55; // fraction of the effect spent swinging
     fx.slashes.forEachActive((s) => {
-      const k = s.life / s.max;
-      const grow = 0.75 + 0.25 * (1 - k);
-      const r = s.radius * grow;
+      const t = 1 - s.life / s.max; // 0 → 1
+      const swing = Math.min(1, t / SWING);
+      const fade = t <= SWING ? 1 : Math.max(0, 1 - (t - SWING) / (1 - SWING));
+      const half = s.arc / 2;
+      // in local space the arc spans [-half, +half]; sweep=+1 swings clockwise (from -half to +half)
+      const from = -half * s.sweep;
+      const cur = from + s.arc * swing * s.sweep;
+      const r = s.radius;
+      const trailLen = Math.min(s.arc * swing, 1.4);
       ctx.save();
       ctx.translate(s.x, s.y);
       ctx.rotate(s.angle);
-      ctx.globalAlpha = k;
+      // fading trail sectors behind the blade
+      const steps = 5;
+      for (let i = 0; i < steps; i++) {
+        const a0 = cur - s.sweep * trailLen * (i + 1) / steps;
+        const a1 = cur - s.sweep * trailLen * i / steps;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, r, Math.min(a0, a1), Math.max(a0, a1));
+        ctx.closePath();
+        const base = s.strong ? 'rgba(255,214,150,' : 'rgba(240,235,220,';
+        ctx.fillStyle = `${base}${(s.strong ? 0.4 : 0.28) * (1 - i / steps) * fade})`;
+        ctx.fill();
+      }
+      // bright edge along the swept part
       ctx.beginPath();
-      ctx.arc(0, 0, r, -s.arc / 2, s.arc / 2);
-      ctx.arc(0, 0, r * 0.55, s.arc / 2, -s.arc / 2, true);
-      ctx.closePath();
-      ctx.fillStyle = s.strong ? 'rgba(255,200,120,0.55)' : 'rgba(240,235,220,0.35)';
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(0, 0, r, -s.arc / 2, s.arc / 2);
-      ctx.strokeStyle = s.strong ? '#ffd28a' : '#ffffff';
-      ctx.lineWidth = s.strong ? 5 : 3;
+      ctx.arc(0, 0, r, Math.min(from, cur), Math.max(from, cur));
+      ctx.strokeStyle = s.strong ? `rgba(255,210,138,${0.9 * fade})` : `rgba(255,255,255,${0.75 * fade})`;
+      ctx.lineWidth = s.strong ? 4 : 3;
       ctx.stroke();
+      // the blade itself while swinging
+      if (swing < 1 || fade > 0.6) {
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(cur) * 14, Math.sin(cur) * 14);
+        ctx.lineTo(Math.cos(cur) * r, Math.sin(cur) * r);
+        ctx.strokeStyle = s.strong ? `rgba(255,210,138,${fade})` : `rgba(255,248,230,${fade})`;
+        ctx.lineWidth = s.strong ? 6 : 4;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
       ctx.restore();
     });
     ctx.globalAlpha = 1;

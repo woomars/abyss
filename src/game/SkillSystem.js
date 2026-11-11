@@ -13,6 +13,7 @@ export class SkillSystem {
     this.arena = arena;
     this.remaining = cfg.slots.map(() => 0);
     this.rush = null;
+    this.spin = null;
     this.projectiles = [];
   }
 
@@ -23,49 +24,77 @@ export class SkillSystem {
     });
   }
 
-  get busy() { return this.rush !== null; }
+  get busy() { return this.rush !== null; } // blocks movement and auto attacks
+  get spinning() { return this.spin !== null; } // blocks auto attacks, player keeps moving
 
   reset() {
     this.remaining = this.cfg.slots.map(() => 0);
     this.rush = null;
+    this.spin = null;
     this.projectiles.length = 0;
+  }
+
+  spinCritChance(hitIndex) {
+    return this.combatCfg.critChance + this.cfg.defs.spin.chainCritStep * hitIndex;
   }
 
   use(slot) {
     const id = this.cfg.slots[slot];
-    if (!id || this.remaining[slot] > 0 || this.busy) return false;
+    if (!id || this.remaining[slot] > 0 || this.busy || this.spinning) return false;
     const def = this.cfg.defs[id];
     this.combat.cancel();
     const p = this.player;
     const dir = { x: this.combat.inputDir.x, y: this.combat.inputDir.y };
     this.events.emit('skill', { id, pos: { x: p.pos.x, y: p.pos.y }, dir });
-    if (id === 'spin') this.spin(def);
+    if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
     else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, hit: new Set() };
     else if (id === 'bladeWave') this.projectiles.push({ def, x: p.pos.x, y: p.pos.y, dir, traveled: 0, hit: new Set() });
     this.remaining[slot] = def.cooldown;
     return true;
   }
 
-  hitEnemy(e, damage, dir) {
+  hitEnemy(e, damage, dir, { critChance = this.combatCfg.critChance, chainIndex = 0 } = {}) {
     const c = this.combatCfg;
-    const crit = this.rng() < c.critChance;
+    const crit = this.rng() < critChance;
     const dmg = Math.round(damage * (crit ? c.critMultiplier : 1));
     const kind = crit ? 'crit' : 'strong';
     const { killed } = e.takeHit({ damage: dmg, knockDir: dir, knockback: c.knockback[kind], stagger: c.stagger[kind] });
     const pos = { x: e.pos.x, y: e.pos.y };
-    this.events.emit('hit', { enemy: e, damage: dmg, crit, strong: true, chainIndex: 0, pos, dir });
+    this.events.emit('hit', { enemy: e, damage: dmg, crit, strong: true, chainIndex, pos, dir });
     if (killed) this.events.emit('kill', { enemy: e, pos, dir, crit });
   }
 
-  spin(def) {
-    const p = this.player;
-    this.events.emit('slash', { pos: { x: p.pos.x, y: p.pos.y }, dir: p.heading, radius: def.radius, arcDeg: 360, chainIndex: 0, strong: true });
+  // Clockwise blade sweep around the player. Enemies are hit in the order the blade passes them;
+  // each hit pauses the sweep briefly and counts as the next chain hit (more damage, more crit).
+  updateSpin(dt) {
+    const s = this.spin;
+    const def = s.def;
+    if (s.pause > 0) { s.pause -= dt; return; }
+    const TAU = Math.PI * 2;
+    const next = Math.min(TAU, s.swept + (TAU / def.duration) * dt);
+    const p = this.player.pos;
+    let first = null, firstRel = Infinity, firstDir = null;
     for (const e of this.enemies.targetable()) {
-      const dx = e.pos.x - p.pos.x, dy = e.pos.y - p.pos.y;
+      if (s.hit.has(e.id)) continue;
+      const dx = e.pos.x - p.x, dy = e.pos.y - p.y;
       const d = Math.hypot(dx, dy);
       if (d - e.radius > def.radius) continue;
-      this.hitEnemy(e, def.damage, d > 1e-6 ? { x: dx / d, y: dy / d } : p.heading);
+      let rel = (Math.atan2(dy, dx) - s.start) % TAU;
+      if (rel < 0) rel += TAU;
+      if (rel > next) continue;
+      if (rel < firstRel) { first = e; firstRel = rel; firstDir = d > 1e-6 ? { x: dx / d, y: dy / d } : this.player.heading; }
     }
+    if (first) {
+      s.hit.add(first.id);
+      s.swept = Math.max(s.swept, firstRel);
+      s.pause = def.hitPause;
+      const damage = def.damage * (1 + def.chainDamageStep * s.hits);
+      this.hitEnemy(first, damage, firstDir, { critChance: this.spinCritChance(s.hits), chainIndex: s.hits });
+      s.hits += 1;
+      return;
+    }
+    s.swept = next;
+    if (s.swept >= TAU - 1e-9) this.spin = null;
   }
 
   // hits targetable enemies whose center is within halfWidth (+radius) of point (x, y)
@@ -82,6 +111,8 @@ export class SkillSystem {
     for (let i = 0; i < this.remaining.length; i++) {
       if (this.remaining[i] > 0) this.remaining[i] = Math.max(0, this.remaining[i] - dt);
     }
+
+    if (this.spin) this.updateSpin(dt);
 
     if (this.rush) {
       const r = this.rush;

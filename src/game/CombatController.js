@@ -57,6 +57,19 @@ export class CombatController {
     if (this.inCombat) this.finish();
   }
 
+  // hard reset for restart (no events)
+  reset() {
+    this._state = 'move';
+    this.target = null;
+    this.linkPoint = null;
+    this.chainIndex = 0;
+    this.excludeIds.clear();
+    this.retryTimer = 0;
+    this.armTimer = 0;
+    this.normalTimer = 0;
+    this.inputDir = { x: 1, y: 0 };
+  }
+
   update(dt) {
     if (this.retryTimer > 0) this.retryTimer -= dt;
     if (this.armTimer > 0) this.armTimer -= dt;

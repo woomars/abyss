@@ -1,7 +1,7 @@
 {
   "slots": ["spin", "rushStrike", "bladeWave"],
   "defs": {
-    "spin": { "name": "회전 베기", "cooldown": 8, "damage": 25, "radius": 150 },
+    "spin": { "name": "회전 베기", "cooldown": 8, "damage": 25, "radius": 150, "duration": 0.35, "hitPause": 0.06, "chainDamageStep": 0.15, "chainCritStep": 0.05 },
     "rushStrike": { "name": "돌진 일격", "cooldown": 10, "damage": 40, "distance": 320, "speed": 1600, "width": 60 },
     "bladeWave": { "name": "원거리 공격", "cooldown": 15, "damage": 30, "range": 620, "speed": 900, "width": 70 }
   }

@@ -4,7 +4,7 @@ export function bindInput(canvas, tracker, { onFirstPointer } = {}) {
   const now = (e) => (e.timeStamp || performance.now()) / 1000;
 
   canvas.addEventListener('pointerdown', (e) => {
-    if (first) { first = false; onFirstPointer && onFirstPointer(); }
+    if (first) { first = false; onFirstPointer && onFirstPointer(e); }
     try { canvas.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
     tracker.pointerDown(e.pointerId, e.clientX, e.clientY, now(e));
     e.preventDefault();

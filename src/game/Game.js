@@ -37,6 +37,23 @@ export class Game {
     this.pendingStroke = null;
     events.on('stroke', (s) => this.queueStroke(s));
     events.on('hit', (h) => this.onHit(h));
+    this.stats = { kills: 0 };
+    events.on('kill', () => { this.stats.kills += 1; });
+  }
+
+  restart() {
+    this.enemies.clear();
+    this.player.reset(this.center());
+    this.movement.burstTime = Infinity;
+    this.combat.reset();
+    this.skills.reset();
+    this.hitStop.reset();
+    this.effects.clear();
+    this.camera.setMode('normal');
+    this.camera.snapTo(this.player.pos);
+    this.pendingStroke = null;
+    this.stats.kills = 0;
+    this.time = 0;
   }
 
   onHit(h) {
@@ -73,7 +90,9 @@ export class Game {
     // input that arrives during hit stop is applied once it ends
     if (!this.hitStop.active) this.applyPendingStroke();
     this.skills.update(dt);
-    if (!this.skills.busy) {
+    if (this.skills.spinning) {
+      this.movement.update(dt); // keep moving while the blade spins
+    } else if (!this.skills.busy) {
       this.combat.update(dt);
       if (!this.combat.inCombat) this.movement.update(dt);
     }

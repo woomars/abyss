@@ -69,6 +69,7 @@ export class Renderer {
     this.drawAfterimages(fx, game.player);
     this.drawWinds(fx);
     this.drawPlayer(game.player, alpha);
+    this.drawSpin(game.skills, game.player, alpha);
     this.drawSlashes(fx);
     this.drawProjectiles(game.skills);
     this.drawRings(fx);
@@ -141,6 +142,39 @@ export class Renderer {
       ctx.restore();
     });
     ctx.globalAlpha = 1;
+  }
+
+  // spinning blade: bright edge at the current angle with a fading trail behind it (clockwise)
+  drawSpin(skills, player, alpha) {
+    const s = skills.spin;
+    if (!s) return;
+    const ctx = this.ctx;
+    const { x, y } = lerpPos(player.prevPos, player.pos, alpha);
+    const r = s.def.radius;
+    const a = s.start + s.swept;
+    const trail = Math.min(1.4, s.swept);
+    const steps = 6;
+    for (let i = 0; i < steps; i++) {
+      const a0 = a - trail * (i + 1) / steps, a1 = a - trail * i / steps;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.arc(x, y, r, a0, a1);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(255,214,150,${0.32 * (1 - i / steps)})`;
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.arc(x, y, r, a - trail, a);
+    ctx.strokeStyle = 'rgba(255,240,210,0.9)';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + Math.cos(a) * 18, y + Math.sin(a) * 18);
+    ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+    ctx.strokeStyle = s.pause > 0 ? '#ffffff' : '#ffd28a';
+    ctx.lineWidth = s.pause > 0 ? 7 : 5;
+    ctx.lineCap = 'round';
+    ctx.stroke();
   }
 
   // blade wave: glowing crescent flying forward

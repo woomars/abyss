@@ -70,6 +70,7 @@ export class Renderer {
     this.drawWinds(fx);
     this.drawPlayer(game.player, alpha);
     this.drawSlashes(fx);
+    this.drawProjectiles(game.skills);
     this.drawRings(fx);
     this.drawParticles(fx);
     this.drawNumbers(fx);
@@ -139,6 +140,29 @@ export class Renderer {
       ctx.stroke();
       ctx.restore();
     });
+    ctx.globalAlpha = 1;
+  }
+
+  // blade wave: glowing crescent flying forward
+  drawProjectiles(skills) {
+    const ctx = this.ctx;
+    for (const p of skills.projectiles) {
+      const w = p.def.width;
+      const k = 1 - p.traveled / p.def.range;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(Math.atan2(p.dir.y, p.dir.x));
+      ctx.globalAlpha = 0.4 + 0.6 * k;
+      ctx.beginPath();
+      ctx.arc(-w * 0.35, 0, w * 0.6, -1.1, 1.1);
+      ctx.arc(-w * 0.6, 0, w * 0.6, 1.0, -1.0, true);
+      ctx.closePath();
+      ctx.fillStyle = '#9fd8ff';
+      ctx.shadowColor = '#6cc4ff';
+      ctx.shadowBlur = 16;
+      ctx.fill();
+      ctx.restore();
+    }
     ctx.globalAlpha = 1;
   }
 
@@ -245,7 +269,7 @@ export class Renderer {
     ctx.font = 'bold 34px system-ui, sans-serif';
     ctx.lineWidth = 4;
     ctx.strokeStyle = '#000';
-    const x = this.cssW - 24, y = this.cssH * 0.38;
+    const x = this.cssW - 24, y = Math.max(70, this.cssH * 0.26);
     ctx.strokeText(String(combo.count), x, y);
     ctx.fillStyle = '#ffd28a';
     ctx.fillText(String(combo.count), x, y);

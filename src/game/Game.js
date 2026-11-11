@@ -6,6 +6,7 @@ import { Camera } from './Camera.js';
 import { EnemyManager } from './EnemyManager.js';
 import { CombatController } from './CombatController.js';
 import { HitStop } from './HitStop.js';
+import { SkillSystem } from './SkillSystem.js';
 import { EffectManager } from './EffectManager.js';
 
 // Assembles all game systems. No DOM access here.
@@ -26,6 +27,10 @@ export class Game {
     this.combat = new CombatController(config.combat, {
       player: this.player, movement: this.movement, enemies: this.enemies, camera: this.camera, events, rng,
       viewRect: () => this.viewRect(),
+    });
+    this.skills = new SkillSystem(config.skills, {
+      player: this.player, movement: this.movement, enemies: this.enemies, combat: this.combat,
+      combatCfg: config.combat, events, rng, arena: this.arena,
     });
     this.hitStop = new HitStop(config.feedback);
     this.effects = new EffectManager(config, events, rng);
@@ -67,11 +72,14 @@ export class Game {
     this.player.savePrev();
     // input that arrives during hit stop is applied once it ends
     if (!this.hitStop.active) this.applyPendingStroke();
-    this.combat.update(dt);
-    if (!this.combat.inCombat) this.movement.update(dt);
+    this.skills.update(dt);
+    if (!this.skills.busy) {
+      this.combat.update(dt);
+      if (!this.combat.inCombat) this.movement.update(dt);
+    }
     this.enemies.update(dt, this.player.pos, this.viewRect(), this.combat.inputDir);
     this.camera.update(dt, this.player);
-    this.effects.update(realDt, this.player, this.combat.inCombat);
+    this.effects.update(realDt, this.player, this.combat.inCombat || this.skills.busy);
   }
 
   // world-space rectangle currently visible on screen

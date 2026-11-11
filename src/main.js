@@ -6,6 +6,7 @@ import { createRng } from './core/rng.js';
 import { Renderer } from './render/Renderer.js';
 import { bindInput } from './systems/InputBinder.js';
 import { AudioSystem } from './systems/AudioSystem.js';
+import { SkillButtons } from './ui/SkillButtons.js';
 
 async function boot() {
   const config = await loadConfig((p) => fetch(p, { cache: 'no-cache' }).then((r) => {
@@ -18,10 +19,13 @@ async function boot() {
   const renderer = new Renderer(canvas, config);
   const game = new Game(config, { events, rng });
 
+  const ui = document.getElementById('ui');
+  const skillButtons = new SkillButtons(ui, game.skills);
   const resize = () => {
     renderer.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
     const v = renderer.viewWorld;
     game.camera.setViewport(v.w, v.h);
+    game.strokes.setExcludedRects(skillButtons.rects());
   };
   window.addEventListener('resize', resize);
   resize();
@@ -36,7 +40,7 @@ async function boot() {
     step: 1 / 60,
     maxFrame: 0.25,
     update: (dt) => game.update(dt),
-    render: (alpha) => renderer.render(game, alpha),
+    render: (alpha) => { renderer.render(game, alpha); skillButtons.render(); },
   });
   const tick = (t) => { loop.frame(t / 1000); requestAnimationFrame(tick); };
   requestAnimationFrame(tick);

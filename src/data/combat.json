@@ -1,7 +1,7 @@
 {
   "attackDamage": 10,
   "dashRange": 190,
-  "dashSpeed": 1150,
+  "dashSpeed": 850,
   "attackConeDeg": 70,
   "overshoot": 40,
   "slashRadius": 72,

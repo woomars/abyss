@@ -8,7 +8,7 @@
   "maxElites": 2,
   "eliteChance": 0.12,
   "types": {
-    "soldier": { "hp": 10, "attack": 5, "speed": 95, "radius": 14, "knockbackResist": 0, "color": "#8a8f98" },
+    "soldier": { "hp": 20, "attack": 5, "speed": 95, "radius": 14, "knockbackResist": 0, "color": "#8a8f98" },
     "elite": { "hp": 90, "attack": 25, "speed": 70, "radius": 26, "knockbackResist": 0.75, "color": "#b0413e" }
   },
   "separation": 0.6,

@@ -1,5 +1,4 @@
 // Pause overlay: resume, restart (with confirmation), screen-shake and sound toggles.
-// Also hosts the "rotate to landscape" notice.
 export class PauseMenu {
   constructor(root, { settings, onChange, onRestart, onOpenChange }) {
     this.settings = settings;
@@ -35,18 +34,6 @@ export class PauseMenu {
       if (btn) this.act(btn.dataset.act);
     });
 
-    this.rotate = document.createElement('div');
-    this.rotate.className = 'overlay rotate-notice hidden';
-    this.rotate.innerHTML = `
-      <div class="rotate-card">
-        <div class="brand">ABYSS</div>
-        <div class="tagline">긋는 방향으로 돌진하고, 연달아 베어 넘겨라</div>
-        <div class="blade"></div>
-        <div class="rotate-icon">⟲</div>
-        <h2>가로로 돌려 주세요</h2>
-      </div>`;
-    root.appendChild(this.rotate);
-
     this.renderToggles();
   }
 
@@ -81,9 +68,5 @@ export class PauseMenu {
     this.isOpen = false;
     this.el.classList.add('hidden');
     this.onOpenChange();
-  }
-
-  setPortrait(on) {
-    this.rotate.classList.toggle('hidden', !on);
   }
 }

@@ -9,9 +9,9 @@
     ]
   },
   "playerRadius": 16,
-  "cruiseSpeed": 220,
-  "burstSpeed": 560,
-  "burstDuration": 0.5,
+  "cruiseSpeed": 150,
+  "burstSpeed": 360,
+  "burstDuration": 0.35,
   "burstDecay": 0.25,
   "visualTurnTime": 0.05
 }

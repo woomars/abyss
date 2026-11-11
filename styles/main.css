@@ -12,17 +12,31 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
-#game {
+/* the stage is rotated ±90° by JS when the viewport is portrait (forced landscape) */
+#stage {
   position: fixed;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  overflow: hidden;
+}
+#game {
+  position: absolute;
   inset: 0;
   display: block;
   touch-action: none;
 }
 #ui {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
 }
+.start-screen {
+  position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 50% 35%, #2a1430 0%, #0b0710 55%, #050308 100%);
+  touch-action: none;
+}
+.start-screen .hint { font-size: 12px; color: #7d7290; }
 #ui .interactive { pointer-events: auto; }
 
 .hidden { display: none !important; }
@@ -72,10 +86,6 @@ html, body {
 }
 .panel button.primary { background: #3a2f45; border-color: #c9a86a; }
 .panel button.danger { background: #4a1c1c; border-color: #a8443c; }
-.rotate-notice {
-  z-index: 10;
-  background: radial-gradient(ellipse at 50% 35%, #2a1430 0%, #0b0710 55%, #050308 100%);
-}
 .rotate-card { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 24px; text-align: center; }
 .rotate-card .brand {
   font-size: 56px; font-weight: 800; letter-spacing: 10px; color: #e8d9a8;
@@ -88,7 +98,6 @@ html, body {
   box-shadow: 0 0 12px #ffd28a; transform: rotate(-18deg);
 }
 .rotate-card h2 { margin: 0; font-size: 17px; color: #e8d9a8; }
-.rotate-icon { font-size: 40px; text-align: center; color: #c9a86a; }
 
 /* debug panel (?debug=1) */
 .debug {

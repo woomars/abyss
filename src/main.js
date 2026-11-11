@@ -11,6 +11,7 @@ import { SkillButtons } from './ui/SkillButtons.js';
 import { HUD } from './ui/HUD.js';
 import { PauseMenu } from './ui/PauseMenu.js';
 import { DebugPanel } from './ui/DebugPanel.js';
+import { chooseRotation, stageSize, stageTransform, toStage } from './systems/orientation.js';
 
 function safeStorage() {
   try { return window.localStorage; } catch (_) { return null; }
@@ -46,10 +47,12 @@ async function boot() {
   };
   applySettings(settings);
 
-  const portraitQuery = window.matchMedia('(orientation: portrait)');
+  const stage = document.getElementById('stage');
+  const startEl = document.getElementById('start');
+  let started = false;
   let menu = null;
   const updatePaused = () => {
-    game.paused = (menu && menu.isOpen) || portraitQuery.matches;
+    game.paused = !started || (menu && menu.isOpen);
   };
 
   const skillButtons = new SkillButtons(ui, game.skills);
@@ -61,38 +64,67 @@ async function boot() {
     onOpenChange: updatePaused,
   });
 
+  // --- forced landscape: rotate the whole stage when the viewport is portrait ---
+  let rot = 0;
+  let gx = null; // low-passed gravity along the device x axis (m/s²)
+  const toLocal = (x, y) => toStage(rot, x, y, window.innerWidth, window.innerHeight);
+  // client-space rect -> stage-space rect (for stroke exclusion zones)
+  const rectToStage = (r) => {
+    const a = toLocal(r.x, r.y), b = toLocal(r.x + r.w, r.y + r.h);
+    return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
+  };
+
   let debug = null;
-  const resize = () => {
-    renderer.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
+  const layout = () => {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    rot = chooseRotation(rot, { vw, vh, gx });
+    const s = stageSize(rot, vw, vh);
+    stage.style.width = s.w + 'px';
+    stage.style.height = s.h + 'px';
+    stage.style.transform = stageTransform(rot, vw, vh);
+    renderer.resize(s.w, s.h, window.devicePixelRatio || 1);
     const v = renderer.viewWorld;
     game.camera.setViewport(v.w, v.h);
     const rects = [...skillButtons.rects(), hud.rect()];
     if (debug) rects.push(debug.rect());
-    game.strokes.setExcludedRects(rects);
-    menu.setPortrait(portraitQuery.matches);
+    game.strokes.setExcludedRects(rects.map(rectToStage));
     updatePaused();
   };
-  if (new URLSearchParams(location.search).get('debug') === '1') {
-    debug = new DebugPanel(ui, { config, game, onLayout: () => resize() });
+  // in development the tuning panel is on by default; ?debug=0 hides it
+  if (new URLSearchParams(location.search).get('debug') !== '0') {
+    debug = new DebugPanel(ui, { config, game, onLayout: () => layout() });
   }
-  window.addEventListener('resize', resize);
-  portraitQuery.addEventListener('change', resize);
-  resize();
+  window.addEventListener('resize', layout);
+  // turning the phone 180° while auto-rotate is off: follow gravity
+  window.addEventListener('devicemotion', (e) => {
+    const g = e.accelerationIncludingGravity;
+    if (!g || g.x == null) return;
+    gx = gx == null ? g.x : gx * 0.8 + g.x * 0.2;
+    if (window.innerWidth < window.innerHeight && chooseRotation(rot, { vw: window.innerWidth, vh: window.innerHeight, gx }) !== rot) layout();
+  });
+  layout();
 
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { menu.open(); audio.suspend(); } else { audio.resume(); }
   });
 
-  bindInput(canvas, game.strokes, {});
+  bindInput(canvas, game.strokes, { toLocal });
   // Chrome grants user activation for touch on pointerup/touchend, not pointerdown:
   // unlock audio and request fullscreen + landscape lock there, retrying until it sticks.
   const onGesture = (e) => {
     audio.unlock();
-    if (e.pointerType === 'touch' && !document.fullscreenElement) enterFullscreenLandscape();
+    if (e.pointerType === 'touch' && !document.fullscreenElement) enterFullscreenLandscape().then(layout);
   };
   document.addEventListener('pointerup', onGesture, true);
   document.addEventListener('pointerdown', () => audio.unlock(), true);
+  // start screen: the first tap is the gesture that allows fullscreen, landscape lock and sound
+  startEl.addEventListener('pointerup', (e) => {
+    e.preventDefault();
+    started = true;
+    startEl.classList.add('hidden');
+    updatePaused();
+  });
 
   const loop = new GameLoop({
     step: 1 / 60,

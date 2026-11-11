@@ -17,7 +17,11 @@ async function boot() {
   const renderer = new Renderer(canvas, config);
   const game = new Game(config, { events, rng });
 
-  const resize = () => renderer.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
+  const resize = () => {
+    renderer.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio || 1);
+    const v = renderer.viewWorld;
+    game.camera.setViewport(v.w, v.h);
+  };
   window.addEventListener('resize', resize);
   resize();
 

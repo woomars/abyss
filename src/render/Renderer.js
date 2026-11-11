@@ -28,7 +28,7 @@ export class Renderer {
   get viewWorld() { return { w: this.cssW / this.scale, h: this.config.camera.viewHeight }; }
 
   cameraPos(game, alpha) {
-    if (game.camera) return game.camera.renderPos;
+    if (game.camera) return lerpPos(game.camera.prevRenderPos || game.camera.renderPos, game.camera.renderPos, alpha);
     return lerpPos(game.player.prevPos, game.player.pos, alpha);
   }
 

@@ -59,12 +59,18 @@ export class Camera {
       const dx = player.pos.x - this.pos.x, dy = player.pos.y - this.pos.y;
       const d = Math.hypot(dx, dy);
       const R = c.freeRadiusFrac * this.viewW;
-      if (d > R) {
-        tx = player.pos.x - (dx / d) * R;
-        ty = player.pos.y - (dy / d) * R;
-      } else {
-        tx = this.pos.x; ty = this.pos.y;
+      if (d <= R) {
+        // hold: glide to a stop by decaying the current velocity (symmetric in every direction;
+        // smoothDamp toward its own position would zero negative velocities in one frame)
+        const k = Math.exp(-dt / Math.max(c.combatFollowTime / 3, 1e-4));
+        this.vx.v *= k; this.vy.v *= k;
+        this.pos.x += this.vx.v * dt;
+        this.pos.y += this.vy.v * dt;
+        this.applyShake(dt);
+        return;
       }
+      tx = player.pos.x - (dx / d) * R;
+      ty = player.pos.y - (dy / d) * R;
       smooth = c.combatFollowTime;
     } else {
       tx = player.pos.x + Math.cos(this.lookAngle) * c.lookAhead;
@@ -78,8 +84,12 @@ export class Camera {
     }
     this.pos.x = smoothDamp(this.pos.x, tx, this.vx, smooth, dt);
     this.pos.y = smoothDamp(this.pos.y, ty, this.vy, smooth, dt);
+    this.applyShake(dt);
+  }
 
-    // shake: random offset, exponential decay
+  // shake: random offset, exponential decay
+  applyShake(dt) {
+    const c = this.cfg;
     if (this.shakeEnabled && this.shakeAmount > 0.01) {
       const a = this.shakeAmount;
       this.renderPos = { x: this.pos.x + (this.rng() * 2 - 1) * a, y: this.pos.y + (this.rng() * 2 - 1) * a };

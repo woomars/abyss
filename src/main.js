@@ -84,14 +84,15 @@ async function boot() {
     if (document.hidden) { menu.open(); audio.suspend(); } else { audio.resume(); }
   });
 
-  bindInput(canvas, game.strokes, {
-    onFirstPointer: (e) => {
-      if (e && e.pointerType === 'touch') enterFullscreenLandscape();
-    },
-  });
-  // browsers may keep audio suspended until a gesture; retry on every touch
-  canvas.addEventListener('pointerdown', () => audio.unlock());
-  ui.addEventListener('pointerdown', () => audio.unlock(), true);
+  bindInput(canvas, game.strokes, {});
+  // Chrome grants user activation for touch on pointerup/touchend, not pointerdown:
+  // unlock audio and request fullscreen + landscape lock there, retrying until it sticks.
+  const onGesture = (e) => {
+    audio.unlock();
+    if (e.pointerType === 'touch' && !document.fullscreenElement) enterFullscreenLandscape();
+  };
+  document.addEventListener('pointerup', onGesture, true);
+  document.addEventListener('pointerdown', () => audio.unlock(), true);
 
   const loop = new GameLoop({
     step: 1 / 60,

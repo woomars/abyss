@@ -1,5 +1,7 @@
 import { Arena } from './Arena.js';
 import { Player } from './Player.js';
+import { StrokeTracker } from './StrokeTracker.js';
+import { MovementController } from './MovementController.js';
 
 // Assembles all game systems. No DOM access here.
 export class Game {
@@ -8,18 +10,38 @@ export class Game {
     this.events = events;
     this.rng = rng;
     this.paused = false;
+    this.time = 0;
     this.arena = new Arena(config.movement.arena);
     this.player = new Player(config.movement, this.center());
+    this.strokes = new StrokeTracker(config.input, events);
+    this.movement = new MovementController(config.movement, this.player, this.arena, events);
+    this.pendingStroke = null;
+    events.on('stroke', (s) => this.queueStroke(s));
   }
+
   center() {
     return { x: this.arena.width / 2, y: this.arena.height / 2 };
   }
+
+  // Strokes are applied at the start of the next logic step (and held during hit stop).
+  queueStroke(s) {
+    const prevNew = this.pendingStroke ? this.pendingStroke.isNew : false;
+    this.pendingStroke = { dir: s.dir, isNew: s.isNew || prevNew };
+  }
+
+  applyPendingStroke() {
+    const s = this.pendingStroke;
+    if (!s) return null;
+    this.pendingStroke = null;
+    this.movement.setDirection(s.dir, { burst: true });
+    return s;
+  }
+
   update(dt) {
     if (this.paused) return;
-    const p = this.player;
-    p.savePrev();
-    const speed = this.config.movement.cruiseSpeed;
-    const next = { x: p.pos.x + p.heading.x * speed * dt, y: p.pos.y + p.heading.y * speed * dt };
-    p.pos = this.arena.resolveCircle(next, p.radius).pos;
+    this.time += dt;
+    this.player.savePrev();
+    this.applyPendingStroke();
+    this.movement.update(dt);
   }
 }

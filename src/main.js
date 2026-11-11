@@ -4,6 +4,7 @@ import { GameLoop } from './game/GameLoop.js';
 import { Events } from './core/Events.js';
 import { createRng } from './core/rng.js';
 import { Renderer } from './render/Renderer.js';
+import { bindInput } from './systems/InputBinder.js';
 
 async function boot() {
   const config = await loadConfig((p) => fetch(p, { cache: 'no-cache' }).then((r) => {
@@ -21,6 +22,7 @@ async function boot() {
   resize();
 
   document.addEventListener('contextmenu', (e) => e.preventDefault());
+  bindInput(canvas, game.strokes, {});
 
   const loop = new GameLoop({
     step: 1 / 60,

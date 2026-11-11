@@ -65,7 +65,30 @@ export class Renderer {
   drawWorld(game, alpha) {
     this.drawPlayer(game.player, alpha);
   }
-  drawScreen() {}
+  drawScreen(game) {
+    this.drawTrail(game);
+  }
+
+  // fading finger trail (screen space) — feedback that the stroke registered
+  drawTrail(game) {
+    const life = this.config.feedback.trailLife;
+    const now = performance.now() / 1000;
+    const pts = game.strokes.trail(now, life);
+    if (pts.length < 2) return;
+    const ctx = this.ctx;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1], b = pts[i];
+      const k = Math.max(0, 1 - (now - b.t) / life);
+      ctx.strokeStyle = `rgba(201,168,106,${0.55 * k})`;
+      ctx.lineWidth = 2 + 6 * k;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+  }
 
   isVisible(pos, r) {
     const v = this.viewWorld, c = this.cam;

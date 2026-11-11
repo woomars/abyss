@@ -44,13 +44,17 @@ export class CombatController {
   }
   get inCombat() { return this._state !== 'move'; }
 
-  onStroke({ dir, isNew }) {
+  // long continuous drawing: steer only (never cancels or arms an attack)
+  onStroke({ dir }) {
     this.inputDir = { x: dir.x, y: dir.y };
-    if (isNew) {
-      this.retryTimer = 0;
-      this.armTimer = this.cfg.rushWindow;
-      if (this.inCombat) this.finish();
-    }
+  }
+
+  // short quick flick: cancel the current chain and arm one dash+chain in that direction
+  onFlick(dir) {
+    this.inputDir = { x: dir.x, y: dir.y };
+    this.retryTimer = 0;
+    this.armTimer = this.cfg.rushWindow;
+    if (this.inCombat) this.finish();
   }
 
   cancel() {

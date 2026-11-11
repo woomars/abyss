@@ -75,10 +75,23 @@ export class StrokeTracker {
     this.events.emit('stroke', { dir: { x: dx / d, y: dy / d }, isNew: false });
   }
 
-  pointerUp(id) {
-    if (!this.pointers.has(id)) return;
+  // A short, fast swipe (flick) is decided on release: it triggers a dash attack.
+  // Long continuous drawing only steers and speeds up movement.
+  pointerUp(id, t) {
+    const st = this.pointers.get(id);
+    if (!st) return;
     this.pointers.delete(id);
-    if (this.activeId === id) this.activeId = null;
+    if (this.activeId !== id) return;
+    this.activeId = null;
+    const end = st.points[st.points.length - 1];
+    const dx = end.x - st.origin.x, dy = end.y - st.origin.y;
+    const d = Math.hypot(dx, dy);
+    const upT = t != null ? t : end.t;
+    const dur = Math.max(upT - st.strokeStart, 1e-3);
+    const c = this.cfg;
+    if (dur <= c.flickMaxTime && d >= c.flickMinPx && d / dur >= c.flickMinSpeed) {
+      this.events.emit('flick', { dir: { x: dx / d, y: dy / d } });
+    }
   }
 
   // recent points of the latest stroke, for drawing a fading finger trail

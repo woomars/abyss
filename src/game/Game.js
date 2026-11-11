@@ -36,6 +36,8 @@ export class Game {
     this.effects = new EffectManager(config, events, rng);
     this.pendingStroke = null;
     events.on('stroke', (s) => this.queueStroke(s));
+    this.pendingFlick = null;
+    events.on('flick', (f) => { this.pendingFlick = { x: f.dir.x, y: f.dir.y }; });
     events.on('hit', (h) => this.onHit(h));
     this.stats = { kills: 0 };
     events.on('kill', () => { this.stats.kills += 1; });
@@ -52,6 +54,7 @@ export class Game {
     this.camera.setMode('normal');
     this.camera.snapTo(this.player.pos);
     this.pendingStroke = null;
+    this.pendingFlick = null;
     this.stats.kills = 0;
     this.time = 0;
   }
@@ -75,11 +78,17 @@ export class Game {
 
   applyPendingStroke() {
     const s = this.pendingStroke;
-    if (!s) return null;
-    this.pendingStroke = null;
-    this.combat.onStroke(s);
-    this.movement.setDirection(s.dir, { burst: true });
-    return s;
+    if (s) {
+      this.pendingStroke = null;
+      this.combat.onStroke(s);
+      this.movement.setDirection(s.dir, { burst: true });
+    }
+    const f = this.pendingFlick;
+    if (f) {
+      this.pendingFlick = null;
+      this.combat.onFlick(f);
+      this.movement.setDirection(f, { burst: true });
+    }
   }
 
   update(realDt) {

@@ -1,5 +1,8 @@
 // Live-tunable parameters exposed in the ?debug=1 panel. Paths point into the config object.
 export const DEBUG_PARAMS = [
+  { path: 'input.flickMaxTime', min: 0.08, max: 0.6, step: 0.01 },
+  { path: 'input.flickMinPx', min: 10, max: 150, step: 5 },
+  { path: 'input.flickMinSpeed', min: 100, max: 2000, step: 50 },
   { path: 'movement.cruiseSpeed', min: 80, max: 500, step: 10 },
   { path: 'movement.burstSpeed', min: 200, max: 1200, step: 10 },
   { path: 'movement.burstDuration', min: 0, max: 1.5, step: 0.05 },

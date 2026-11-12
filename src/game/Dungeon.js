@@ -1,5 +1,6 @@
 import { floorInfo, pickWeighted, randInt } from './floorPlan.js';
 import { buildRoom } from './RoomBuilder.js';
+import { floorLabel } from '../core/floorLabel.js';
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
@@ -61,7 +62,7 @@ export class Dungeon {
     this.state = 'fadeIn';
     this.fade = 1;
     const info = this.info;
-    let title = `${this.floor}층`, music = info.music, bossName = null;
+    let title = floorLabel(this.floor), music = info.music, bossName = null;
     if (kind === 'combat') {
       this.waveCount = info.band.waves.count;
       this.spawnWave();
@@ -72,7 +73,7 @@ export class Dungeon {
       this.boss = g.enemies.spawnAt(b.type, pos, { hp: info.mods.hp * b.hp, attack: info.mods.attack * b.attack, speed: info.mods.speed });
       this.boss.patterns = b.patterns.slice();
       bossName = tcfg.name;
-      title = `${this.floor}층 ${info.band.title} — ${bossName}`;
+      title = `${floorLabel(this.floor)} ${info.band.title} — ${bossName}`;
     } else if (kind === 'treasure') {
       this.chest = { x: room.center.x, y: room.center.y, r: c.chestRadius, opened: false, big: false };
       title = '보물방';

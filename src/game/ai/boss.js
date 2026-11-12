@@ -30,7 +30,9 @@ export const bossAI = {
     const t = e.tcfg;
     const names = (e.patterns || Object.keys(t.patterns)).filter((n) => {
       const p = t.patterns[n];
-      return p && !(p.kind === 'summon' && this.minions(e, game) >= p.maxMinions);
+      const z = game.config.enemies.summon, floor = (game.dungeon && game.dungeon.floor) || 1;
+      const cap = p ? p.maxMinions + Math.floor((z ? z.capPerFloor : 0) * (floor - 1)) : 0;
+      return p && !(p.kind === 'summon' && this.minions(e, game) >= cap);
     });
     if (names.length === 0) return null;
     const fresh = names.length > 1 ? names.filter((n) => n !== e.ai.last) : names;
@@ -78,17 +80,34 @@ export const bossAI = {
     game.events.emit('bossBasic', { enemy: e, name: a.name, kind: a.kind, pos: { x: e.pos.x, y: e.pos.y } });
   },
 
+  // where a minion appears: around the boss, or near / mid / far from the player
+  summonPoint(e, game, i, n) {
+    const z = game.config.enemies.summon, rng = game.rng, ar = game.arena;
+    let zone = 'boss', r = rng() * (z.zones.boss + z.zones.near + z.zones.mid + z.zones.far);
+    for (const k of ['boss', 'near', 'mid', 'far']) { r -= z.zones[k]; if (r <= 0) { zone = k; break; } }
+    let c, d;
+    if (zone === 'boss') { c = e.pos; d = e.radius + e.tcfg.summonRing; }
+    else { c = game.player.pos; d = z[zone][0] + rng() * (z[zone][1] - z[zone][0]); }
+    const a = zone === 'boss' ? (i / n) * Math.PI * 2 + rng() * 0.5 : rng() * Math.PI * 2;
+    const pad = 40;
+    const q = { x: Math.max(pad, Math.min(ar.width - pad, c.x + Math.cos(a) * d)), y: Math.max(pad, Math.min(ar.height - pad, c.y + Math.sin(a) * d)) };
+    return { pos: ar.resolveCircle(q, 16).pos, zone };
+  },
+
   summon(e, game, p) {
-    const room = Math.max(0, p.maxMinions - this.minions(e, game));
+    const z = game.config.enemies.summon, floor = (game.dungeon && game.dungeon.floor) || 1;
+    const scale = 1 + (z ? z.perFloor : 0) * (floor - 1);
+    const cap = p.maxMinions + Math.floor((z ? z.capPerFloor : 0) * (floor - 1));
+    const room = Math.max(0, cap - this.minions(e, game));
     const list = [];
-    for (let i = 0; i < p.count; i++) list.push(p.type);
-    for (let i = 0; i < (p.extraCount || 0); i++) list.push(p.extraType);
+    for (let i = 0; i < Math.round(p.count * scale); i++) list.push(p.type);
+    for (let i = 0; i < Math.round((p.extraCount || 0) * scale); i++) list.push(p.extraType);
     const info = game.dungeon && game.dungeon.info;
     const mods = { ...(info ? info.mods : {}), minion: true }; // minions press the attack on their own
     list.slice(0, room).forEach((type, i, arr) => {
-      const a = (i / arr.length) * Math.PI * 2 + game.rng() * 0.5;
-      const r = e.radius + e.tcfg.summonRing;
-      game.enemies.spawnAt(type, { x: e.pos.x + Math.cos(a) * r, y: e.pos.y + Math.sin(a) * r }, mods);
+      const { pos, zone } = z ? this.summonPoint(e, game, i, arr.length) : { pos: { x: e.pos.x, y: e.pos.y }, zone: 'boss' };
+      game.enemies.spawnAt(type, pos, mods);
+      game.events.emit('minionSpawn', { pos, zone });
     });
   },
 

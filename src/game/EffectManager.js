@@ -29,6 +29,7 @@ export class EffectManager {
     events.on('playerHit', (e) => this.onPlayerHit(e));
     events.on('chainBroken', (e) => this.text(e.pos.x, e.pos.y - 52, '끊김'));
     events.on('evade', (e) => this.text(e.pos.x, e.pos.y - 52, '회피'));
+    events.on('minionSpawn', (e) => { this.ring(e.pos.x, e.pos.y, 4, 42, '#a070ff'); this.ring(e.pos.x, e.pos.y, 20, 8, '#e0c8ff'); });
     events.on('stun', (e) => this.ring(e.pos.x, e.pos.y, e.enemy.radius, e.enemy.radius + 26, '#ffe08a'));
     events.on('stormZap', (e) => { this.onLink({ ...e, chainIndex: 4 }); this.ring(e.to.x, e.to.y, 6, 34, '#9fd8ff'); });
     events.on('quake', (e) => {
@@ -123,7 +124,10 @@ export class EffectManager {
     s.life = s.max = SLASH_LIFE;
   }
 
+  // the combo counts hits; it breaks when no hit lands within comboWindow
   onHit({ damage, crit, strong, pos, dir, enemy }) {
+    this.combo.count += 1;
+    this.combo.timer = this.fb.comboWindow;
     const color = crit ? '#ffb347' : enemy && enemy.isElite ? '#ff6a5c' : '#fff3c4';
     this.spark(pos.x, pos.y, dir, this.fb.particles.hit, crit ? 520 : 380, color, crit ? 3.5 : 2.5, 0.25);
     const n = this.numbers.acquire();
@@ -140,8 +144,6 @@ export class EffectManager {
 
   onKill({ pos, dir }) {
     this.spark(pos.x, pos.y, dir, this.fb.particles.kill, 300, '#9aa0aa', 4, 0.5);
-    this.combo.count += 1;
-    this.combo.timer = this.fb.comboWindow;
   }
 
   onLink({ from, to, chainIndex }) {

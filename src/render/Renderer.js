@@ -740,7 +740,8 @@ export class Renderer {
     ctx.font = 'bold 13px system-ui, sans-serif';
     ctx.fillStyle = '#c9a86a';
     ctx.fillText('COMBO', x, y + 26);
-    // the damage multiplier the combo gives, brighter as it grows
+    // the damage multiplier the combo gives, brighter as it grows (shown once it starts to count)
+    if (mult <= 1) { ctx.globalAlpha = 1; return; }
     const heat = Math.min(1, (mult - 1) / 1.5);
     ctx.font = `bold ${Math.round(18 + heat * 8)}px system-ui, sans-serif`;
     ctx.lineWidth = 4;

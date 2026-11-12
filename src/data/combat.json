@@ -40,6 +40,7 @@
   "hurtLockout": 0.35,
   "combo": {
     "step": 0.05,
-    "cap": 30
+    "every": 5,
+    "cap": 100
   }
 }

@@ -1,4 +1,5 @@
 import { relicIcon } from './relicIcons.js';
+import { floorLabel } from '../core/floorLabel.js';
 
 // Top HUD: HP bar, floor (or practice), gold, owned treasures, kills, enemies left, pause button.
 export class HUD {
@@ -50,7 +51,7 @@ export class HUD {
   update(game) {
     this.set('kills', this.killsEl, String(game.stats.kills));
     const d = game.dungeon, run = game.mode === 'dungeon';
-    this.set('floor', this.floorEl, !run ? '연습장' : d.roomKind === 'treasure' ? `${d.floor}층 · 보물방` : `${d.floor}층`);
+    this.set('floor', this.floorEl, !run ? '연습장' : d.roomKind === 'treasure' ? `${floorLabel(d.floor)} · 보물방` : floorLabel(d.floor));
     this.set('gold', this.goldEl, String(d.gold));
     this.toggle('goldHidden', this.goldWrap, !run);
     this.toggle('pocketHidden', this.pocketWrap, !run);

@@ -3,6 +3,7 @@
 import { LOADOUT_SLOTS } from './Loadout.js';
 import { gradeIndex } from './ItemFactory.js';
 import { josa } from '../../core/josa.js';
+import { floorLabel } from '../../core/floorLabel.js';
 
 const pull = (list, id) => {
   const i = list.findIndex((it) => it.id === id);
@@ -150,8 +151,8 @@ export function isNotable(item, cfg) {
 // the father's story told by an inherited notable item
 export function featText(item, cfg, record) {
   const part = cfg.parts[item.slot].label, o = item.origin;
-  const got = o ? (o.boss ? `${o.floor}층에서 ${josa(o.boss, '을', '를')} 쓰러뜨리고 얻은 ${part}` : `${o.floor}층에서 얻은 ${part}`) : `오래전에 얻은 ${part}`;
-  return `${got}. 그는 ${record.floor}층까지 내려갔다.`;
+  const got = o ? (o.boss ? `${floorLabel(o.floor)}에서 ${josa(o.boss, '을', '를')} 쓰러뜨리고 얻은 ${part}` : `${floorLabel(o.floor)}에서 얻은 ${part}`) : `오래전에 얻은 ${part}`;
+  return `${got}. 그는 ${floorLabel(record.floor)}까지 내려갔다.`;
 }
 
 // lifesteal does not pass to the next generation: strip it (affix and the vampire lord's power)

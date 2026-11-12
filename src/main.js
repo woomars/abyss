@@ -76,7 +76,7 @@ async function boot() {
   let lastFate = null;
   const gameOver = new GameOver(ui, {
     onRetry: () => {
-      if (lastFate) heir.show(lastFate, { label: game.hasGear() ? '대장간으로' : '1층으로' });
+      if (lastFate) heir.show(lastFate, { label: game.hasGear() ? '대장간으로' : '지하 1층으로' });
       else game.restart();
     },
   });
@@ -156,7 +156,7 @@ async function boot() {
         // the game was closed in the middle of a fight: that run counts as a death
         game.enterLimbo();
         const fate = game.endRunByDeath(v.lastFloor);
-        heir.show(fate, { note: '지난 판이 싸움 도중 중단되어, 쓰러진 것으로 처리했습니다.', label: game.hasGear() ? '대장간으로' : '1층으로' });
+        heir.show(fate, { note: '지난 판이 싸움 도중 중단되어, 쓰러진 것으로 처리했습니다.', label: game.hasGear() ? '대장간으로' : '지하 1층으로' });
       } else game.beginRun();
     },
     onNew: (n, family, given) => {

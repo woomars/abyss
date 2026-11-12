@@ -1,5 +1,8 @@
 // Title inside the (landscape) stage: 이어하기 / 새로하기, the save-slot list, and naming a new family.
 // store: VaultStore; names: config.names; onContinue(slot); onNew(slot, family, given)
+import { floorLabel } from '../core/floorLabel.js';
+
+
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function when(ms) {
@@ -57,7 +60,7 @@ export class TitleMenu {
         return `<button class="tm-slot empty" data-act="slot" data-slot="${slot}" ${mode === 'continue' ? 'disabled' : ''}>
           <span class="tm-no">${slot}</span><span class="tm-empty">빈 저장 칸</span></button>`;
       }
-      const where = s.state === 'rest' ? `${s.floor}층 대장간에서 쉬는 중` : s.state === 'run' ? '싸우던 중 중단됨' : '대장간에서 출발 준비';
+      const where = s.state === 'rest' ? `${floorLabel(s.floor)} 대장간에서 쉬는 중` : s.state === 'run' ? '싸우던 중 중단됨' : '대장간에서 출발 준비';
       return `<button class="tm-slot" data-act="slot" data-slot="${slot}">
         <span class="tm-no">${slot}</span>
         <span class="tm-who"><b>${esc(s.family)} ${esc(s.given)}</b><small>${s.generation}대손 · Lv ${s.level}</small></span>

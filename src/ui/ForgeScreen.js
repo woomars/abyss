@@ -6,6 +6,7 @@ import {
   findItem, equipItem, unequipItem, storeItem, takeItem, salvagePreview, salvageItems, enhancePreview, enhanceItem,
 } from '../game/items/Forge.js';
 import { STAT_KEYS } from '../game/Stats.js';
+import { floorLabel } from '../core/floorLabel.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const SLOT_LABEL = { weapon: '무기', helm: '투구', armor: '갑옷', gloves: '장갑', boots: '신발', amulet: '목걸이', ring1: '반지 1', ring2: '반지 2' };
@@ -71,7 +72,7 @@ export class ForgeScreen {
         <span class="fg-sp"></span>
         ${this.start ? '' : `<span class="fg-gold">${relicIcon('gold', 13)} ${g.dungeon.gold}</span>`}
         <button class="fg-btn small" data-act="title">타이틀</button>
-        <button class="fg-btn pri" data-act="depart">${this.start ? '1층으로 ▶' : `${g.dungeon.floor + 1}층으로 ▶`}</button>
+        <button class="fg-btn pri" data-act="depart">${floorLabel(this.start ? 1 : g.dungeon.floor + 1)}으로 ▶</button>
       </div>
       <div class="fg-body">${this.tab === 'equip' ? this.renderEquip() : this.tab === 'salvage' ? this.renderSalvage() : this.tab === 'sets' ? this.renderSets() : this.renderEnhance()}</div>`;
   }

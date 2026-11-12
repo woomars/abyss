@@ -269,5 +269,27 @@
     ],
     "windup": 0.45,
     "lunge": 40
+  },
+  "summon": {
+    "zones": {
+      "boss": 0.4,
+      "near": 0.2,
+      "mid": 0.2,
+      "far": 0.2
+    },
+    "near": [
+      140,
+      260
+    ],
+    "mid": [
+      300,
+      460
+    ],
+    "far": [
+      520,
+      720
+    ],
+    "perFloor": 0.05,
+    "capPerFloor": 0.25
   }
 }

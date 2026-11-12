@@ -72,8 +72,8 @@ export class Game {
       // hp is precious: lifesteal only works on mid-boss-class kills and up
       if (this.bonusStats.lifesteal && !this.over && e.enemy && e.enemy.isBoss) this.healFlat(this.bonusStats.lifesteal);
       this.stats.kills += 1;
-      this.stats.bestCombo = Math.max(this.stats.bestCombo, this.effects.combo.count);
     });
+    events.on('hit', () => { this.stats.bestCombo = Math.max(this.stats.bestCombo, this.effects.combo.count); });
     // player health: enemy counterattacks hurt, a short invulnerability follows; it only comes back from cards
     this.over = false;
     this.resetHealth();
@@ -316,11 +316,12 @@ export class Game {
 
   // the bonus read by combat and skills at this moment (effects that depend on state adjust it)
   // combo multiplier: each combo step adds `step` (+ comboStep from cards/gear), counted up to `cap`
+  // the multiplier rises one step every `every` combo, counted up to `cap`
   comboMult() {
     const c = this.config.combat.combo;
     if (!c) return 1;
-    const n = Math.min(this.effects.combo.count, c.cap);
-    return 1 + n * (c.step + this.bonusStats.comboStep);
+    const steps = Math.floor(Math.min(this.effects.combo.count, c.cap) / (c.every || 1));
+    return 1 + steps * (c.step + this.bonusStats.comboStep);
   }
 
   currentBonus() {

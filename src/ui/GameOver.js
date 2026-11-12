@@ -1,3 +1,6 @@
+import { floorLabel } from '../core/floorLabel.js';
+
+
 // Game over overlay: shown when the player's HP reaches 0.
 export class GameOver {
   constructor(root, { onRetry }) {
@@ -31,12 +34,12 @@ export class GameOver {
     this.el.querySelector('[data-act="retry"]').textContent = fate ? '가문을 잇는다' : '다시 하기';
     this.el.querySelector('.go-kills').textContent = String(kills);
     this.el.querySelector('.go-combo').textContent = String(bestCombo);
-    this.el.querySelector('.go-floor').textContent = `${floor}층`;
+    this.el.querySelector('.go-floor').textContent = floorLabel(floor);
     this.el.querySelector('.go-floor-box').classList.toggle('hidden', !floor);
     const best = this.el.querySelector('.go-best');
     best.textContent = !floor ? ''
       : unranked ? '층 이동으로 시작한 판은 기록하지 않습니다'
-        : isNew ? `최고 기록 갱신! ${bestFloor}층` : `최고 기록 ${bestFloor}층`;
+        : isNew ? `최고 기록 갱신! ${floorLabel(bestFloor)}` : `최고 기록 ${floorLabel(bestFloor)}`;
     best.classList.toggle('new', isNew);
     this.el.classList.remove('hidden');
   }

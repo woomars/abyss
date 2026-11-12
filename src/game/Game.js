@@ -315,9 +315,19 @@ export class Game {
   }
 
   // the bonus read by combat and skills at this moment (effects that depend on state adjust it)
+  // combo multiplier: each combo step adds `step` (+ comboStep from cards/gear), counted up to `cap`
+  comboMult() {
+    const c = this.config.combat.combo;
+    if (!c) return 1;
+    const n = Math.min(this.effects.combo.count, c.cap);
+    return 1 + n * (c.step + this.bonusStats.comboStep);
+  }
+
   currentBonus() {
-    const extra = abyssRingBonus(this);
-    return extra > 0 ? { ...this.bonusStats, damage: this.bonusStats.damage + extra } : this.bonusStats;
+    const extra = abyssRingBonus(this), m = this.comboMult();
+    if (extra <= 0 && m === 1) return this.bonusStats;
+    // damage is (1 + damage) x combo multiplier
+    return { ...this.bonusStats, damage: (1 + this.bonusStats.damage + extra) * m - 1 };
   }
 
   allocItemId() { return this.vault.allocId(); }

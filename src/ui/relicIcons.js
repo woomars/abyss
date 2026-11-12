@@ -15,6 +15,7 @@ const P = {
   amulet: '<path d="M6 3c0 6 3 8 6 8s6-2 6-8"/><path d="M12 11l4 5-4 5-4-5z"/>',
   ring: '<circle cx="12" cy="14" r="6"/><path d="M9 6l3-3 3 3-3 2z"/>',
   bag: '<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  flame: '<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-4-1-6 1-9z"/>',
   anvil: '<path d="M3 7h13c0 3 2 4 5 4v2H8l-2 3h3v3H5v-3h1L4 11H3z"/>',
 };
 

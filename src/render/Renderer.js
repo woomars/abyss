@@ -551,7 +551,7 @@ export class Renderer {
 
   drawScreen(game) {
     this.drawTrail(game);
-    this.drawCombo(game.effects.combo);
+    this.drawCombo(game.effects.combo, game.comboMult());
     if (game.mode === 'dungeon') {
       this.drawBossBar(game.dungeon.boss);
       this.drawExitArrow(game.dungeon);
@@ -723,7 +723,7 @@ export class Renderer {
     ctx.restore();
   }
 
-  drawCombo(combo) {
+  drawCombo(combo, mult = 1) {
     if (combo.count < 2) return;
     const ctx = this.ctx;
     const k = Math.min(1, combo.timer / 0.5);
@@ -740,6 +740,13 @@ export class Renderer {
     ctx.font = 'bold 13px system-ui, sans-serif';
     ctx.fillStyle = '#c9a86a';
     ctx.fillText('COMBO', x, y + 26);
+    // the damage multiplier the combo gives, brighter as it grows
+    const heat = Math.min(1, (mult - 1) / 1.5);
+    ctx.font = `bold ${Math.round(18 + heat * 8)}px system-ui, sans-serif`;
+    ctx.lineWidth = 4;
+    ctx.strokeText(`X${mult.toFixed(2)}`, x, y + 52);
+    ctx.fillStyle = `rgb(255,${Math.round(210 - heat * 130)},${Math.round(120 - heat * 90)})`;
+    ctx.fillText(`X${mult.toFixed(2)}`, x, y + 52);
     ctx.globalAlpha = 1;
   }
 

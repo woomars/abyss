@@ -149,6 +149,10 @@
     "skillDamage": [
       "특수기 피해",
       "pct"
+    ],
+    "comboStep": [
+      "콤보당 공격력",
+      "pct"
     ]
   },
   "grades": {
@@ -314,6 +318,10 @@
     "cooldown": {
       "value": 0.05,
       "prefix": "현자의"
+    },
+    "comboStep": {
+      "value": 0.005,
+      "prefix": "몰아붙이는"
     }
   },
   "legendaries": {

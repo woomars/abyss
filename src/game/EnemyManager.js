@@ -11,6 +11,7 @@ export class EnemyManager {
     this.nextId = 1;
     this.spawnTimer = 0;
     this.autoSpawn = true;
+    this.game = null; // set by Game: enemy brains need the player, hazards and view
     this.onAttack = null; // (enemy) => void, set by Game: an enemy strike connected
     this.onStrike = null; // (enemy, hit:boolean) => void: an enemy swung (sound/visual), hit or miss
   }
@@ -28,7 +29,7 @@ export class EnemyManager {
   }
 
   update(dt, playerPos, viewRect, heading = null, playerRadius = 16) {
-    for (const e of this.list) e.update(dt, playerPos, this.arena, playerRadius, this.onAttack, this.onStrike);
+    for (const e of this.list) e.update(dt, playerPos, this.arena, playerRadius, this.onAttack, this.onStrike, this.game);
     this.separate();
     const far = this.cfg.despawnDistance;
     for (let i = this.list.length - 1; i >= 0; i--) {

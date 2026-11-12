@@ -18,6 +18,21 @@ export class Camera {
     this.viewH = 540;
     this.shakeAmount = 0;
     this.shakeEnabled = true;
+    this.bounds = null; // room rect {w, h}: the view stays inside it (plus a little wall)
+  }
+
+  setBounds(b) { this.bounds = b; }
+
+  // keep a view center inside the room; a room smaller than the view is centered
+  clampPoint(p) {
+    const b = this.bounds;
+    if (!b) return p;
+    const m = this.cfg.boundsMargin || 0;
+    const fit = (v, size, view) => {
+      const lo = view / 2 - m, hi = size - view / 2 + m;
+      return lo > hi ? size / 2 : Math.min(hi, Math.max(lo, v));
+    };
+    return { x: fit(p.x, b.w, this.viewW), y: fit(p.y, b.h, this.viewH) };
   }
 
   setViewport(worldW, worldH) { this.viewW = worldW; this.viewH = worldH; }
@@ -82,6 +97,7 @@ export class Camera {
         smooth = c.followTime;
       }
     }
+    ({ x: tx, y: ty } = this.clampPoint({ x: tx, y: ty }));
     this.pos.x = smoothDamp(this.pos.x, tx, this.vx, smooth, dt);
     this.pos.y = smoothDamp(this.pos.y, ty, this.vy, smooth, dt);
     this.applyShake(dt);

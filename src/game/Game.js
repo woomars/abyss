@@ -9,6 +9,7 @@ import { HitStop } from './HitStop.js';
 import { SkillSystem } from './SkillSystem.js';
 import { EffectManager } from './EffectManager.js';
 import { Dungeon } from './Dungeon.js';
+import { Hazards } from './Hazards.js';
 
 // Assembles all game systems. No DOM access here.
 export class Game {
@@ -50,6 +51,10 @@ export class Game {
     this.resetHealth();
     this.enemies.onAttack = (e) => this.damagePlayer(e.attack, e);
     this.enemies.onStrike = (e, hit) => events.emit('enemyStrike', { enemy: e, pos: { x: e.pos.x, y: e.pos.y }, hit });
+    // enemy attacks in the world (arrows, telegraphed areas)
+    this.hazards = new Hazards(this.arena);
+    this.hazards.onHit = (dmg, h) => this.damagePlayer(dmg, { pos: { x: h.x, y: h.y } });
+    this.enemies.game = this;
     // practice arena by default (endless enemies); startRun() switches to the dungeon
     this.mode = 'practice';
     this.dungeon = new Dungeon(config.dungeon, this);
@@ -67,6 +72,7 @@ export class Game {
     this.mode = 'practice';
     this.enemies.autoSpawn = true;
     this.arena.cfg = this.config.movement.arena;
+    this.camera.setBounds(null);
     this.dungeon.reset();
     this.resetRun();
     this.player.reset(this.center());
@@ -76,6 +82,7 @@ export class Game {
   // place the player at a new room's start (called by Dungeon behind the fade)
   loadRoom(room) {
     this.enemies.clear();
+    this.hazards.clear();
     this.arena.cfg = room.arena;
     this.player.reset(room.start);
     this.movement.burstTime = Infinity;
@@ -83,7 +90,8 @@ export class Game {
     this.skills.cancelActive();
     this.effects.clear();
     this.camera.setMode('normal');
-    this.camera.snapTo(this.player.pos);
+    this.camera.setBounds({ w: room.arena.width, h: room.arena.height });
+    this.camera.snapTo(this.camera.clampPoint(this.player.pos));
     this.pendingStroke = null;
     this.pendingFlick = null;
   }
@@ -136,6 +144,7 @@ export class Game {
   // shared reset for a new run or practice session
   resetRun() {
     this.enemies.clear();
+    this.hazards.clear();
     this.player.reset(this.center());
     this.movement.burstTime = Infinity;
     this.combat.reset();
@@ -202,6 +211,7 @@ export class Game {
       if (!this.combat.inCombat) this.movement.update(dt);
     }
     this.enemies.update(dt, this.player.pos, this.viewRect(), this.combat.inputDir, this.player.radius);
+    this.hazards.update(dt, this.player);
     if (this.mode === 'dungeon') this.dungeon.update(dt);
     this.camera.update(dt, this.player);
     this.effects.update(realDt, this.player, this.combat.inCombat || this.skills.busy);

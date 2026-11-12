@@ -40,6 +40,8 @@ export class AudioSystem {
     events.on('exitOpen', () => this.play('chime'));
     events.on('chestOpen', (e) => this.play('coins', { gain: e.big ? 1.3 : 1 }));
     events.on('floorExit', () => this.play('portal'));
+    events.on('enemyShoot', () => this.play('bow'));
+    events.on('wraithBlink', () => this.play('blink'));
   }
 
   // fetch + decode every configured sample (after the AudioContext exists)
@@ -187,6 +189,14 @@ const VOICES = {
     a.tone('square', 320 * p, 110, 0.06 * g, 0.12);
   },
   link: (a, p, g) => a.tone('sine', 880 * p, 1320 * p, 0.14 * g, 0.08, 0.002),
+  bow: (a, p, g) => {
+    a.tone('triangle', 520 * p, 180 * p, 0.1 * g, 0.08);
+    a.noiseBurst('highpass', 3000 * p, 6000 * p, 1, 0.1 * g, 0.12, 0.005);
+  },
+  blink: (a, p, g) => {
+    a.tone('sine', 900 * p, 200 * p, 0.08 * g, 0.3, 0.02);
+    a.noiseBurst('bandpass', 1800 * p, 400 * p, 3, 0.08 * g, 0.3, 0.03);
+  },
   chime: (a, p, g) => {
     a.tone('sine', 660 * p, 660 * p, 0.16 * g, 0.5, 0.01);
     a.tone('sine', 990 * p, 990 * p, 0.12 * g, 0.6, 0.06);

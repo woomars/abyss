@@ -65,8 +65,9 @@ export class Renderer {
   drawWorld(game, alpha) {
     const fx = game.effects;
     if (game.mode === 'dungeon') this.drawRoomObjects(game.dungeon);
+    this.drawHazards(game.hazards);
     this.drawLinks(fx);
-    this.drawEnemies(game.enemies, alpha);
+    this.drawEnemies(game, alpha);
     this.drawAfterimages(fx, game.player);
     this.drawWinds(fx);
     this.drawPlayer(game.player, alpha);
@@ -316,28 +317,73 @@ export class Renderer {
     ctx.globalAlpha = 1;
   }
 
-  drawEnemies(mgr, alpha) {
-    const ctx = this.ctx;
+  drawEnemies(game, alpha) {
+    const ctx = this.ctx, mgr = game.enemies, pp = game.player.pos;
     for (const e of mgr.all()) {
       const r = e.radius;
-      if (!this.isVisible(e.pos, r * 2)) continue;
+      if (!this.isVisible(e.pos, r * 3)) continue;
       const { x, y } = lerpPos(e.prevPos, e.pos, alpha);
       let size = r * 1.6;
-      let a = 1;
+      let a = e.fade == null ? 1 : e.fade;
       if (e.dying) {
         const k = Math.max(0, e.deathTimer / e.root.deathTime);
-        a = k;
+        a *= k;
         size *= 0.6 + 0.4 * k;
       }
-      // stagger wobble
+      if (a <= 0.01) continue;
       const wob = e.staggerTime > 0 && !e.dying ? Math.sin(e.staggerTime * 60) * 2 : 0;
+      const fill = e.flashTime > 0 ? '#ffffff' : e.strikeTime > 0 ? '#ff3b30' : e.tcfg.color;
       ctx.globalAlpha = a;
-      ctx.fillStyle = e.flashTime > 0 ? '#ffffff' : e.strikeTime > 0 ? '#ff3b30' : e.tcfg.color;
-      ctx.fillRect(x - size / 2 + wob, y - size / 2, size, size);
-      ctx.strokeStyle = e.isElite ? '#e0a050' : '#2b2e36';
-      ctx.lineWidth = e.isElite ? 3 : 2;
-      ctx.strokeRect(x - size / 2 + wob, y - size / 2, size, size);
+      if (e.mods.enhanced && !e.dying) { // enhanced: golden aura
+        ctx.beginPath();
+        ctx.arc(x, y, r * 1.45, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,200,90,0.16)';
+        ctx.fill();
+      }
+      const ai = e.tcfg.ai;
+      ctx.fillStyle = fill;
+      ctx.lineWidth = e.isElite || e.mods.enhanced ? 3 : 2;
+      ctx.strokeStyle = e.mods.enhanced ? '#ffcf5a' : e.isElite ? '#e0a050' : '#2b2e36';
+      if (ai === 'archer') {
+        const ang = Math.atan2(pp.y - y, pp.x - x);
+        ctx.save();
+        ctx.translate(x + wob, y);
+        ctx.rotate(ang);
+        ctx.beginPath();
+        ctx.moveTo(r * 1.1, 0);
+        ctx.lineTo(-r * 0.8, r * 0.9);
+        ctx.lineTo(-r * 0.8, -r * 0.9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      } else if (ai === 'wraith') {
+        ctx.globalAlpha = a * 0.85;
+        ctx.beginPath();
+        ctx.arc(x + wob, y, r, Math.PI, 0);
+        ctx.lineTo(x + r + wob, y + r * 0.9);
+        for (let i = 3; i >= 0; i--) ctx.lineTo(x + wob - r + (2 * r * i) / 3, y + r * (i % 2 ? 0.5 : 0.95));
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = e.mods.enhanced ? '#ffcf5a' : '#cdb8ff';
+        ctx.stroke();
+      } else if (e.isBoss) {
+        this.drawBossBody(e, x + wob, y, fill);
+      } else {
+        ctx.fillRect(x - size / 2 + wob, y - size / 2, size, size);
+        ctx.strokeRect(x - size / 2 + wob, y - size / 2, size, size);
+      }
       ctx.globalAlpha = 1;
+      // archer aim line: thin while tracking, bright once locked
+      if (ai === 'archer' && e.ai.aim > 0 && !e.dying) {
+        const k = 1 - e.ai.aim / e.tcfg.windup, locked = e.ai.aim <= e.tcfg.windup * 0.4;
+        ctx.strokeStyle = locked ? 'rgba(255,80,60,0.85)' : `rgba(255,140,90,${0.25 + 0.35 * k})`;
+        ctx.lineWidth = locked ? 2.5 : 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + e.ai.aimDir.x * 320, y + e.ai.aimDir.y * 320);
+        ctx.stroke();
+      }
       // counterattack telegraph: reach circle that fills in as the strike approaches
       if (e.windupTime > 0 && !e.dying) {
         const reach = r + (e.tcfg.attackRange || 0) + 16;
@@ -352,15 +398,128 @@ export class Renderer {
         ctx.fillStyle = `rgba(255,60,50,${0.12 + 0.18 * k})`;
         ctx.fill();
       }
-      if (e.isElite && !e.dying) {
+      if ((e.isElite || e.mods.enhanced) && !e.isBoss && !e.dying && e.hp < e.maxHp) {
         const w = r * 2.2, h = 5;
         ctx.fillStyle = '#20141a';
         ctx.fillRect(x - w / 2, y - size / 2 - 12, w, h);
-        ctx.fillStyle = '#d0453f';
+        ctx.fillStyle = e.mods.enhanced ? '#e6b84a' : '#d0453f';
         ctx.fillRect(x - w / 2, y - size / 2 - 12, w * (e.hp / e.maxHp), h);
       }
     }
   }
+
+  // boss: heavy octagon body with horns; glows red when enraged
+  drawBossBody(e, x, y, fill) {
+    const ctx = this.ctx, r = e.radius;
+    if (e.ai && e.ai.enraged) {
+      const pulse = 0.25 + Math.sin(performance.now() / 120) * 0.1;
+      ctx.beginPath();
+      ctx.arc(x, y, r * 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,50,30,${pulse})`;
+      ctx.fill();
+    }
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const a = Math.PI / 8 + (i * Math.PI) / 4;
+      ctx[i ? 'lineTo' : 'moveTo'](x + Math.cos(a) * r, y + Math.sin(a) * r);
+    }
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = '#ffcf5a';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    // horns
+    ctx.fillStyle = '#e8dcc0';
+    for (const sgn of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(x + sgn * r * 0.45, y - r * 0.8);
+      ctx.lineTo(x + sgn * r * 0.95, y - r * 1.45);
+      ctx.lineTo(x + sgn * r * 0.75, y - r * 0.7);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // eyes
+    ctx.fillStyle = e.ai && e.ai.enraged ? '#ff4030' : '#ffd060';
+    ctx.fillRect(x - r * 0.42, y - r * 0.2, r * 0.25, r * 0.12);
+    ctx.fillRect(x + r * 0.17, y - r * 0.2, r * 0.25, r * 0.12);
+  }
+
+  // telegraphs and arrows (drawn on the floor, under the enemies)
+  drawHazards(hz) {
+    const ctx = this.ctx;
+    for (const h of hz.list) {
+      if (!this.isVisible(h, (h.radius || h.maxRadius || 20) + 20)) continue;
+      if (h.kind === 'arrow') {
+        ctx.strokeStyle = '#f2e3c0';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(h.x - h.dir.x * 20, h.y - h.dir.y * 20);
+        ctx.lineTo(h.x, h.y);
+        ctx.stroke();
+        ctx.fillStyle = '#ff6a50';
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.radius * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+        continue;
+      }
+      const k = Math.min(1, h.t / h.delay);
+      const flash = h.kind !== 'ring' && h.done;
+      ctx.save();
+      ctx.translate(h.x, h.y);
+      if (h.kind === 'circle' || h.kind === 'cone') {
+        const path = () => {
+          ctx.beginPath();
+          if (h.kind === 'circle') ctx.arc(0, 0, h.radius, 0, Math.PI * 2);
+          else {
+            const a0 = Math.atan2(h.dir.y, h.dir.x), half = (h.arcDeg * Math.PI / 180) / 2;
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, h.radius, a0 - half, a0 + half);
+            ctx.closePath();
+          }
+        };
+        path();
+        ctx.fillStyle = flash ? 'rgba(255,120,80,0.55)' : 'rgba(255,50,40,0.10)';
+        ctx.fill();
+        ctx.strokeStyle = flash ? 'rgba(255,200,150,0.9)' : 'rgba(255,70,60,0.7)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        if (!flash) { // fill grows from the center toward the edge as the hit approaches
+          ctx.save();
+          ctx.scale(k, k);
+          path();
+          ctx.fillStyle = `rgba(255,60,50,${0.12 + 0.2 * k})`;
+          ctx.fill();
+          ctx.restore();
+        }
+      } else if (h.kind === 'ring') {
+        if (h.t < h.delay) {
+          ctx.setLineDash([10, 10]);
+          ctx.strokeStyle = `rgba(255,90,60,${0.25 + 0.3 * k})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, h.maxRadius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = `rgba(255,60,40,${0.2 + 0.3 * k})`;
+          ctx.beginPath();
+          ctx.arc(0, 0, 30 + 30 * k, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.strokeStyle = 'rgba(255,120,70,0.75)';
+          ctx.lineWidth = h.thickness;
+          ctx.beginPath();
+          ctx.arc(0, 0, Math.max(1, h.r), 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(255,230,190,0.9)';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+  }
+
   drawScreen(game) {
     this.drawTrail(game);
     this.drawCombo(game.effects.combo);

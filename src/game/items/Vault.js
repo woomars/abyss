@@ -17,6 +17,7 @@ export class Vault {
     this.progress = { level: 1, xp: 0 };
     this.savedAt = 0;
     this.lastFloor = 0; // floor of the run in progress (for a run cut short by closing the game)
+    this.carry = [];    // pocket while at the start forge (taken along into the run)
   }
 
   allocId() { return this.nextId++; }
@@ -38,7 +39,7 @@ export class Vault {
   toJSON() {
     return {
       version: VAULT_VERSION, stash: this.stash, powder: this.powder, seen: this.seen, equipped: this.equipped,
-      state: this.state, run: this.run, nextId: this.nextId, lineage: this.lineage, progress: this.progress, savedAt: this.savedAt, lastFloor: this.lastFloor,
+      state: this.state, run: this.run, nextId: this.nextId, lineage: this.lineage, progress: this.progress, savedAt: this.savedAt, lastFloor: this.lastFloor, carry: this.carry,
     };
   }
 
@@ -67,6 +68,10 @@ export class Vault {
     v.progress = { level: Number.isFinite(pr.level) ? pr.level : 1, xp: Number.isFinite(pr.xp) ? pr.xp : 0 };
     v.savedAt = Number.isFinite(data.savedAt) ? data.savedAt : 0;
     v.lastFloor = Number.isFinite(data.lastFloor) ? data.lastFloor : 0;
+    v.carry = Array.isArray(data.carry) ? data.carry.filter((i) => i && typeof i === 'object') : [];
+    // never hand out an id that a saved item already has
+    const ids = [...v.stash, ...v.carry, ...Object.values(v.equipped), ...((v.run && v.run.pocket) || [])].map((i) => (i && Number.isFinite(i.id) ? i.id : 0));
+    v.nextId = Math.max(v.nextId, ...ids.map((n) => n + 1), 1);
     return v;
   }
 }

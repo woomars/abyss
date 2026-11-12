@@ -86,6 +86,11 @@ export class Game {
     this.hazards.onHit = (dmg, h) => this.damagePlayer(dmg, { pos: { x: h.x, y: h.y } });
     this.enemies.game = this;
     events.on('bossEnrage', () => this.camera.addShake(this.config.camera.shake.crit));
+    events.on('floorStart', (e) => {
+      if (this.vault.state !== 'run') return;
+      this.vault.lastFloor = e.floor;
+      this.saveVault();
+    });
     // practice arena by default (endless enemies); startRun() switches to the dungeon
     this.mode = 'practice';
     this.dungeon = new Dungeon(config.dungeon, this);
@@ -146,9 +151,11 @@ export class Game {
   }
 
   // max hp follows the bonus; gaining max hp also gains that much current hp
-  applyMaxHp() {
+  // keepMissing (forge): the same hp stays missing, so swapping gear never heals
+  applyMaxHp(keepMissing = false) {
     const p = this.player, max = this.config.combat.player.maxHp + this.bonusStats.maxHp;
-    if (max > p.maxHp) p.hp += max - p.maxHp;
+    if (keepMissing) p.hp = Math.max(1, max - (p.maxHp - p.hp));
+    else if (max > p.maxHp) p.hp += max - p.maxHp;
     p.maxHp = max;
     p.hp = Math.min(p.hp, max);
   }
@@ -161,6 +168,7 @@ export class Game {
       this.refreshBonus();
       this.applyMaxHp();
       this.events.emit('levelUp', { level: this.vault.progress.level, pos: { x: this.player.pos.x, y: this.player.pos.y } });
+      if (this.vault.state === 'run') this.saveVault(); // levels survive even a closed game
     }
   }
 
@@ -177,6 +185,7 @@ export class Game {
   saveVault() {
     this.vault.equipped = this.loadout.toJSON();
     if (this.vault.state === 'rest') this.vault.run = this.snapshotRun();
+    if (this.forge && this.forge.start) this.vault.carry = this.loot.pocket.slice();
     this.events.emit('vaultChanged', { vault: this.vault });
   }
 
@@ -184,12 +193,20 @@ export class Game {
   forgeChanged() {
     const before = { ...this.gearSets };
     this.refreshBonus();
+    this.applyMaxHp(true);
     for (const [id, n] of Object.entries(this.gearSets)) {
       const total = Object.keys(this.config.items.sets[id].pieces).length;
       if (n >= total && (before[id] || 0) < total) this.events.emit('setComplete', { id, name: this.config.items.sets[id].name });
     }
-    this.applyMaxHp();
     this.saveVault();
+  }
+
+  // between runs (heir screen): no practice enemies, nothing moving
+  enterLimbo() {
+    this.mode = 'dungeon';
+    this.enemies.autoSpawn = false;
+    this.resetRun();
+    this.dungeon.reset();
   }
 
   // the forge before floor 1 (new hero or a new run)
@@ -198,6 +215,7 @@ export class Game {
     this.enemies.autoSpawn = false;
     this.resetRun();
     this.dungeon.reset();
+    this.loot.pocket.push(...this.vault.carry);
     this.forge = { start: true };
     this.vault.state = 'idle';
     this.vault.run = null;
@@ -221,9 +239,12 @@ export class Game {
     this.vault.state = 'run';
     this.vault.run = null;
     if (start) {
+      const pocket = this.loot.pocket.slice(); // what was set aside at the start forge comes along
       this.vault.lastFloor = 1;
+      this.vault.carry = [];
       this.saveVault();
       this.startRun(1);
+      this.loot.pocket.push(...pocket);
     } else {
       this.vault.lastFloor = this.dungeon.floor + 1;
       this.saveVault();
@@ -275,6 +296,7 @@ export class Game {
     this.vault.state = 'idle';
     this.vault.run = null;
     this.vault.lastFloor = 0;
+    this.vault.carry = [];
     this.refreshBonus();
     this.saveVault();
     return { record, heir, survived, lost };
@@ -377,7 +399,8 @@ export class Game {
 
   // pause menu "포기하기": a dungeon run counts as a death; the practice arena just restarts
   giveUp() {
-    if (this.mode !== 'dungeon' || this.forge) { this.restart(); return; }
+    if (this.forge) return; // nothing to give up at a forge
+    if (this.mode !== 'dungeon') { this.restart(); return; }
     if (this.over) return;
     this.player.hp = 0;
     this.die();

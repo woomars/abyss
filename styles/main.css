@@ -445,3 +445,5 @@ html, body {
 .fg-flash { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 8px 16px; border-radius: 8px; background: rgba(60, 20, 20, 0.92); border: 1px solid #a8443c; color: #ffd0c8; z-index: 5; }
 
 .fg-actions.sticky { position: sticky; bottom: -6px; margin: 2px 0 -6px; padding: 5px 0 6px; background: rgba(12, 9, 16, 0.97); }
+.fg-flash.good { background: rgba(40, 20, 60, 0.95); border-color: #c27cff; color: #f0dcff; font-size: 15px; font-weight: 700; box-shadow: 0 0 24px rgba(194, 124, 255, 0.6); }
+.pause-menu { z-index: 40; }

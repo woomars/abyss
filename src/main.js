@@ -124,7 +124,7 @@ async function boot() {
     onRestart: () => { gameOver.hide(); game.giveUp(); },
     onOpenChange: updatePaused,
   });
-  events.on('setComplete', (e) => banner.show(`${e.name} 세트 완성!`, '연쇄 마지막 타격에서 폭발이 일어납니다', { kind: 'reward', ms: 2600 }));
+  events.on('setComplete', (e) => { if (forge.isOpen) forge.flash(`${e.name} 세트 완성! 연쇄 마지막 타격에서 폭발`, true); });
   events.on('levelUp', (e) => banner.show('레벨 업!', `Lv ${e.level} · 공격력과 최대 체력이 올랐습니다`, { kind: 'reward', ms: 1600 }));
 
   // --- family, forge and title (all inside the landscape stage) ---
@@ -154,7 +154,7 @@ async function boot() {
       if (v.state === 'rest' && v.run) game.restoreRun(v.run);
       else if (v.state === 'run') {
         // the game was closed in the middle of a fight: that run counts as a death
-        game.resetRun();
+        game.enterLimbo();
         const fate = game.endRunByDeath(v.lastFloor);
         heir.show(fate, { note: '지난 판이 싸움 도중 중단되어, 쓰러진 것으로 처리했습니다.' });
       } else game.openStartForge();
@@ -201,7 +201,7 @@ async function boot() {
       onFloor: (floor) => {
         gameOver.hide();
         title.hide(); forge.hide(); heir.hide();
-        if (!started) { enterSlot(null, new Vault({ family: '시험', given: '기사' })); }
+        if (slot != null || !started) enterSlot(null, new Vault({ family: '시험', given: '기사' })); // debug runs use a throwaway family
         if (floor === -2) { game.startRun(4); game.dungeon.enterForge(); return; }
         if (floor > 0) game.startRun(floor);
         else if (floor === -1) { game.startRun(3); game.dungeon.enterRoom('treasure'); }

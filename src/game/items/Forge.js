@@ -138,7 +138,8 @@ export function enhanceItem(ctx, id, tier, count) {
 // ---- death ----
 export function survivalChance(item, cfg) {
   if (item.scar) return 0;
-  return cfg.grades[item.grade].survive + cfg.qualities[item.quality].survive;
+  const g = cfg.grades[item.grade].survive;
+  return g > 0 ? g + cfg.qualities[item.quality].survive : 0; // 일반·고급 never survive
 }
 
 

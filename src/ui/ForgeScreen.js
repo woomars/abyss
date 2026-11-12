@@ -285,9 +285,9 @@ export class ForgeScreen {
     this.render();
   }
 
-  flash(msg) {
+  flash(msg, good = false) {
     const t = document.createElement('div');
-    t.className = 'fg-flash';
+    t.className = `fg-flash${good ? ' good' : ''}`;
     t.textContent = msg;
     this.el.appendChild(t);
     setTimeout(() => t.remove(), 1500);

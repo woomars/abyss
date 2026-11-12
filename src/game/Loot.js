@@ -72,6 +72,7 @@ export class Loot {
         if (k >= 1) {
           this.ground.splice(i, 1);
           this.pocket.push(gi.item);
+          this.game.vault.markSeen(gi.item);
           this.warned = false;
           this.game.events.emit('lootPickup', { item: gi.item, pos: { x: p.pos.x, y: p.pos.y } });
         }

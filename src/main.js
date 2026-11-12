@@ -16,6 +16,7 @@ import { GameOver } from './ui/GameOver.js';
 import { Banner } from './ui/Banner.js';
 import { RecordStore } from './systems/RecordStore.js';
 import { RelicPicker } from './ui/RelicPicker.js';
+import { LootToast } from './ui/LootToast.js';
 import { chooseRotation, stageSize, stageTransform, toStage } from './systems/orientation.js';
 
 function safeStorage() {
@@ -98,6 +99,9 @@ async function boot() {
     onReroll: () => game.rerollRelics(),
   });
   events.on('relicOffer', (e) => picker.show(e.offers, e));
+  const toast = new LootToast(ui, config.items);
+  events.on('lootPickup', (e) => toast.show(e.item));
+  events.on('pocketFull', () => toast.text('주머니가 가득 찼습니다'));
   events.on('relicReroll', (e) => picker.show(e.offers, e));
   menu = new PauseMenu(ui, {
     settings,

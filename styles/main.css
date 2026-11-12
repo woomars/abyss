@@ -255,3 +255,25 @@ html, body {
 .relics { display: flex; flex-wrap: wrap; gap: 4px; max-width: 220px; }
 .relics .rl { position: relative; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 5px; border: 1px solid #4a3d5c; background: rgba(23, 18, 29, 0.75); color: #e8d9a8; }
 .relics .rl b { position: absolute; right: -3px; bottom: -4px; font-size: 9px; color: #fff; text-shadow: 0 0 2px #000, 0 0 2px #000; }
+
+/* equipment cells */
+.icell {
+  --gc: #a7b0ba; --qc: transparent;
+  position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  width: 40px; height: 40px; border-radius: 7px; border: 2px solid var(--gc); color: var(--gc);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.06), rgba(10, 8, 14, 0.85) 70%); font: inherit;
+}
+.icell.q1, .icell.q2 { outline: 2px solid var(--qc); outline-offset: 1px; }
+.icell.g-legendary { box-shadow: 0 0 10px rgba(255, 154, 60, 0.55); }
+.icell .ilv { position: absolute; right: 2px; top: 0; font-size: 10px; font-weight: 800; color: #fff; text-shadow: 0 0 3px #000, 0 0 2px #000; }
+.icell.scar::after { content: ''; position: absolute; left: 3px; bottom: 3px; width: 7px; height: 7px; border-radius: 50%; background: #c8443a; box-shadow: 0 0 4px #c8443a; }
+.pocket-wrap { color: #b3a8c4; display: inline-flex; align-items: center; gap: 2px; }
+.pocket-wrap .pocket { color: #e8e3d6; font-weight: 700; }
+
+/* pickup notices */
+.loot-toasts { position: absolute; top: calc(36px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; z-index: 5; }
+.loot-toast { display: flex; align-items: center; gap: 6px; padding: 3px 10px 3px 4px; border-radius: 8px; background: rgba(12, 9, 16, 0.85); border: 1px solid #3b2f4f; font-size: 12px; animation: banner-in 0.25s ease-out; transition: opacity 0.4s; }
+.loot-toast .icell { width: 22px; height: 22px; border-width: 1.5px; border-radius: 5px; }
+.loot-toast.warn { padding: 4px 10px; color: #ffb0a0; }
+.loot-toast.out { opacity: 0; }
+.loot-toast.g-legendary { border-color: #ff9a3c; box-shadow: 0 0 12px rgba(255, 154, 60, 0.5); }

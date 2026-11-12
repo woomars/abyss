@@ -47,6 +47,12 @@ export class AudioSystem {
     events.on('bossBasic', () => this.play('warn', { gain: 0.55, pitch: 1.35 }));
     events.on('chainBroken', () => this.play('whoosh', { gain: 0.6, pitch: 0.6 }));
     events.on('relicOffer', () => this.play('chime', { pitch: 0.8 }));
+    events.on('lootDrop', (e) => { if (e.item.grade === 'epic' || e.item.grade === 'legendary') this.play('chime', { pitch: 0.6, gain: 0.8 }); });
+    events.on('lootPickup', (e) => {
+      const i = ['common', 'uncommon', 'rare', 'epic', 'legendary'].indexOf(e.item.grade);
+      if (i >= 4) { this.play('portal', { pitch: 1.6, gain: 0.6 }); this.play('chime', { pitch: 1.3, gain: 1.2 }); }
+      else this.play('coins', { pitch: 0.8 + i * 0.12, gain: 0.5 + i * 0.15 });
+    });
     events.on('relicReroll', () => this.play('coins', { gain: 0.8 }));
     events.on('relicPick', () => this.play('chime', { pitch: 1.25, gain: 1.2 }));
   }

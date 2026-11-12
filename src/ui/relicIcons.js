@@ -10,6 +10,12 @@ const P = {
   fang: '<path d="M4 5h16l-3 5-2 9-3-7-3 7-2-9z"/>',
   shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 7v10"/>',
   chain: '<rect x="2.5" y="9" width="10" height="6" rx="3"/><rect x="11.5" y="9" width="10" height="6" rx="3"/>',
+  helm: '<path d="M4 15a8 8 0 0 1 16 0v4H4z"/><path d="M12 7v12M4 15h16"/>',
+  gloves: '<path d="M7 21v-8l-2-3 1-2 3 3V5a1.5 1.5 0 0 1 3 0v5V4a1.5 1.5 0 0 1 3 0v6V6a1.5 1.5 0 0 1 3 0v9l-2 6z"/>',
+  amulet: '<path d="M6 3c0 6 3 8 6 8s6-2 6-8"/><path d="M12 11l4 5-4 5-4-5z"/>',
+  ring: '<circle cx="12" cy="14" r="6"/><path d="M9 6l3-3 3 3-3 2z"/>',
+  bag: '<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  anvil: '<path d="M3 7h13c0 3 2 4 5 4v2H8l-2 3h3v3H5v-3h1L4 11H3z"/>',
 };
 
 export function relicIcon(name, size = 24) {

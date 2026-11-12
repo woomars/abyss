@@ -64,7 +64,7 @@ export class Renderer {
   // hook points extended by later tasks
   drawWorld(game, alpha) {
     const fx = game.effects;
-    if (game.mode === 'dungeon') this.drawRoomObjects(game.dungeon);
+    if (game.mode === 'dungeon') { this.drawRoomObjects(game.dungeon); this.drawLoot(game); }
     this.drawHazards(game.hazards);
     this.drawLinks(fx);
     this.drawEnemies(game, alpha);
@@ -553,6 +553,43 @@ export class Renderer {
   }
 
   // exit portal (dim ring while closed, glowing swirl once open) and treasure chest
+  // equipment on the floor: a gem in the grade colour, a beam for epic and better, flying when pulled in
+  drawLoot(game) {
+    const ctx = this.ctx, cfg = game.config.items, t = performance.now() / 1000;
+    for (const g of game.loot.ground) {
+      if (!this.isVisible(g, 80)) continue;
+      const it = g.item, col = cfg.grades[it.grade].color, hi = it.grade === 'epic' || it.grade === 'legendary';
+      const bob = g.fly ? 0 : Math.sin(t * 3 + it.id) * 3;
+      const s = g.fly ? 6 : 9;
+      ctx.save();
+      ctx.translate(g.x, g.y + bob);
+      if (hi && !g.fly) { // light pillar
+        const grd = ctx.createLinearGradient(0, -90, 0, 0);
+        grd.addColorStop(0, 'rgba(0,0,0,0)');
+        grd.addColorStop(1, col);
+        ctx.globalAlpha = 0.35 + Math.sin(t * 4) * 0.1;
+        ctx.fillStyle = grd;
+        ctx.fillRect(-5, -90, 10, 90);
+      }
+      ctx.globalAlpha = g.fly ? 0.8 : 0.35;
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 2.2, 0, Math.PI * 2);
+      ctx.fillStyle = col;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, -s); ctx.lineTo(s * 0.8, 0); ctx.lineTo(0, s); ctx.lineTo(-s * 0.8, 0);
+      ctx.closePath();
+      ctx.fillStyle = col;
+      ctx.fill();
+      const qc = cfg.qualities[it.quality].color;
+      ctx.lineWidth = qc ? 2.5 : 1.5;
+      ctx.strokeStyle = qc || '#1a1420';
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   drawRoomObjects(d) {
     const ctx = this.ctx, t = performance.now() / 1000;
     const ex = d.exit;

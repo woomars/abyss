@@ -8,7 +8,7 @@ export class HUD {
     this.el.innerHTML = `
       <div class="hud-left">
         <div class="hp"><div class="hp-fill"></div><span class="hp-text">HP 100 / 100</span></div>
-        <div class="meta"><span class="floor">연습장</span><span class="gold-wrap"><span class="gold-icon">◆</span> <span class="gold">0</span></span></div>
+        <div class="meta"><span class="floor">연습장</span><span class="gold-wrap"><span class="gold-icon">◆</span> <span class="gold">0</span></span><span class="pocket-wrap">${relicIcon('bag', 13)} <span class="pocket">0</span></span></div>
         <div class="relics"></div>
       </div>
       <div class="hud-center"><span class="kills-label">처치</span> <span class="kills">0</span><span class="left-wrap"> · 남은 적 <span class="left">0</span></span></div>
@@ -22,6 +22,8 @@ export class HUD {
     this.leftWrap = this.el.querySelector('.left-wrap');
     this.pauseBtn = this.el.querySelector('.pause');
     this.relicsEl = this.el.querySelector('.relics');
+    this.pocketEl = this.el.querySelector('.pocket');
+    this.pocketWrap = this.el.querySelector('.pocket-wrap');
     this.pauseBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); onPause(); });
     this.last = {};
   }
@@ -50,6 +52,8 @@ export class HUD {
     this.set('floor', this.floorEl, !run ? '연습장' : d.roomKind === 'treasure' ? `${d.floor}층 · 보물방` : `${d.floor}층`);
     this.set('gold', this.goldEl, String(d.gold));
     this.toggle('goldHidden', this.goldWrap, !run);
+    this.toggle('pocketHidden', this.pocketWrap, !run);
+    this.set('pocket', this.pocketEl, `${game.loot.pocket.length}/${game.config.items.pocketSize}`);
     const fighting = run && !d.exit.open && d.roomKind !== 'treasure';
     this.toggle('leftHidden', this.leftWrap, !fighting);
     if (fighting) this.set('left', this.leftEl, d.waveCount > 1 ? `${d.remaining} (웨이브 ${d.waveIndex}/${d.waveCount})` : String(d.remaining));

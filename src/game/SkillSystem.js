@@ -84,9 +84,10 @@ export class SkillSystem {
   hitEnemy(e, damage, dir, { critChance = this.combatCfg.critChance + this.bonus().crit, chainIndex = 0, skill = null } = {}) {
     const c = this.combatCfg;
     const crit = this.rng() < critChance;
-    const dmg = Math.round(damage * (1 + this.bonus().damage) * (crit ? c.critMultiplier : 1));
+    const b = this.bonus();
+    const dmg = Math.round(damage * (1 + b.damage + b.skillDamage) * (crit ? c.critMultiplier + b.critDamage : 1));
     const kind = crit ? 'crit' : 'strong';
-    const { killed } = e.takeHit({ damage: dmg, knockDir: dir, knockback: c.knockback[kind], stagger: c.stagger[kind] });
+    const { killed } = e.takeHit({ damage: dmg, knockDir: dir, knockback: c.knockback[kind] * (1 + b.knockback), stagger: c.stagger[kind] });
     const pos = { x: e.pos.x, y: e.pos.y };
     this.events.emit('hit', { enemy: e, damage: dmg, crit, strong: true, chainIndex, pos, dir, skill });
     if (killed) this.events.emit('kill', { enemy: e, pos, dir, crit });

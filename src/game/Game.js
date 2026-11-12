@@ -11,6 +11,8 @@ import { EffectManager } from './EffectManager.js';
 import { Dungeon } from './Dungeon.js';
 import { Hazards } from './Hazards.js';
 import { Relics } from './Relics.js';
+import { zeroStats, addStats } from './Stats.js';
+import { Loot } from './Loot.js';
 
 // Assembles all game systems. No DOM access here.
 export class Game {
@@ -29,8 +31,9 @@ export class Game {
     this.camera.snapTo(this.player.pos);
     // treasures picked this run (treasure-room cards); their bonuses feed combat, skills, movement
     this.relics = new Relics(config.relics);
-    const bonus = () => this.relics.stats;
-    this.movement.speedMul = () => 1 + this.relics.stats.speed;
+    this.bonusStats = zeroStats(); // cards + equipment, rebuilt by refreshBonus()
+    const bonus = () => this.currentBonus();
+    this.movement.speedMul = () => 1 + this.bonusStats.speed;
     this.offer = null; // cards on screen: the world waits until one is picked
     this.combat = new CombatController(config.combat, {
       player: this.player, movement: this.movement, enemies: this.enemies, camera: this.camera, events, rng,
@@ -48,8 +51,14 @@ export class Game {
     events.on('flick', (f) => { this.pendingFlick = { x: f.dir.x, y: f.dir.y }; });
     events.on('hit', (h) => this.onHit(h));
     this.stats = { kills: 0, bestCombo: 0 };
+    // equipment on the floor and this run's pocket
+    this.itemSeq = 1; // replaced by the vault's counter once a vault is attached
+    this.vault = null;
+    this.loot = new Loot(config.items, this);
+    events.on('kill', (e) => this.loot.onKill(e.enemy));
+    events.on('roomCleared', () => this.loot.magnet());
     events.on('kill', () => {
-      if (this.relics.stats.lifesteal && !this.over) this.healFlat(this.relics.stats.lifesteal);
+      if (this.bonusStats.lifesteal && !this.over) this.healFlat(this.bonusStats.lifesteal);
       this.stats.kills += 1;
       this.stats.bestCombo = Math.max(this.stats.bestCombo, this.effects.combo.count);
     });
@@ -93,6 +102,7 @@ export class Game {
   // place the player at a new room's start (called by Dungeon behind the fade)
   loadRoom(room) {
     this.enemies.clear();
+    this.loot.clearGround();
     this.hazards.clear();
     this.arena.cfg = room.arena;
     this.player.reset(room.start);
@@ -111,6 +121,20 @@ export class Game {
     const p = this.player;
     p.hp = Math.min(p.maxHp, p.hp + p.maxHp * frac);
   }
+
+  // sum of every bonus source; call whenever cards or equipment change
+  refreshBonus() {
+    const s = addStats(zeroStats(), this.relics.stats);
+    this.extraBonus(s);
+    this.bonusStats = s;
+  }
+
+  extraBonus() {} // equipment hooks in here (Phase 3)
+
+  // the bonus read by combat and skills at this moment (effects that depend on state adjust it)
+  currentBonus() { return this.bonusStats; }
+
+  allocItemId() { return this.vault ? this.vault.allocId() : this.itemSeq++; }
 
   healFlat(amount) {
     const p = this.player;
@@ -150,6 +174,7 @@ export class Game {
     const o = this.offer.offers[i];
     if (!o) return null;
     this.relics.take(o, this);
+    this.refreshBonus();
     this.offer = null;
     this.pendingStroke = null;
     this.pendingFlick = null;
@@ -160,7 +185,7 @@ export class Game {
 
   resetHealth() {
     const c = this.config.combat.player;
-    this.player.maxHp = c.maxHp + this.relics.stats.maxHp;
+    this.player.maxHp = c.maxHp + this.bonusStats.maxHp;
     this.player.hp = this.player.maxHp;
     this.player.invuln = 0;
     this.sinceHit = Infinity;
@@ -171,7 +196,7 @@ export class Game {
     const p = this.player;
     if (this.over || p.invuln > 0 || amount <= 0) return false;
     if (this.mode === 'dungeon' && this.dungeon.state === 'fadeOut') return false; // already leaving
-    amount *= Math.max(0.2, 1 - this.relics.stats.armor);
+    amount *= Math.max(0.2, 1 - this.bonusStats.armor);
     p.hp = Math.max(0, p.hp - amount);
     this.combat.interrupt(); // a blow taken mid dash/chain breaks the chain
     p.invuln = this.config.combat.player.hurtInvuln;
@@ -221,7 +246,9 @@ export class Game {
     this.time = 0;
     this.over = false;
     this.offer = null;
+    this.loot.reset();
     this.relics.reset();
+    this.refreshBonus();
     this.resetHealth();
   }
 
@@ -276,7 +303,7 @@ export class Game {
     }
     this.enemies.update(dt, this.player.pos, this.viewRect(), this.combat.inputDir, this.player.radius);
     this.hazards.update(dt, this.player);
-    if (this.mode === 'dungeon') this.dungeon.update(dt);
+    if (this.mode === 'dungeon') { this.dungeon.update(dt); this.loot.update(dt); }
     this.camera.update(dt, this.player);
     this.effects.update(realDt, this.player, this.combat.inCombat || this.skills.busy);
   }

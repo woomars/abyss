@@ -2,7 +2,7 @@
 // and the summed stat bonuses that combat, skills, movement and health read. Each card also rolls a
 // quality tier (normal / 상급 / 최상급) that multiplies its value; deeper floors and boss chests roll
 // better tiers more often. Pure game logic, reset every run.
-const ZERO = { damage: 0, maxHp: 0, crit: 0, speed: 0, cooldown: 0, lifesteal: 0, armor: 0, chain: 0 };
+import { zeroStats } from './Stats.js';
 
 export function formatValue(v, fmt) {
   return fmt === 'pct' ? `${Math.round(v * 100)}%` : String(Math.round(v));
@@ -16,7 +16,7 @@ export class Relics {
 
   reset() {
     this.owned = {}; // id -> count
-    this.stats = { ...ZERO };
+    this.stats = zeroStats();
   }
 
   count(id) { return this.owned[id] || 0; }
@@ -99,4 +99,4 @@ export class Relics {
   }
 }
 
-export const NO_BONUS = ZERO;
+export const NO_BONUS = Object.freeze(zeroStats());

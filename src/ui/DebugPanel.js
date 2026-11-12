@@ -25,6 +25,7 @@ export class DebugPanel {
         <div class="dbtns"><button data-act="copy">JSON 복사</button><button data-act="spawn">적 무리 소환</button></div>
         <div class="dbtns">층 이동 <select data-act="floor"><option value="">고르기</option><option value="0">연습장</option><option value="-1">보물방</option>${
           Array.from({ length: 21 }, (_, i) => `<option value="${i + 1}">${i + 1}층</option>`).join('')}</select></div>
+        <div class="dbtns">장비 지급 <select data-act="grant"><option value="">고르기</option><option value="common">일반</option><option value="uncommon">고급</option><option value="rare">희귀</option><option value="epic">영웅</option><option value="legendary">전설</option><option value="set">세트</option></select></div>
         <div class="dbtns">배경음악 <select data-act="music">${Object.keys(config.music.playlists).map((k) =>
           `<option value="${k}"${k === config.music.scenes.play ? ' selected' : ''}>${MUSIC_LABEL[k] || k} (${config.music.playlists[k].length}곡)</option>`).join('')}</select>
           <button data-act="nextTrack">다음 곡</button></div>
@@ -36,6 +37,10 @@ export class DebugPanel {
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.el.addEventListener('change', (e) => {
       if (e.target.dataset.act === 'music' && this.music) this.music.play(e.target.value);
+      if (e.target.dataset.act === 'grant' && e.target.value !== '') {
+        this.grant(e.target.value);
+        e.target.value = '';
+      }
       if (e.target.dataset.act === 'floor' && e.target.value !== '' && this.onFloor) {
         this.onFloor(Number(e.target.value));
         e.target.value = '';
@@ -71,6 +76,19 @@ export class DebugPanel {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(json).then(() => { ta.classList.add('hidden'); }, show);
     } else show();
+  }
+
+  // drop an item of the chosen grade in front of the player (dungeon only)
+  grant(grade) {
+    const g = this.game;
+    if (g.mode !== 'dungeon') return;
+    const p = g.player.pos, h = g.combat.inputDir;
+    const cfg = this.config.items;
+    const opts = { id: g.allocItemId(), level: Math.max(1, g.dungeon.floor), quality: Math.floor(Math.random() * 3) };
+    if (grade === 'set') opts.set = 'abyss'; else opts.grade = grade;
+    import('../game/items/ItemFactory.js').then(({ createItem }) => {
+      g.loot.dropAt({ x: p.x + h.x * 140, y: p.y + h.y * 140 }, { item: createItem(cfg, Math.random, opts) });
+    });
   }
 
   spawn() {

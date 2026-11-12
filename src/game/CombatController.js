@@ -33,6 +33,7 @@ export class CombatController {
   get armed() { return this.armTimer > 0; }
 
   get chainCount() { return this.cfg.chain.count + this.bonus().chain; }
+  get slashRadius() { return this.cfg.slashRadius * (1 + this.bonus().range); }
 
   get state() { return this._state; }
 
@@ -98,7 +99,7 @@ export class CombatController {
       // no recent swipe: no dash, only an in-place normal attack on enemies within reach
       if (!this.armed) { this.normalAttack(); return; }
       if (this.retryTimer > 0) return;
-      const t = selectAttackTarget(this.player.pos, this.inputDir, this.candidates(), { range: c.dashRange, coneDeg: c.attackConeDeg });
+      const t = selectAttackTarget(this.player.pos, this.inputDir, this.candidates(), { range: c.dashRange * (1 + this.bonus().dashRange), coneDeg: c.attackConeDeg });
       if (!t) { this.normalAttack(); return; }
       this.armTimer = 0; // one swipe = one dash+chain sequence
       this.excludeIds.clear();
@@ -142,9 +143,9 @@ export class CombatController {
     const c = this.cfg;
     const p = this.player;
     const dir = p.heading;
-    const hits = slashHits(p.pos, dir, this.candidates(), { radius: c.slashRadius, arcDeg: c.slashArcDeg, maxTargets: c.maxTargets });
+    const hits = slashHits(p.pos, dir, this.candidates(), { radius: this.slashRadius, arcDeg: c.slashArcDeg, maxTargets: c.maxTargets });
     if (!hits.length) return;
-    this.normalTimer = c.normalAttackInterval;
+    this.normalTimer = c.normalAttackInterval / (1 + this.bonus().attackSpeed);
     this.applySlash(dir, hits, 0, false);
   }
 
@@ -155,7 +156,7 @@ export class CombatController {
     let dx = t.pos.x - p.pos.x, dy = t.pos.y - p.pos.y;
     let d = Math.hypot(dx, dy);
     const dir = d > 1e-6 ? { x: dx / d, y: dy / d } : { x: this.inputDir.x, y: this.inputDir.y };
-    const hits = slashHits(p.pos, dir, this.enemies.targetable(), { radius: c.slashRadius, arcDeg: c.slashArcDeg, maxTargets: c.maxTargets });
+    const hits = slashHits(p.pos, dir, this.enemies.targetable(), { radius: this.slashRadius, arcDeg: c.slashArcDeg, maxTargets: c.maxTargets });
     if (!hits.includes(t)) hits.unshift(t);
     this.applySlash(dir, hits, this.chainIndex, this.chainIndex >= this.chainCount);
     // slash through: continue a little past the target
@@ -167,17 +168,17 @@ export class CombatController {
   applySlash(dir, hits, chainIndex, last) {
     const c = this.cfg, b = this.bonus();
     const p = this.player;
-    this.events.emit('slash', { pos: { x: p.pos.x, y: p.pos.y }, dir, radius: c.slashRadius, arcDeg: c.slashArcDeg, chainIndex, strong: last });
+    this.events.emit('slash', { pos: { x: p.pos.x, y: p.pos.y }, dir, radius: this.slashRadius, arcDeg: c.slashArcDeg, chainIndex, strong: last });
     for (const e of hits) {
       const crit = this.rng() < c.critChance + b.crit;
       const strong = last;
       const kind = crit ? 'crit' : strong ? 'strong' : 'normal';
-      const mult = (chainIndex > 0 ? c.chain.damageMultiplier : 1) * (crit ? c.critMultiplier : 1);
-      const damage = Math.round(c.attackDamage * mult * (1 + b.damage));
+      const mult = (chainIndex > 0 ? c.chain.damageMultiplier * (1 + b.chainDamage) : 1) * (crit ? c.critMultiplier + b.critDamage : 1);
+      const damage = Math.round((c.attackDamage + b.attackFlat) * mult * (1 + b.damage));
       let kdx = e.pos.x - p.pos.x, kdy = e.pos.y - p.pos.y;
       const kd = Math.hypot(kdx, kdy);
       const knockDir = kd > 1e-6 ? { x: kdx / kd, y: kdy / kd } : dir;
-      const { killed } = e.takeHit({ damage, knockDir, knockback: c.knockback[kind], stagger: c.stagger[kind] });
+      const { killed } = e.takeHit({ damage, knockDir, knockback: c.knockback[kind] * (1 + b.knockback), stagger: c.stagger[kind] });
       this.excludeIds.add(e.id);
       const pos = { x: e.pos.x, y: e.pos.y };
       this.events.emit('hit', { enemy: e, damage, crit, strong, chainIndex, pos, dir: knockDir });
@@ -203,7 +204,7 @@ export class CombatController {
   findChainTarget() {
     const ch = this.cfg.chain;
     return selectChainTarget(this.player.pos, this.inputDir, this.candidates(), {
-      range: ch.range, minDistance: ch.minDistance, coneDeg: ch.coneDeg, excludeIds: this.excludeIds,
+      range: ch.range * (1 + this.bonus().chainRange), minDistance: ch.minDistance, coneDeg: ch.coneDeg, excludeIds: this.excludeIds,
     });
   }
 

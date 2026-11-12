@@ -13,6 +13,8 @@ import { HUD } from './ui/HUD.js';
 import { PauseMenu } from './ui/PauseMenu.js';
 import { DebugPanel } from './ui/DebugPanel.js';
 import { GameOver } from './ui/GameOver.js';
+import { Banner } from './ui/Banner.js';
+import { RecordStore } from './systems/RecordStore.js';
 import { chooseRotation, stageSize, stageTransform, toStage } from './systems/orientation.js';
 
 function safeStorage() {
@@ -62,7 +64,21 @@ async function boot() {
   const skillButtons = new SkillButtons(ui, game.skills, { toLocal: (x, y) => toLocal(x, y) });
   const hud = new HUD(ui, { onPause: () => menu.open() });
   const gameOver = new GameOver(ui, { onRetry: () => game.restart() });
-  events.on('playerDown', (s) => gameOver.show(s));
+  const records = new RecordStore(safeStorage());
+  events.on('playerDown', (s) => {
+    const r = s.floor ? records.submitFloor(s.floor) : { bestFloor: 0, isNew: false };
+    gameOver.show({ ...s, ...r });
+  });
+  // dungeon announcements and music follow the room
+  const banner = new Banner(ui);
+  events.on('floorStart', (e) => {
+    music.play(e.music);
+    if (e.kind === 'boss') banner.show(e.boss, e.title.replace(` — ${e.boss}`, ''), { kind: 'boss', ms: 2400 });
+    else if (e.kind === 'treasure') banner.show('보물방', '상자를 열어 보세요');
+    else banner.show(e.title);
+  });
+  events.on('roomCleared', (e) => banner.show('방 정리', `출구가 열렸습니다 · 골드 +${e.gold}`));
+  events.on('chestOpen', (e) => banner.show(`골드 +${e.gold}`, e.heal >= 1 ? '체력을 모두 회복했습니다' : `체력 ${Math.round(e.heal * 100)}% 회복`, { kind: 'reward' }));
   menu = new PauseMenu(ui, {
     settings,
     onChange: (s) => { applySettings(s); save.save(s); },
@@ -98,7 +114,15 @@ async function boot() {
   };
   // in development the tuning panel is on by default; ?debug=0 hides it
   if (new URLSearchParams(location.search).get('debug') !== '0') {
-    debug = new DebugPanel(ui, { config, game, music, onLayout: () => layout() });
+    debug = new DebugPanel(ui, {
+      config, game, music, onLayout: () => layout(),
+      // jump straight to a floor (or the practice arena) to test bosses
+      onFloor: (floor) => {
+        gameOver.hide();
+        if (floor > 0) game.startRun(floor);
+        else { game.startPractice(); music.play(config.music.scenes.play); banner.show('연습장'); }
+      },
+    });
   }
   window.addEventListener('resize', layout);
   // turning the phone 180° while auto-rotate is off: follow gravity
@@ -130,7 +154,7 @@ async function boot() {
     e.preventDefault();
     started = true;
     startEl.classList.add('hidden');
-    music.play(config.music.scenes.play); // inside the tap, so the browser allows playback
+    game.startRun(1); // floorStart starts the music inside the tap, so the browser allows playback
     updatePaused();
   });
 

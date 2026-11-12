@@ -3,15 +3,181 @@
   "minCount": 15,
   "spawnMargin": 120,
   "groupChance": 0.3,
-  "groupSize": [3, 5],
+  "groupSize": [
+    3,
+    5
+  ],
   "spawnInterval": 0.4,
   "maxElites": 2,
   "eliteChance": 0.12,
   "types": {
-    "soldier": { "hp": 20, "attack": 5, "speed": 95, "radius": 14, "knockbackResist": 0, "color": "#8a8f98", "attackRange": 22, "attackWindup": 0.25 },
-    "elite": { "hp": 90, "attack": 25, "speed": 70, "radius": 26, "knockbackResist": 0.75, "color": "#b0413e", "attackRange": 34, "attackWindup": 0.4 }
+    "soldier": {
+      "hp": 20,
+      "attack": 5,
+      "speed": 95,
+      "radius": 14,
+      "knockbackResist": 0,
+      "color": "#8a8f98",
+      "attackRange": 22,
+      "attackWindup": 0.25,
+      "name": "해골 전사",
+      "rank": "normal"
+    },
+    "elite": {
+      "hp": 90,
+      "attack": 25,
+      "speed": 70,
+      "radius": 26,
+      "knockbackResist": 0.75,
+      "color": "#b0413e",
+      "attackRange": 34,
+      "attackWindup": 0.4,
+      "name": "오크 전사",
+      "rank": "elite"
+    },
+    "archer": {
+      "name": "고블린 궁수",
+      "rank": "normal",
+      "ai": "archer",
+      "hp": 16,
+      "attack": 8,
+      "speed": 85,
+      "radius": 13,
+      "knockbackResist": 0,
+      "color": "#6f9a4a",
+      "keepMin": 220,
+      "keepMax": 340,
+      "range": 460,
+      "windup": 0.6,
+      "cooldown": 2.4,
+      "arrowSpeed": 430,
+      "arrowRadius": 6,
+      "arrowRange": 700
+    },
+    "wraith": {
+      "name": "망령",
+      "rank": "normal",
+      "ai": "wraith",
+      "hp": 24,
+      "attack": 14,
+      "speed": 55,
+      "radius": 15,
+      "knockbackResist": 0.2,
+      "color": "#8a6fc0",
+      "blinkCooldown": [
+        3.5,
+        5.5
+      ],
+      "blinkTime": 0.3,
+      "blinkDistance": [
+        70,
+        130
+      ],
+      "aoeRadius": 90,
+      "aoeDelay": 0.7
+    },
+    "warchief": {
+      "rank": "boss",
+      "ai": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.35,
+        "windup": 0.7,
+        "cooldown": 0.6
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "name": "오크 대장",
+      "hp": 700,
+      "attack": 22,
+      "speed": 85,
+      "radius": 40,
+      "color": "#9a3a2a",
+      "patterns": {
+        "smash": {
+          "kind": "cone",
+          "radius": 230,
+          "arcDeg": 100,
+          "windup": 0.8,
+          "damage": 22,
+          "recover": 0.6
+        },
+        "summon": {
+          "kind": "summon",
+          "type": "soldier",
+          "count": 3,
+          "windup": 0.6,
+          "recover": 0.4,
+          "maxMinions": 8
+        },
+        "shockwave": {
+          "kind": "ring",
+          "windup": 0.7,
+          "speed": 420,
+          "maxRadius": 520,
+          "thickness": 34,
+          "damage": 18,
+          "recover": 0.5
+        }
+      }
+    },
+    "gatekeeper": {
+      "rank": "boss",
+      "ai": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.35,
+        "windup": 0.7,
+        "cooldown": 0.6
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "name": "심연의 수문장",
+      "hp": 1800,
+      "attack": 28,
+      "speed": 90,
+      "radius": 52,
+      "color": "#3b2f6b",
+      "patterns": {
+        "cone": {
+          "kind": "cone",
+          "radius": 280,
+          "arcDeg": 110,
+          "windup": 0.85,
+          "damage": 28,
+          "recover": 0.6
+        },
+        "shockwave": {
+          "kind": "ring",
+          "windup": 0.8,
+          "speed": 460,
+          "maxRadius": 640,
+          "thickness": 38,
+          "damage": 24,
+          "recover": 0.5
+        },
+        "summon": {
+          "kind": "summon",
+          "type": "wraith",
+          "count": 2,
+          "extraType": "soldier",
+          "extraCount": 2,
+          "windup": 0.7,
+          "recover": 0.4,
+          "maxMinions": 8
+        }
+      }
+    }
   },
-  "counterWindow": 1.0,
+  "counterWindow": 1,
   "separation": 0.6,
   "knockbackDecay": 8,
   "spawnAheadChance": 0.65,

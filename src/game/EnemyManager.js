@@ -1,6 +1,7 @@
 import { Enemy } from './Enemy.js';
 
-// Keeps the practice arena populated: spawns off-screen, chases, separates, removes the dead.
+// Updates enemies (chase, separate, remove the dead). In the practice arena (autoSpawn) it also
+// keeps the room populated off-screen; in the dungeon the Dungeon spawns waves through spawnAt.
 export class EnemyManager {
   constructor(cfg, arena, rng) {
     this.cfg = cfg; // config.enemies (live)
@@ -9,6 +10,7 @@ export class EnemyManager {
     this.list = [];
     this.nextId = 1;
     this.spawnTimer = 0;
+    this.autoSpawn = true;
     this.onAttack = null; // (enemy) => void, set by Game: an enemy strike connected
     this.onStrike = null; // (enemy, hit:boolean) => void: an enemy swung (sound/visual), hit or miss
   }
@@ -17,8 +19,8 @@ export class EnemyManager {
   targetable() { return this.list.filter((e) => e.targetable); }
   clear() { this.list.length = 0; this.spawnTimer = 0; }
 
-  spawnAt(type, pos) {
-    const e = new Enemy(this.nextId++, type, this.cfg, pos);
+  spawnAt(type, pos, mods = null) {
+    const e = new Enemy(this.nextId++, type, this.cfg, pos, mods);
     e.pos = this.arena.resolveCircle(e.pos, e.radius).pos;
     e.prevPos = { x: e.pos.x, y: e.pos.y };
     this.list.push(e);
@@ -32,11 +34,11 @@ export class EnemyManager {
     for (let i = this.list.length - 1; i >= 0; i--) {
       const e = this.list[i];
       // the player outruns enemies: recycle stragglers left far behind (off-screen only)
-      const tooFar = far > 0 && !e.dying && !this.inRect(e.pos, viewRect, 0) &&
+      const tooFar = this.autoSpawn && far > 0 && !e.dying && !this.inRect(e.pos, viewRect, 0) &&
         Math.hypot(e.pos.x - playerPos.x, e.pos.y - playerPos.y) > far;
       if (!e.alive || tooFar) this.list.splice(i, 1);
     }
-    this.spawn(dt, playerPos, viewRect, heading);
+    if (this.autoSpawn) this.spawn(dt, playerPos, viewRect, heading);
   }
 
   separate() {

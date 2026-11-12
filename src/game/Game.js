@@ -8,6 +8,7 @@ import { CombatController } from './CombatController.js';
 import { HitStop } from './HitStop.js';
 import { SkillSystem } from './SkillSystem.js';
 import { EffectManager } from './EffectManager.js';
+import { Dungeon } from './Dungeon.js';
 
 // Assembles all game systems. No DOM access here.
 export class Game {
@@ -47,8 +48,49 @@ export class Game {
     // player health: enemy counterattacks hurt, a short invulnerability follows, regen after a quiet delay
     this.over = false;
     this.resetHealth();
-    this.enemies.onAttack = (e) => this.damagePlayer(e.tcfg.attack, e);
+    this.enemies.onAttack = (e) => this.damagePlayer(e.attack, e);
     this.enemies.onStrike = (e, hit) => events.emit('enemyStrike', { enemy: e, pos: { x: e.pos.x, y: e.pos.y }, hit });
+    // practice arena by default (endless enemies); startRun() switches to the dungeon
+    this.mode = 'practice';
+    this.dungeon = new Dungeon(config.dungeon, this);
+  }
+
+  // begin a dungeon run at the given floor (debug can start deeper)
+  startRun(floor = 1) {
+    this.mode = 'dungeon';
+    this.enemies.autoSpawn = false;
+    this.resetRun();
+    this.dungeon.start(floor);
+  }
+
+  startPractice() {
+    this.mode = 'practice';
+    this.enemies.autoSpawn = true;
+    this.arena.cfg = this.config.movement.arena;
+    this.dungeon.reset();
+    this.resetRun();
+    this.player.reset(this.center());
+    this.camera.snapTo(this.player.pos);
+  }
+
+  // place the player at a new room's start (called by Dungeon behind the fade)
+  loadRoom(room) {
+    this.enemies.clear();
+    this.arena.cfg = room.arena;
+    this.player.reset(room.start);
+    this.movement.burstTime = Infinity;
+    this.combat.reset();
+    this.skills.cancelActive();
+    this.effects.clear();
+    this.camera.setMode('normal');
+    this.camera.snapTo(this.player.pos);
+    this.pendingStroke = null;
+    this.pendingFlick = null;
+  }
+
+  healPlayer(frac) {
+    const p = this.player;
+    p.hp = Math.min(p.maxHp, p.hp + p.maxHp * frac);
   }
 
   resetHealth() {
@@ -74,7 +116,7 @@ export class Game {
     if (p.hp <= 0) {
       this.over = true;
       this.combat.cancel();
-      this.events.emit('playerDown', { kills: this.stats.kills, bestCombo: this.stats.bestCombo });
+      this.events.emit('playerDown', { kills: this.stats.kills, bestCombo: this.stats.bestCombo, floor: this.mode === 'dungeon' ? this.dungeon.floor : 0 });
     }
     return true;
   }
@@ -87,6 +129,12 @@ export class Game {
   }
 
   restart() {
+    if (this.mode === 'dungeon') { this.startRun(1); return; }
+    this.startPractice();
+  }
+
+  // shared reset for a new run or practice session
+  resetRun() {
     this.enemies.clear();
     this.player.reset(this.center());
     this.movement.burstTime = Infinity;
@@ -154,6 +202,7 @@ export class Game {
       if (!this.combat.inCombat) this.movement.update(dt);
     }
     this.enemies.update(dt, this.player.pos, this.viewRect(), this.combat.inputDir, this.player.radius);
+    if (this.mode === 'dungeon') this.dungeon.update(dt);
     this.camera.update(dt, this.player);
     this.effects.update(realDt, this.player, this.combat.inCombat || this.skills.busy);
   }

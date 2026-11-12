@@ -41,6 +41,22 @@
     "boss": {
       "hit": "hitHeavy",
       "death": "deathBoss"
+    },
+    "archer": {
+      "hit": "hit",
+      "death": "deathSoldier"
+    },
+    "wraith": {
+      "hit": "hit",
+      "death": "deathSoldier"
+    },
+    "warchief": {
+      "hit": "hitHeavy",
+      "death": "deathElite"
+    },
+    "gatekeeper": {
+      "hit": "hitHeavy",
+      "death": "deathBoss"
     }
   },
   "bySkill": {

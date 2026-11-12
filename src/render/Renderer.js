@@ -64,6 +64,7 @@ export class Renderer {
   // hook points extended by later tasks
   drawWorld(game, alpha) {
     const fx = game.effects;
+    if (game.mode === 'dungeon') this.drawRoomObjects(game.dungeon);
     this.drawLinks(fx);
     this.drawEnemies(game.enemies, alpha);
     this.drawAfterimages(fx, game.player);
@@ -363,6 +364,109 @@ export class Renderer {
   drawScreen(game) {
     this.drawTrail(game);
     this.drawCombo(game.effects.combo);
+    if (game.mode === 'dungeon') {
+      this.drawExitArrow(game.dungeon);
+      const f = game.dungeon.fade;
+      if (f > 0) {
+        this.ctx.fillStyle = `rgba(0,0,0,${f})`;
+        this.ctx.fillRect(0, 0, this.cssW, this.cssH);
+      }
+    }
+  }
+
+  // exit portal (dim ring while closed, glowing swirl once open) and treasure chest
+  drawRoomObjects(d) {
+    const ctx = this.ctx, t = performance.now() / 1000;
+    const ex = d.exit;
+    if (ex.r > 0 && this.isVisible(ex, ex.r * 2)) {
+      ctx.save();
+      ctx.translate(ex.x, ex.y);
+      if (ex.open) {
+        const pulse = 1 + Math.sin(t * 4) * 0.06;
+        const g = ctx.createRadialGradient(0, 0, 4, 0, 0, ex.r * 1.6 * pulse);
+        g.addColorStop(0, 'rgba(255,240,200,0.95)');
+        g.addColorStop(0.35, 'rgba(201,168,106,0.65)');
+        g.addColorStop(1, 'rgba(120,60,200,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(0, 0, ex.r * 1.6 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.rotate(t * 1.8);
+        ctx.strokeStyle = 'rgba(255,230,170,0.85)';
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.arc(0, 0, ex.r * (0.55 + i * 0.22), i * 2.1, i * 2.1 + 2.2);
+          ctx.stroke();
+        }
+      } else {
+        ctx.strokeStyle = 'rgba(120,100,150,0.45)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.arc(0, 0, ex.r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.restore();
+    }
+    const ch = d.chest;
+    if (ch && this.isVisible(ch, ch.r * 2)) {
+      const w = ch.r * 1.8, h = ch.r * 1.3;
+      ctx.save();
+      ctx.translate(ch.x, ch.y);
+      if (!ch.opened) {
+        const glow = 0.35 + Math.sin(t * 3) * 0.15;
+        ctx.fillStyle = `rgba(255,210,120,${glow})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, ch.r * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = ch.big ? '#7a4a1c' : '#5e3b1a';
+      ctx.fillRect(-w / 2, -h / 2 + 4, w, h - 4);
+      ctx.strokeStyle = ch.big ? '#ffd76a' : '#d8a64a';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(-w / 2, -h / 2 + 4, w, h - 4);
+      // lid: closed on top, or tipped back when opened
+      ctx.fillStyle = ch.big ? '#8f5a24' : '#6e4520';
+      if (ch.opened) ctx.fillRect(-w / 2, -h / 2 - 10, w, 8);
+      else ctx.fillRect(-w / 2, -h / 2 - 2, w, 10);
+      ctx.strokeRect(-w / 2, ch.opened ? -h / 2 - 10 : -h / 2 - 2, w, ch.opened ? 8 : 10);
+      ctx.restore();
+    }
+  }
+
+  // arrow at the screen edge pointing to an open exit that is off-screen
+  drawExitArrow(d) {
+    const ex = d.exit;
+    if (!ex.open || d.state !== 'play') return;
+    const s = this.worldToScreen(ex);
+    const m = 34;
+    if (s.x > m && s.x < this.cssW - m && s.y > m && s.y < this.cssH - m) return;
+    const cx = this.cssW / 2, cy = this.cssH / 2;
+    const ang = Math.atan2(s.y - cy, s.x - cx);
+    // clamp onto the screen rectangle inset by m
+    const kx = (this.cssW / 2 - m) / Math.max(1e-6, Math.abs(Math.cos(ang)));
+    const ky = (this.cssH / 2 - m) / Math.max(1e-6, Math.abs(Math.sin(ang)));
+    const k = Math.min(kx, ky);
+    const x = cx + Math.cos(ang) * k, y = cy + Math.sin(ang) * k;
+    const ctx = this.ctx, pulse = 1 + Math.sin(performance.now() / 150) * 0.12;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(ang);
+    ctx.scale(pulse, pulse);
+    ctx.beginPath();
+    ctx.moveTo(16, 0);
+    ctx.lineTo(-10, 11);
+    ctx.lineTo(-4, 0);
+    ctx.lineTo(-10, -11);
+    ctx.closePath();
+    ctx.fillStyle = '#ffd98a';
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
   }
 
   drawCombo(combo) {

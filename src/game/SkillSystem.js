@@ -28,6 +28,14 @@ export class SkillSystem {
   get busy() { return this.rush !== null; } // blocks movement and auto attacks
   get spinning() { return this.spin !== null; } // blocks auto attacks, player keeps moving
 
+  // stop skills in flight (room change) but keep cooldowns
+  cancelActive() {
+    this.rush = null;
+    this.spin = null;
+    this.projectiles.length = 0;
+    this.aim = null;
+  }
+
   reset() {
     this.remaining = this.cfg.slots.map(() => 0);
     this.rush = null;

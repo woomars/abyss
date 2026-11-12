@@ -37,6 +37,9 @@ export class AudioSystem {
     events.on('enemyStrike', () => this.sample('enemyAttack'));
     events.on('playerHit', () => this.sample('hurt'));
     events.on('playerDown', () => this.play('down'));
+    events.on('exitOpen', () => this.play('chime'));
+    events.on('chestOpen', (e) => this.play('coins', { gain: e.big ? 1.3 : 1 }));
+    events.on('floorExit', () => this.play('portal'));
   }
 
   // fetch + decode every configured sample (after the AudioContext exists)
@@ -184,6 +187,17 @@ const VOICES = {
     a.tone('square', 320 * p, 110, 0.06 * g, 0.12);
   },
   link: (a, p, g) => a.tone('sine', 880 * p, 1320 * p, 0.14 * g, 0.08, 0.002),
+  chime: (a, p, g) => {
+    a.tone('sine', 660 * p, 660 * p, 0.16 * g, 0.5, 0.01);
+    a.tone('sine', 990 * p, 990 * p, 0.12 * g, 0.6, 0.06);
+  },
+  coins: (a, p, g) => {
+    for (let i = 0; i < 4; i++) setTimeout(() => { if (a.ctx) a.tone('triangle', (1400 + i * 260) * p, (1500 + i * 260) * p, 0.1 * g, 0.14); }, i * 55);
+  },
+  portal: (a, p, g) => {
+    a.noiseBurst('bandpass', 300 * p, 2400 * p, 2, 0.2 * g, 0.45, 0.05);
+    a.tone('sine', 220 * p, 880 * p, 0.12 * g, 0.45, 0.02);
+  },
   whoosh: (a, p, g) => a.noiseBurst('bandpass', 500 * p, 1700 * p, 2.5, 0.12 * g, 0.12, 0.02),
   hurt: (a, p, g) => {
     a.tone('square', 220 * p, 90, 0.12 * g, 0.16);

@@ -1,4 +1,4 @@
-// Top HUD: HP bar (MVP: always full), level/floor, kill count, pause button.
+// Top HUD: HP bar, floor (or practice), gold, kills, enemies left, pause button.
 export class HUD {
   constructor(root, { onPause }) {
     this.el = document.createElement('div');
@@ -6,15 +6,20 @@ export class HUD {
     this.el.innerHTML = `
       <div class="hud-left">
         <div class="hp"><div class="hp-fill"></div><span class="hp-text">HP 100 / 100</span></div>
-        <div class="meta"><span class="lv">Lv 1</span><span class="floor">연습장</span></div>
+        <div class="meta"><span class="floor">연습장</span><span class="gold-wrap"><span class="gold-icon">◆</span> <span class="gold">0</span></span></div>
       </div>
-      <div class="hud-center"><span class="kills-label">처치</span> <span class="kills">0</span></div>
+      <div class="hud-center"><span class="kills-label">처치</span> <span class="kills">0</span><span class="left-wrap"> · 남은 적 <span class="left">0</span></span></div>
       <button class="pause interactive" aria-label="일시 정지">❚❚</button>`;
     root.appendChild(this.el);
     this.killsEl = this.el.querySelector('.kills');
+    this.floorEl = this.el.querySelector('.floor');
+    this.goldEl = this.el.querySelector('.gold');
+    this.goldWrap = this.el.querySelector('.gold-wrap');
+    this.leftEl = this.el.querySelector('.left');
+    this.leftWrap = this.el.querySelector('.left-wrap');
     this.pauseBtn = this.el.querySelector('.pause');
     this.pauseBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); onPause(); });
-    this.lastKills = -1;
+    this.last = {};
   }
 
   rect() {
@@ -22,12 +27,28 @@ export class HUD {
     return { x: r.left - 8, y: r.top - 8, w: r.width + 16, h: r.height + 16 };
   }
 
+  // write only when the value changed (DOM writes are not free on phones)
+  set(key, el, value) {
+    if (this.last[key] === value) return;
+    this.last[key] = value;
+    el.textContent = value;
+  }
+
+  toggle(key, el, hidden) {
+    if (this.last[key] === hidden) return;
+    this.last[key] = hidden;
+    el.classList.toggle('hidden', hidden);
+  }
+
   update(game) {
-    const k = game.stats.kills;
-    if (k !== this.lastKills) {
-      this.lastKills = k;
-      this.killsEl.textContent = String(k);
-    }
+    this.set('kills', this.killsEl, String(game.stats.kills));
+    const d = game.dungeon, run = game.mode === 'dungeon';
+    this.set('floor', this.floorEl, !run ? '연습장' : d.roomKind === 'treasure' ? `${d.floor}층 · 보물방` : `${d.floor}층`);
+    this.set('gold', this.goldEl, String(d.gold));
+    this.toggle('goldHidden', this.goldWrap, !run);
+    const fighting = run && !d.exit.open && d.roomKind !== 'treasure';
+    this.toggle('leftHidden', this.leftWrap, !fighting);
+    if (fighting) this.set('left', this.leftEl, d.waveCount > 1 ? `${d.remaining} (웨이브 ${d.waveIndex}/${d.waveCount})` : String(d.remaining));
     const p = game.player;
     const hp = Math.ceil(p.hp);
     if (hp !== this.lastHp) {

@@ -1,14 +1,16 @@
 // Single enemy: chases the player, reacts to hits (stagger, knockback, flash), plays a death fade.
 export class Enemy {
-  constructor(id, type, root, pos) {
+  constructor(id, type, root, pos, mods = null) {
     this.id = id;
     this.type = type;
     this.root = root; // config.enemies (live)
+    // floor multipliers (dungeon) and enhanced-monster bonus; practice enemies use 1
+    this.mods = { hp: 1, attack: 1, speed: 1, size: 1, enhanced: false, ...(mods || {}) };
     this.pos = { x: pos.x, y: pos.y };
     this.prevPos = { x: pos.x, y: pos.y };
     this.vel = { x: 0, y: 0 }; // knockback velocity
-    this.hp = this.tcfg.hp;
-    this.maxHp = this.tcfg.hp;
+    this.hp = this.tcfg.hp * this.mods.hp;
+    this.maxHp = this.hp;
     this.alive = true;
     this.dying = false;
     this.deathTimer = 0;
@@ -28,8 +30,13 @@ export class Enemy {
   }
 
   get tcfg() { return this.root.types[this.type]; }
-  get radius() { return this.tcfg.radius; }
-  get isElite() { return this.type === 'elite'; }
+  get radius() { return this.tcfg.radius * this.mods.size; }
+  get attack() { return this.tcfg.attack * this.mods.attack; }
+  get speed() { return this.tcfg.speed * this.mods.speed; }
+  get rank() { return this.tcfg.rank || 'normal'; }
+  // heavy targets: preferred by targeting, pushed less by crowding
+  get isElite() { return this.rank === 'elite' || this.rank === 'boss'; }
+  get isBoss() { return this.rank === 'boss'; }
   get targetable() { return this.alive && !this.dying; }
 
   takeHit({ damage, knockDir, knockback, stagger }) {
@@ -83,8 +90,8 @@ export class Enemy {
       const dx = playerPos.x - this.pos.x, dy = playerPos.y - this.pos.y;
       const d = Math.hypot(dx, dy);
       if (d > this.radius) {
-        mx += (dx / d) * this.tcfg.speed;
-        my += (dy / d) * this.tcfg.speed;
+        mx += (dx / d) * this.speed;
+        my += (dy / d) * this.speed;
       }
     }
     const decay = Math.exp(-this.root.knockbackDecay * dt);

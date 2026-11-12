@@ -39,5 +39,7 @@ export function describeItem(item, cfg) {
     effectText: item.effect ? cfg.effects[item.effect].label : null,
     setText: set ? set.name : null,
     scar: !!item.scar,
+    // heirloom: the latest owner who passed it down (and his feat for notable items)
+    heirloom: item.legacy && item.legacy.length ? item.legacy[item.legacy.length - 1] : null,
   };
 }

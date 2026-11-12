@@ -8,6 +8,7 @@ export class HUD {
     this.el.innerHTML = `
       <div class="hud-left">
         <div class="hp"><div class="hp-fill"></div><span class="hp-text">HP 100 / 100</span></div>
+        <div class="xp-row"><span class="lv">Lv 1</span><div class="xp"><div class="xp-fill"></div></div><span class="who"></span></div>
         <div class="meta"><span class="floor">연습장</span><span class="gold-wrap"><span class="gold-icon">◆</span> <span class="gold">0</span></span><span class="pocket-wrap">${relicIcon('bag', 13)} <span class="pocket">0</span></span></div>
         <div class="relics"></div>
       </div>
@@ -57,6 +58,12 @@ export class HUD {
     const fighting = run && !d.exit.open && d.roomKind !== 'treasure';
     this.toggle('leftHidden', this.leftWrap, !fighting);
     if (fighting) this.set('left', this.leftEl, d.waveCount > 1 ? `${d.remaining} (웨이브 ${d.waveIndex}/${d.waveCount})` : String(d.remaining));
+    const v = game.vault, pr = v.progress;
+    this.set('lv', this.el.querySelector('.lv'), `Lv ${pr.level}`);
+    this.set('who', this.el.querySelector('.who'), v.lineage.given ? `${v.lineage.given} · ${v.lineage.generation}대` : '');
+    const need = Math.round(game.config.progress.need.base * Math.pow(pr.level, game.config.progress.need.exp));
+    const xpw = `${Math.min(100, (100 * pr.xp) / need).toFixed(1)}%`;
+    if (this.last.xpw !== xpw) { this.last.xpw = xpw; this.el.querySelector('.xp-fill').style.width = xpw; }
     const owned = game.relics.list();
     const key = owned.map((r) => r.id + r.count).join(',');
     if (this.last.relics !== key) {

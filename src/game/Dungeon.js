@@ -84,7 +84,24 @@ export class Dungeon {
 
   // next room after the exit: a treasure room after some floors, else the next floor
   advance() {
-    if (this.roomKind !== 'treasure' && this.info.treasureAfter) { this.enterRoom('treasure'); return; }
+    if (this.roomKind !== 'treasure' && this.roomKind !== 'forge' && this.info.treasureAfter) { this.enterRoom('treasure'); return; }
+    if (this.roomKind !== 'forge' && (this.cfg.forgeAfter || []).includes(this.info.base)) { this.enterForge(); return; }
+    this.floor += 1;
+    this.info = floorInfo(this.floor, this.cfg);
+    this.enterRoom(this.info.kind);
+  }
+
+  // the forge is a screen, not a room: the world stays dark behind it until the player leaves
+  enterForge() {
+    this.roomKind = 'forge';
+    this.state = 'forge';
+    this.fade = 1;
+    this.chest = null;
+    this.exit.open = false;
+    this.game.openForge();
+  }
+
+  leaveForge() {
     this.floor += 1;
     this.info = floorInfo(this.floor, this.cfg);
     this.enterRoom(this.info.kind);
@@ -196,6 +213,8 @@ export class Dungeon {
     if (this.state === 'fadeIn') {
       this.fade = Math.max(0, this.fade - dt / c.fadeTime);
       if (this.fade === 0) this.state = 'play';
+    } else if (this.state === 'forge') {
+      return;
     } else if (this.state === 'fadeOut') {
       this.fade = Math.min(1, this.fade + dt / c.fadeTime);
       if (this.fade === 1) this.advance();

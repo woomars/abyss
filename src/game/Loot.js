@@ -26,16 +26,18 @@ export class Loot {
     const g = this.game;
     if (g.mode !== 'dungeon' || !enemy || enemy.mods.minion) return;
     const d = this.cfg.drops;
-    if (enemy.isBoss) { this.dropAt(enemy.pos, { boss: true, minGrade: d.boss.minGrade, count: d.boss.count }); return; }
+    if (enemy.isBoss) { this.dropAt(enemy.pos, { boss: true, minGrade: d.boss.minGrade, count: d.boss.count, bossName: enemy.tcfg.name }); return; }
     const kind = enemy.mods.enhanced ? 'enhanced' : enemy.isElite ? 'elite' : 'normal';
     if (g.rng() < d.chance[kind]) this.dropAt(enemy.pos);
   }
 
   // place new drops around pos; returns the items
-  dropAt(pos, { boss = false, minGrade = null, count = 1, item = null } = {}) {
+  dropAt(pos, { boss = false, minGrade = null, count = 1, item = null, bossName = null } = {}) {
     const g = this.game, out = [];
+    const floor = Math.max(1, g.dungeon.floor || 1);
     for (let i = 0; i < count; i++) {
-      const it = item || rollDrop(this.cfg, g.rng, { id: g.allocItemId(), floor: Math.max(1, g.dungeon.floor || 1), boss, minGrade });
+      const it = item || rollDrop(this.cfg, g.rng, { id: g.allocItemId(), floor, boss, minGrade });
+      if (!it.origin) it.origin = { floor, boss: bossName }; // remembered for heirloom stories
       const s = this.cfg.pickup.scatter, a = g.rng() * Math.PI * 2;
       const q = g.arena.resolveCircle({ x: pos.x + Math.cos(a) * s * (count > 1 ? 1 : 0.4), y: pos.y + Math.sin(a) * s * (count > 1 ? 1 : 0.4) }, 10).pos;
       this.ground.push({ item: it, x: q.x, y: q.y, t: 0, fly: null });

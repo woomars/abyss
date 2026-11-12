@@ -13,6 +13,7 @@ export class GameOver {
           <div><span>최고 콤보</span><b class="go-combo">0</b></div>
         </div>
         <p class="go-best"></p>
+        <div class="go-fate"></div>
         <button class="primary" data-act="retry">다시 하기</button>
       </div>`;
     root.appendChild(this.el);
@@ -21,7 +22,13 @@ export class GameOver {
   }
 
   // floor 0 = practice arena (no floor stats)
-  show({ kills, bestCombo, floor = 0, bestFloor = 0, isNew = false, unranked = false }) {
+  show({ kills, bestCombo, floor = 0, bestFloor = 0, isNew = false, unranked = false, fate = null }) {
+    const fe = this.el.querySelector('.go-fate');
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    fe.innerHTML = fate ? `<div>${esc(fate.record.family)} ${esc(fate.record.given)} (${fate.record.generation}대손)</div>
+      <div class="${fate.survived.length ? 'up' : 'dim'}">${fate.survived.length ? `살아남은 장비: ${fate.survived.map((i) => esc(i.name)).join(', ')}` : '살아남은 장비 없음'}</div>
+      <div class="dim">잃은 장비 ${fate.lost.length}개 · 골드와 주머니는 사라졌습니다</div>` : '';
+    this.el.querySelector('[data-act="retry"]').textContent = fate ? '가문을 잇는다' : '다시 하기';
     this.el.querySelector('.go-kills').textContent = String(kills);
     this.el.querySelector('.go-combo').textContent = String(bestCombo);
     this.el.querySelector('.go-floor').textContent = `${floor}층`;

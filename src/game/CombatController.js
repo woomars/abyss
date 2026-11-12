@@ -114,6 +114,7 @@ export class CombatController {
   startDash(target) {
     this.target = target;
     this.dashTime = 0;
+    this.dashFrom = { x: this.player.pos.x, y: this.player.pos.y };
     this._state = 'dash';
     this.events.emit('dashStart', { pos: { x: this.player.pos.x, y: this.player.pos.y }, target, chainIndex: this.chainIndex });
   }
@@ -159,6 +160,7 @@ export class CombatController {
     const hits = slashHits(p.pos, dir, this.enemies.targetable(), { radius: this.slashRadius, arcDeg: c.slashArcDeg, maxTargets: c.maxTargets });
     if (!hits.includes(t)) hits.unshift(t);
     this.applySlash(dir, hits, this.chainIndex, this.chainIndex >= this.chainCount);
+    if (this.dashFrom) this.events.emit('dashHit', { from: this.dashFrom, to: { x: p.pos.x, y: p.pos.y }, target: t });
     // slash through: continue a little past the target
     this.linkPoint = { x: t.pos.x + dir.x * c.overshoot, y: t.pos.y + dir.y * c.overshoot };
     this.linkTime = 0;

@@ -13,6 +13,13 @@ import { Hazards } from './Hazards.js';
 import { Relics } from './Relics.js';
 import { zeroStats, addStats } from './Stats.js';
 import { Loot } from './Loot.js';
+import { Loadout } from './items/Loadout.js';
+import { Vault } from './items/Vault.js';
+import { resolveDeath } from './items/Forge.js';
+import { addXp, xpForKill, levelStats } from './Progress.js';
+import { succeed } from './Family.js';
+import { floorInfo } from './floorPlan.js';
+import { installGearEffects, evades, abyssRingBonus } from './items/effects.js';
 
 // Assembles all game systems. No DOM access here.
 export class Game {
@@ -52,10 +59,14 @@ export class Game {
     events.on('hit', (h) => this.onHit(h));
     this.stats = { kills: 0, bestCombo: 0 };
     // equipment on the floor and this run's pocket
-    this.itemSeq = 1; // replaced by the vault's counter once a vault is attached
-    this.vault = null;
+    // the save slot in play (main attaches the real one); worn gear; the forge screen when open
+    this.vault = new Vault({ family: '', given: '' });
+    this.loadout = new Loadout(config.items);
+    this.gearEffects = new Set();
+    this.gearSets = {};
+    this.forge = null; // { start: bool } while the forge screen is open — the world waits
     this.loot = new Loot(config.items, this);
-    events.on('kill', (e) => this.loot.onKill(e.enemy));
+    events.on('kill', (e) => { this.loot.onKill(e.enemy); this.gainXp(e.enemy); });
     events.on('roomCleared', () => this.loot.magnet());
     events.on('kill', () => {
       if (this.bonusStats.lifesteal && !this.over) this.healFlat(this.bonusStats.lifesteal);
@@ -78,6 +89,7 @@ export class Game {
     // practice arena by default (endless enemies); startRun() switches to the dungeon
     this.mode = 'practice';
     this.dungeon = new Dungeon(config.dungeon, this);
+    installGearEffects(this);
   }
 
   // begin a dungeon run at the given floor (debug can start deeper)
@@ -125,16 +137,156 @@ export class Game {
   // sum of every bonus source; call whenever cards or equipment change
   refreshBonus() {
     const s = addStats(zeroStats(), this.relics.stats);
-    this.extraBonus(s);
+    const sum = this.loadout.summary();
+    addStats(s, sum.stats);
+    addStats(s, levelStats(this.config.progress, this.vault.progress.level));
+    this.gearEffects = sum.effects;
+    this.gearSets = sum.sets;
     this.bonusStats = s;
   }
 
-  extraBonus() {} // equipment hooks in here (Phase 3)
+  // max hp follows the bonus; gaining max hp also gains that much current hp
+  applyMaxHp() {
+    const p = this.player, max = this.config.combat.player.maxHp + this.bonusStats.maxHp;
+    if (max > p.maxHp) p.hp += max - p.maxHp;
+    p.maxHp = max;
+    p.hp = Math.min(p.hp, max);
+  }
+
+  gainXp(enemy) {
+    if (this.mode !== 'dungeon' || !enemy || this.over) return;
+    const cfg = this.config.progress;
+    const n = addXp(cfg, this.vault.progress, xpForKill(cfg, enemy, this.dungeon.floor));
+    if (n > 0) {
+      this.refreshBonus();
+      this.applyMaxHp();
+      this.events.emit('levelUp', { level: this.vault.progress.level, pos: { x: this.player.pos.x, y: this.player.pos.y } });
+    }
+  }
+
+  // ---- save slot, forge and the family line ----
+  attachVault(vault) {
+    this.vault = vault;
+    this.loadout = Loadout.fromJSON(vault.equipped, this.config.items);
+    this.refreshBonus();
+    this.resetHealth();
+  }
+
+  forgeCtx() { return { cfg: this.config.items, loadout: this.loadout, pocket: this.loot.pocket, vault: this.vault }; }
+
+  saveVault() {
+    this.vault.equipped = this.loadout.toJSON();
+    if (this.vault.state === 'rest') this.vault.run = this.snapshotRun();
+    this.events.emit('vaultChanged', { vault: this.vault });
+  }
+
+  // after any forge action: stats, hp and the save follow the new gear
+  forgeChanged() {
+    const before = { ...this.gearSets };
+    this.refreshBonus();
+    for (const [id, n] of Object.entries(this.gearSets)) {
+      const total = Object.keys(this.config.items.sets[id].pieces).length;
+      if (n >= total && (before[id] || 0) < total) this.events.emit('setComplete', { id, name: this.config.items.sets[id].name });
+    }
+    this.applyMaxHp();
+    this.saveVault();
+  }
+
+  // the forge before floor 1 (new hero or a new run)
+  openStartForge() {
+    this.mode = 'dungeon';
+    this.enemies.autoSpawn = false;
+    this.resetRun();
+    this.dungeon.reset();
+    this.forge = { start: true };
+    this.vault.state = 'idle';
+    this.vault.run = null;
+    this.saveVault();
+    this.events.emit('forgeOpen', { start: true, floor: 0 });
+  }
+
+  // the forge after a boss / floor 15 (called by Dungeon): the run is saved whole while resting here
+  openForge() {
+    this.forge = { start: false };
+    this.combat.reset();
+    this.hazards.clear();
+    this.vault.state = 'rest';
+    this.saveVault();
+    this.events.emit('forgeOpen', { start: false, floor: this.dungeon.floor });
+  }
+
+  departForge() {
+    const start = this.forge && this.forge.start;
+    this.forge = null;
+    this.vault.state = 'run';
+    this.vault.run = null;
+    if (start) {
+      this.vault.lastFloor = 1;
+      this.saveVault();
+      this.startRun(1);
+    } else {
+      this.vault.lastFloor = this.dungeon.floor + 1;
+      this.saveVault();
+      this.dungeon.leaveForge();
+    }
+  }
+
+  snapshotRun() {
+    const d = this.dungeon;
+    return {
+      floor: d.floor, startFloor: d.startFloor || 1, gold: d.gold, hp: this.player.hp,
+      pocket: this.loot.pocket.slice(), relics: { owned: { ...this.relics.owned }, stats: { ...this.relics.stats } },
+      stats: { ...this.stats },
+    };
+  }
+
+  // reopen a run saved while resting at a forge
+  restoreRun(snap) {
+    this.mode = 'dungeon';
+    this.enemies.autoSpawn = false;
+    this.resetRun();
+    const d = this.dungeon;
+    d.reset();
+    d.floor = snap.floor; d.startFloor = snap.startFloor; d.gold = snap.gold;
+    d.info = floorInfo(snap.floor, d.cfg);
+    d.roomKind = 'forge'; d.state = 'forge'; d.fade = 1;
+    this.loot.pocket.push(...snap.pocket);
+    Object.assign(this.relics.owned, snap.relics.owned);
+    Object.assign(this.relics.stats, snap.relics.stats);
+    Object.assign(this.stats, snap.stats);
+    this.refreshBonus();
+    this.resetHealth();
+    this.player.hp = Math.min(this.player.maxHp, snap.hp);
+    this.forge = { start: false };
+    this.events.emit('forgeOpen', { start: false, floor: snap.floor, resumed: true });
+  }
+
+  // the hero fell (or the run was cut short): keep what survives, pass the line to the heir
+  endRunByDeath(floor = this.dungeon.floor) {
+    const l = this.vault.lineage;
+    const record = {
+      given: l.given, family: l.family, generation: l.generation, level: this.vault.progress.level,
+      floor: floor || this.vault.lastFloor || 1, kills: this.stats.kills, bestCombo: this.stats.bestCombo,
+    };
+    const { survived, lost } = resolveDeath(this.forgeCtx(), this.rng, record);
+    record.survived = survived.map((i) => i.name);
+    record.lost = lost.length;
+    const heir = succeed(this.vault, this.config.names, this.rng, record, this.config.progress.historyMax);
+    this.vault.state = 'idle';
+    this.vault.run = null;
+    this.vault.lastFloor = 0;
+    this.refreshBonus();
+    this.saveVault();
+    return { record, heir, survived, lost };
+  }
 
   // the bonus read by combat and skills at this moment (effects that depend on state adjust it)
-  currentBonus() { return this.bonusStats; }
+  currentBonus() {
+    const extra = abyssRingBonus(this);
+    return extra > 0 ? { ...this.bonusStats, damage: this.bonusStats.damage + extra } : this.bonusStats;
+  }
 
-  allocItemId() { return this.vault ? this.vault.allocId() : this.itemSeq++; }
+  allocItemId() { return this.vault.allocId(); }
 
   healFlat(amount) {
     const p = this.player;
@@ -196,6 +348,11 @@ export class Game {
     const p = this.player;
     if (this.over || p.invuln > 0 || amount <= 0) return false;
     if (this.mode === 'dungeon' && this.dungeon.state === 'fadeOut') return false; // already leaving
+    if (evades(this)) { // 망령의 갑옷
+      p.invuln = this.config.items.effects.wraithArmor.invuln;
+      this.events.emit('evade', { pos: { x: p.pos.x, y: p.pos.y } });
+      return false;
+    }
     amount *= Math.max(0.2, 1 - this.bonusStats.armor);
     p.hp = Math.max(0, p.hp - amount);
     this.combat.interrupt(); // a blow taken mid dash/chain breaks the chain
@@ -206,13 +363,24 @@ export class Game {
     this.hitStop.trigger('normal');
     const shake = this.config.camera.shake.strong;
     if (shake) this.camera.addShake(shake);
-    if (p.hp <= 0) {
-      this.over = true;
-      this.combat.cancel();
-      const run = this.mode === 'dungeon';
-      this.events.emit('playerDown', { kills: this.stats.kills, bestCombo: this.stats.bestCombo, floor: run ? this.dungeon.floor : 0, startFloor: run ? this.dungeon.startFloor : 0 });
-    }
+    if (p.hp <= 0) this.die();
     return true;
+  }
+
+  die() {
+    this.over = true;
+    this.combat.cancel();
+    const run = this.mode === 'dungeon';
+    const fate = run ? this.endRunByDeath() : null;
+    this.events.emit('playerDown', { kills: this.stats.kills, bestCombo: this.stats.bestCombo, floor: run ? this.dungeon.floor : 0, startFloor: run ? this.dungeon.startFloor : 0, fate });
+  }
+
+  // pause menu "포기하기": a dungeon run counts as a death; the practice arena just restarts
+  giveUp() {
+    if (this.mode !== 'dungeon' || this.forge) { this.restart(); return; }
+    if (this.over) return;
+    this.player.hp = 0;
+    this.die();
   }
 
   updateHealth(dt) {
@@ -246,6 +414,7 @@ export class Game {
     this.time = 0;
     this.over = false;
     this.offer = null;
+    this.forge = null;
     this.loot.reset();
     this.relics.reset();
     this.refreshBonus();
@@ -286,7 +455,7 @@ export class Game {
 
   update(realDt) {
     if (this.paused) return;
-    if (this.offer) return; // choosing a treasure card
+    if (this.offer || this.forge) return; // choosing a treasure card / at the forge
     if (this.over) { this.effects.update(realDt, this.player, false); return; }
     const dt = this.hitStop.update(realDt);
     this.time += dt;

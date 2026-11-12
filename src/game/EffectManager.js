@@ -28,12 +28,25 @@ export class EffectManager {
     events.on('turn', (e) => this.onTurn(e));
     events.on('playerHit', (e) => this.onPlayerHit(e));
     events.on('chainBroken', (e) => this.text(e.pos.x, e.pos.y - 52, '끊김'));
+    events.on('evade', (e) => this.text(e.pos.x, e.pos.y - 52, '회피'));
+    events.on('stormZap', (e) => { this.onLink({ ...e, chainIndex: 4 }); this.ring(e.to.x, e.to.y, 6, 34, '#9fd8ff'); });
+    events.on('quake', (e) => {
+      const n = Math.max(2, Math.ceil(Math.hypot(e.to.x - e.from.x, e.to.y - e.from.y) / 50));
+      for (let i = 0; i <= n; i++) this.ring(e.from.x + ((e.to.x - e.from.x) * i) / n, e.from.y + ((e.to.y - e.from.y) * i) / n, 6, 40, '#d9a35b');
+    });
+    events.on('setBlast', (e) => { this.ring(e.pos.x, e.pos.y, 12, e.radius, '#c27cff'); this.ring(e.pos.x, e.pos.y, 6, e.radius * 0.6, '#ffffff'); });
     events.on('enemyStrike', (e) => {
       if (!e.riposte) return; // riposte: a red burst on the angry enemy
       const r = this.rings.acquire();
       r.x = e.pos.x; r.y = e.pos.y; r.r0 = e.enemy.radius; r.r1 = e.enemy.radius + 50; r.color = '#ff3b30';
       r.life = r.max = RING_LIFE;
     });
+  }
+
+  ring(x, y, r0, r1, color) {
+    const r = this.rings.acquire();
+    r.x = x; r.y = y; r.r0 = r0; r.r1 = r1; r.color = color;
+    r.life = r.max = RING_LIFE;
   }
 
   text(x, y, value) {

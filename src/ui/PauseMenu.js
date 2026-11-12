@@ -13,14 +13,14 @@ export class PauseMenu {
       <div class="panel main-view">
         <h2>일시 정지</h2>
         <button data-act="resume" class="primary">계속하기</button>
-        <button data-act="restart">재시작</button>
+        <button data-act="restart">포기하기</button>
         <button data-act="shake" class="toggle"></button>
         <button data-act="sound" class="toggle"></button>
         <button data-act="music" class="toggle"></button>
       </div>
       <div class="panel confirm-view hidden">
-        <h2>정말 재시작할까요?</h2>
-        <p>지금까지의 진행이 초기화됩니다.</p>
+        <h2>이번 판을 포기할까요?</h2>
+        <p>쓰러진 것으로 처리되고 아들이 대를 잇습니다.</p>
         <div class="row">
           <button data-act="confirm-yes" class="danger">예</button>
           <button data-act="confirm-no" class="primary">아니오</button>

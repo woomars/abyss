@@ -53,6 +53,19 @@ export class AudioSystem {
       if (i >= 4) { this.play('portal', { pitch: 1.6, gain: 0.6 }); this.play('chime', { pitch: 1.3, gain: 1.2 }); }
       else this.play('coins', { pitch: 0.8 + i * 0.12, gain: 0.5 + i * 0.15 });
     });
+    events.on('levelUp', () => { this.play('chime', { pitch: 1 }); setTimeout(() => this.play('chime', { pitch: 1.5 }), 120); });
+    events.on('setComplete', () => { this.play('roar', { pitch: 1.4, gain: 0.6 }); this.play('chime', { pitch: 1.2, gain: 1.3 }); });
+    events.on('forgeAction', (e) => {
+      if (e.kind === 'equip' || e.kind === 'unequip') this.play('clank');
+      else if (e.kind === 'salvage') this.play('crush');
+      else if (e.kind === 'enhance') this.play('hammer');
+      else if (e.kind === 'enhanceUp') { this.play('hammer'); setTimeout(() => this.play('chime', { pitch: 1.3 }), 90); }
+      else this.play('coins', { gain: 0.5, pitch: 0.7 });
+    });
+    events.on('stormZap', () => this.play('blink', { pitch: 1.8, gain: 0.5 }));
+    events.on('quake', () => this.play('roar', { pitch: 2, gain: 0.35 }));
+    events.on('setBlast', () => this.play('portal', { pitch: 0.7, gain: 0.8 }));
+    events.on('evade', () => this.play('blink', { pitch: 1.2, gain: 0.6 }));
     events.on('relicReroll', () => this.play('coins', { gain: 0.8 }));
     events.on('relicPick', () => this.play('chime', { pitch: 1.25, gain: 1.2 }));
   }
@@ -183,6 +196,19 @@ export class AudioSystem {
 }
 
 const VOICES = {
+  clank: (a, p, g) => {
+    a.tone('square', 1800 * p, 1500 * p, 0.05 * g, 0.12);
+    a.noiseBurst('highpass', 3000 * p, 2000 * p, 1, 0.18 * g, 0.08);
+  },
+  crush: (a, p, g) => {
+    a.noiseBurst('lowpass', 1800 * p, 200 * p, 0.8, 0.35 * g, 0.35);
+    a.tone('sawtooth', 160 * p, 60 * p, 0.1 * g, 0.3);
+  },
+  hammer: (a, p, g) => {
+    a.tone('triangle', 900 * p, 820 * p, 0.2 * g, 0.35);
+    a.tone('square', 2600 * p, 2400 * p, 0.04 * g, 0.2);
+    a.noiseBurst('bandpass', 2400 * p, 1600 * p, 2, 0.25 * g, 0.06);
+  },
   slash: (a, p, g) => a.noiseBurst('bandpass', 3200 * p, 900 * p, 1.2, 0.35 * g, 0.09),
   impact: (a, p, g) => {
     a.tone('sine', 150 * p, 55, 0.6 * g, 0.12);

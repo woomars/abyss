@@ -17,6 +17,11 @@ import { Banner } from './ui/Banner.js';
 import { RecordStore } from './systems/RecordStore.js';
 import { RelicPicker } from './ui/RelicPicker.js';
 import { LootToast } from './ui/LootToast.js';
+import { TitleMenu } from './ui/TitleMenu.js';
+import { HeirScreen } from './ui/HeirScreen.js';
+import { ForgeScreen } from './ui/ForgeScreen.js';
+import { VaultStore } from './systems/VaultStore.js';
+import { Vault } from './game/items/Vault.js';
 import { chooseRotation, stageSize, stageTransform, toStage } from './systems/orientation.js';
 
 function safeStorage() {
@@ -56,20 +61,30 @@ async function boot() {
   applySettings(settings);
 
   const stage = document.getElementById('stage');
-  const startEl = document.getElementById('start');
   let started = false;
   let menu = null;
   const updatePaused = () => {
     game.paused = !started || (menu && menu.isOpen);
   };
+  // save slots: the vault in play is saved whenever it changes
+  const store = new VaultStore(safeStorage());
+  let slot = null;
+  events.on('vaultChanged', (e) => { if (slot) store.save(slot, e.vault); });
 
   const skillButtons = new SkillButtons(ui, game.skills, { toLocal: (x, y) => toLocal(x, y) });
   const hud = new HUD(ui, { onPause: () => menu.open() });
-  const gameOver = new GameOver(ui, { onRetry: () => game.restart() });
+  let lastFate = null;
+  const gameOver = new GameOver(ui, {
+    onRetry: () => {
+      if (lastFate) heir.show(lastFate);
+      else game.restart();
+    },
+  });
   const records = new RecordStore(safeStorage());
   events.on('playerDown', (s) => {
     // only honest runs (started at floor 1, not via the debug floor jump) count for the record
     const r = s.floor && s.startFloor === 1 ? records.submitFloor(s.floor) : { bestFloor: records.load().bestFloor, isNew: false };
+    lastFate = s.fate || null;
     gameOver.show({ ...s, ...r, unranked: !!s.floor && s.startFloor !== 1 });
   });
   // dungeon announcements and music follow the room
@@ -106,8 +121,50 @@ async function boot() {
   menu = new PauseMenu(ui, {
     settings,
     onChange: (s) => { applySettings(s); save.save(s); },
-    onRestart: () => { game.restart(); gameOver.hide(); },
+    onRestart: () => { gameOver.hide(); game.giveUp(); },
     onOpenChange: updatePaused,
+  });
+  events.on('setComplete', (e) => banner.show(`${e.name} 세트 완성!`, '연쇄 마지막 타격에서 폭발이 일어납니다', { kind: 'reward', ms: 2600 }));
+  events.on('levelUp', (e) => banner.show('레벨 업!', `Lv ${e.level} · 공격력과 최대 체력이 올랐습니다`, { kind: 'reward', ms: 1600 }));
+
+  // --- family, forge and title (all inside the landscape stage) ---
+  const heir = new HeirScreen(ui, { onContinue: () => game.openStartForge() });
+  const forge = new ForgeScreen(ui, {
+    game,
+    onDepart: () => { forge.hide(); game.departForge(); },
+    onTitle: () => { forge.hide(); started = false; updatePaused(); title.open(); music.play('base'); },
+  });
+  events.on('forgeOpen', (e) => {
+    music.play('base');
+    gameOver.hide();
+    forge.show(e);
+  });
+  const enterSlot = (n, vault) => {
+    slot = n;
+    game.attachVault(vault);
+    started = true;
+    updatePaused();
+  };
+  const title = new TitleMenu(ui, {
+    store, names: config.names,
+    onContinue: (n) => {
+      const v = store.load(n);
+      if (!v) { title.open(); return; }
+      enterSlot(n, v);
+      if (v.state === 'rest' && v.run) game.restoreRun(v.run);
+      else if (v.state === 'run') {
+        // the game was closed in the middle of a fight: that run counts as a death
+        game.resetRun();
+        const fate = game.endRunByDeath(v.lastFloor);
+        heir.show(fate, { note: '지난 판이 싸움 도중 중단되어, 쓰러진 것으로 처리했습니다.' });
+      } else game.openStartForge();
+    },
+    onNew: (n, family, given) => {
+      const v = new Vault({ family, given });
+      store.save(n, v);
+      enterSlot(n, v);
+      game.openStartForge();
+    },
   });
 
   // --- forced landscape: rotate the whole stage when the viewport is portrait ---
@@ -143,6 +200,9 @@ async function boot() {
       // jump straight to a floor (or the practice arena) to test bosses
       onFloor: (floor) => {
         gameOver.hide();
+        title.hide(); forge.hide(); heir.hide();
+        if (!started) { enterSlot(null, new Vault({ family: '시험', given: '기사' })); }
+        if (floor === -2) { game.startRun(4); game.dungeon.enterForge(); return; }
         if (floor > 0) game.startRun(floor);
         else if (floor === -1) { game.startRun(3); game.dungeon.enterRoom('treasure'); }
         else { game.startPractice(); music.play(config.music.scenes.play); banner.show('연습장'); }
@@ -174,14 +234,6 @@ async function boot() {
   };
   document.addEventListener('pointerup', onGesture, true);
   document.addEventListener('pointerdown', () => audio.unlock(), true);
-  // start screen: the first tap is the gesture that allows fullscreen, landscape lock and sound
-  startEl.addEventListener('pointerup', (e) => {
-    e.preventDefault();
-    started = true;
-    startEl.classList.add('hidden');
-    game.startRun(1); // floorStart starts the music inside the tap, so the browser allows playback
-    updatePaused();
-  });
 
   let lastRender = performance.now();
   const loop = new GameLoop({
@@ -203,7 +255,7 @@ async function boot() {
   const tick = (t) => { loop.frame(t / 1000); requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
 
-  window.__abyss = { game, config, renderer, loop, events, audio, music, menu };
+  window.__abyss = { game, config, renderer, loop, events, audio, music, menu, store, forge, title, heir };
 }
 
 boot().catch((err) => {

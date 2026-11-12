@@ -1,0 +1,19 @@
+{
+  "xp": {
+    "normal": 1,
+    "enhanced": 3,
+    "elite": 4,
+    "boss": 40,
+    "perFloor": 0.1
+  },
+  "need": {
+    "base": 12,
+    "exp": 1.45
+  },
+  "perLevel": {
+    "damage": 0.02,
+    "maxHp": 4
+  },
+  "maxLevel": 99,
+  "historyMax": 20
+}

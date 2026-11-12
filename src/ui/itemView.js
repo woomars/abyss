@@ -24,5 +24,6 @@ export function itemDetail(item, cfg) {
     ${d.lines.map((l, i) => `<div class="iline${i === 0 ? ' ibase' : ''}">${l}</div>`).join('')}
     ${d.effectText ? `<div class="ieffect">${d.effectText}</div>` : ''}
     ${d.setText ? `<div class="iset">세트: ${d.setText}</div>` : ''}
+    ${d.heirloom ? `<div class="iheir">물려받음: ${d.heirloom.generation}대손 ${d.heirloom.given} ${d.heirloom.family}${d.heirloom.feat ? `<br><i>${d.heirloom.feat}</i>` : ''}</div>` : ''}
   </div>`;
 }

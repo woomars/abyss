@@ -1,21 +1,35 @@
 {
   "choices": 3,
   "pickDelay": 0.6,
+  "reroll": { "base": 25, "growth": 0.5 },
   "rarity": {
     "common": { "weight": 60, "label": "일반", "color": "#a7b0ba" },
     "rare": { "weight": 30, "label": "희귀", "color": "#5aa0ff" },
     "epic": { "weight": 10, "label": "영웅", "color": "#c27cff" }
   },
+  "quality": {
+    "tiers": [
+      { "label": "", "mult": 1 },
+      { "label": "상급", "mult": 1.5, "color": "#7fe0a0" },
+      { "label": "최상급", "mult": 2, "color": "#ffcf5a" }
+    ],
+    "chance": [
+      null,
+      { "base": 0.15, "perFloor": 0.015, "max": 0.45 },
+      { "base": 0.03, "perFloor": 0.01, "max": 0.3 }
+    ],
+    "bossBonus": 0.1
+  },
   "list": {
-    "whetstone": { "name": "숫돌", "desc": "공격력 +15%", "icon": "sword", "rarity": "common", "stat": "damage", "add": 0.15, "max": 5 },
-    "heart": { "name": "붉은 심장", "desc": "최대 체력 +20", "icon": "heart", "rarity": "common", "stat": "maxHp", "add": 20, "max": 5 },
-    "potion": { "name": "회복의 물약", "desc": "체력 60% 회복", "icon": "potion", "rarity": "common", "heal": 0.6 },
-    "eye": { "name": "매의 눈", "desc": "치명타 확률 +8%", "icon": "eye", "rarity": "common", "stat": "crit", "add": 0.08, "max": 4 },
-    "boots": { "name": "바람 장화", "desc": "이동 속도 +10%", "icon": "boots", "rarity": "common", "stat": "speed", "add": 0.1, "max": 3 },
-    "goldbag": { "name": "금화 주머니", "desc": "골드 +{gold}", "icon": "gold", "rarity": "common", "gold": [60, 100] },
-    "hourglass": { "name": "모래시계", "desc": "특수기 재사용 대기 -15%", "icon": "hourglass", "rarity": "rare", "stat": "cooldown", "add": 0.15, "max": 3 },
-    "fang": { "name": "흡혈 송곳니", "desc": "적을 처치할 때마다 체력 +2", "icon": "fang", "rarity": "rare", "stat": "lifesteal", "add": 2, "max": 3 },
-    "plate": { "name": "강철 흉갑", "desc": "받는 피해 -12%", "icon": "shield", "rarity": "rare", "stat": "armor", "add": 0.12, "max": 3 },
-    "chain": { "name": "연쇄의 고리", "desc": "연쇄 공격 +1회", "icon": "chain", "rarity": "epic", "stat": "chain", "add": 1, "max": 2 }
+    "whetstone": { "name": "숫돌", "desc": "공격력 +{v}", "fmt": "pct", "icon": "sword", "rarity": "common", "stat": "damage", "add": 0.15, "max": 5 },
+    "heart": { "name": "붉은 심장", "desc": "최대 체력 +{v}", "fmt": "int", "icon": "heart", "rarity": "common", "stat": "maxHp", "add": 20, "max": 5 },
+    "potion": { "name": "회복의 물약", "desc": "체력 {v} 회복", "fmt": "pct", "icon": "potion", "rarity": "common", "heal": 0.5, "cap": 1 },
+    "eye": { "name": "매의 눈", "desc": "치명타 확률 +{v}", "fmt": "pct", "icon": "eye", "rarity": "common", "stat": "crit", "add": 0.06, "max": 4 },
+    "boots": { "name": "바람 장화", "desc": "이동 속도 +{v}", "fmt": "pct", "icon": "boots", "rarity": "common", "stat": "speed", "add": 0.08, "max": 3 },
+    "goldbag": { "name": "금화 주머니", "desc": "골드 +{v}", "fmt": "int", "icon": "gold", "rarity": "common", "gold": [50, 90] },
+    "hourglass": { "name": "모래시계", "desc": "특수기 재사용 대기 -{v}", "fmt": "pct", "icon": "hourglass", "rarity": "rare", "stat": "cooldown", "add": 0.12, "max": 3 },
+    "fang": { "name": "흡혈 송곳니", "desc": "적을 처치할 때마다 체력 +{v}", "fmt": "int", "icon": "fang", "rarity": "rare", "stat": "lifesteal", "add": 2, "max": 3 },
+    "plate": { "name": "강철 흉갑", "desc": "받는 피해 -{v}", "fmt": "pct", "icon": "shield", "rarity": "rare", "stat": "armor", "add": 0.1, "max": 3 },
+    "chain": { "name": "연쇄의 고리", "desc": "연쇄 공격 +{v}회", "fmt": "int", "icon": "chain", "rarity": "epic", "stat": "chain", "add": 1, "max": 2, "fixed": true }
   }
 }

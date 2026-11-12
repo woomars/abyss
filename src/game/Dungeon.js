@@ -156,7 +156,7 @@ export class Dungeon {
     this.openExit();
   }
 
-  // boss chest: gold and a full heal. Treasure-room chest: gold, then three treasure cards to pick from.
+  // boss chest: gold and a full heal; treasure-room chest: gold. Both then offer three treasure cards.
   openChest() {
     const c = this.cfg, g = this.game, ch = this.chest;
     ch.opened = true;
@@ -167,7 +167,7 @@ export class Dungeon {
     if (heal) g.healPlayer(heal);
     g.events.emit('chestOpen', { pos: { x: ch.x, y: ch.y }, gold, heal, big: ch.big });
     if (!this.exit.open) this.openExit();
-    if (!ch.big) g.offerRelics(g.relics.roll(g.rng, { goldMult: mult }));
+    g.offerRelics({ goldMult: mult, floor: this.floor, boss: ch.big });
   }
 
   // enemies left far away (stuck behind pillars, wandering) come back near the player

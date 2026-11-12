@@ -84,20 +84,21 @@ async function boot() {
     else banner.show('방 정리', `출구가 열렸습니다 · 골드 +${e.gold}`);
   });
   events.on('bossEnrage', () => banner.show('분노!', '', { kind: 'boss', ms: 1200 }));
-  events.on('chestOpen', (e) => {
-    if (e.big) banner.show(`골드 +${e.gold}`, '체력을 모두 회복했습니다', { kind: 'reward' });
-  });
-  // treasure room: pick one of three cards (the game waits meanwhile)
-  let chestGold = 0;
-  events.on('chestOpen', (e) => { chestGold = e.big ? 0 : e.gold; });
+  // treasure room and boss chests: pick one of three cards (the game waits meanwhile)
+  let chest = null;
+  events.on('chestOpen', (e) => { chest = e; });
   const picker = new RelicPicker(ui, {
     pickDelay: () => config.relics.pickDelay,
     onPick: (i) => {
       const o = game.chooseRelic(i);
-      if (o) banner.show(`${o.name} 획득`, chestGold ? `${o.desc} · 골드 +${chestGold}` : o.desc, { kind: 'reward' });
+      if (!o) return;
+      const sub = [o.desc, chest ? `골드 +${chest.gold}` : '', chest && chest.big ? '체력 모두 회복' : ''].filter(Boolean).join(' · ');
+      banner.show(`${o.tierLabel ? o.tierLabel + ' ' : ''}${o.name} 획득`, sub, { kind: 'reward' });
     },
+    onReroll: () => game.rerollRelics(),
   });
-  events.on('relicOffer', (e) => picker.show(e.offers));
+  events.on('relicOffer', (e) => picker.show(e.offers, e));
+  events.on('relicReroll', (e) => picker.show(e.offers, e));
   menu = new PauseMenu(ui, {
     settings,
     onChange: (s) => { applySettings(s); save.save(s); },

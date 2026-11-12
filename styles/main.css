@@ -202,8 +202,25 @@ html, body {
 .relic-picker { z-index: 12; background: radial-gradient(ellipse at center, rgba(40, 28, 10, 0.78), rgba(4, 3, 8, 0.88)); }
 .rp-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 16px; max-width: 100%; }
 .rp-title { margin: 0; font-size: 20px; color: #ffe08a; letter-spacing: 2px; text-shadow: 0 0 14px rgba(255, 200, 90, 0.5), 0 2px 0 #000; animation: banner-in 0.35s ease-out; }
-.rp-hint { margin: 0; font-size: 12px; color: #9c91ad; opacity: 0; transition: opacity 0.3s; }
-.relic-picker.ready .rp-hint { opacity: 1; }
+.rp-bottom { display: flex; align-items: center; gap: 14px; opacity: 0; transition: opacity 0.3s; }
+.relic-picker.ready .rp-bottom { opacity: 1; }
+.rp-hint { font-size: 12px; color: #9c91ad; }
+.rp-gold { font-size: 12px; color: #b3a8c4; }
+.rp-gold b, .rp-cost { color: #f0d890; }
+.gold-icon { color: #f0d890; }
+.rp-reroll {
+  min-height: 38px; padding: 0 14px; border-radius: 8px; border: 1px solid #c9a86a; background: #3a2f45;
+  color: #e8e3d6; font: inherit; font-size: 14px; touch-action: manipulation;
+}
+.rp-reroll:disabled { opacity: 0.45; border-color: #4a3d5c; }
+.rp-rarity em { font-style: normal; color: var(--tc); }
+.rp-card.t-1, .rp-card.t-2 { outline: 2px solid var(--tc); outline-offset: 3px; }
+.rp-card.t-1 .rp-desc, .rp-card.t-2 .rp-desc { color: var(--tc); font-weight: 700; }
+.rp-card.t-2::after {
+  content: ''; position: absolute; inset: -6px; pointer-events: none; border-radius: 15px; border: 2px solid var(--tc);
+  box-shadow: 0 0 18px var(--tc); opacity: 0.55; animation: rp-shine 1.6s ease-in-out infinite;
+}
+@keyframes rp-shine { 50% { opacity: 0.15; } }
 .rp-cards { display: flex; gap: 14px; justify-content: center; max-width: 100%; }
 .rp-card {
   --rc: #a7b0ba;

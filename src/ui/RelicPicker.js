@@ -1,10 +1,12 @@
 import { relicIcon } from './relicIcons.js';
 
-// Treasure-room scene: three cards rise from the chest; tap one to keep it. Cards ignore taps for a
-// moment after appearing so the swipe that walked into the chest cannot pick one by accident.
+// Chest scene: three cards rise from the chest; tap one to keep it, or pay gold to draw three new
+// ones. Cards ignore taps for a moment after appearing so the swipe that walked into the chest
+// cannot pick one by accident.
 export class RelicPicker {
-  constructor(root, { onPick, pickDelay = () => 0.6 }) {
+  constructor(root, { onPick, onReroll, pickDelay = () => 0.6 }) {
     this.onPick = onPick;
+    this.onReroll = onReroll;
     this.pickDelay = pickDelay;
     this.isOpen = false;
     this.el = document.createElement('div');
@@ -13,10 +15,18 @@ export class RelicPicker {
       <div class="rp-wrap">
         <h2 class="rp-title">보물을 하나 고르세요</h2>
         <div class="rp-cards"></div>
-        <p class="rp-hint">카드를 눌러 가져갑니다</p>
+        <div class="rp-bottom">
+          <span class="rp-hint">카드를 눌러 가져갑니다</span>
+          <button class="rp-reroll">다시 뽑기 <span class="gold-icon">◆</span> <b class="rp-cost">0</b></button>
+          <span class="rp-gold">보유 <span class="gold-icon">◆</span> <b>0</b></span>
+        </div>
       </div>`;
     root.appendChild(this.el);
     this.cards = this.el.querySelector('.rp-cards');
+    this.rerollBtn = this.el.querySelector('.rp-reroll');
+    this.rerollBtn.addEventListener('click', () => {
+      if (this.ready && !this.chosen && !this.rerollBtn.disabled) this.onReroll();
+    });
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.cards.addEventListener('click', (e) => {
       const card = e.target.closest('.rp-card');
@@ -25,13 +35,17 @@ export class RelicPicker {
     });
   }
 
-  show(offers) {
+  // cost / gold: price of a redraw and the gold the player has
+  show(offers, { cost = 0, gold = 0 } = {}) {
     this.isOpen = true;
     this.ready = false;
     this.chosen = false;
+    this.rerollBtn.disabled = gold < cost;
+    this.el.querySelector('.rp-cost').textContent = String(cost);
+    this.el.querySelector('.rp-gold b').textContent = String(gold);
     this.cards.innerHTML = offers.map((o, i) => `
-      <button class="rp-card r-${o.rarity}" data-i="${i}" style="--rc:${o.color};--d:${i * 0.12}s">
-        <span class="rp-rarity">${o.rarityLabel}</span>
+      <button class="rp-card r-${o.rarity}${o.tier ? ` t-${o.tier}` : ''}" data-i="${i}" style="--rc:${o.color};--tc:${o.tierColor || o.color};--d:${i * 0.12}s">
+        <span class="rp-rarity">${o.rarityLabel}${o.tierLabel ? ` · <em>${o.tierLabel}</em>` : ''}</span>
         <span class="rp-icon">${relicIcon(o.icon, 34)}</span>
         <b class="rp-name">${o.name}</b>
         <span class="rp-desc">${o.desc}</span>

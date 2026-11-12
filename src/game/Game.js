@@ -117,12 +117,31 @@ export class Game {
     p.hp = Math.min(p.maxHp, p.hp + amount);
   }
 
-  // show treasure cards; the world pauses until chooseRelic()
-  offerRelics(offers) {
+  // show treasure cards; the world pauses until chooseRelic(). ctx: { goldMult, floor, boss }
+  offerRelics(ctx) {
+    const offers = this.relics.roll(this.rng, ctx);
     if (!offers.length) return false;
-    this.offer = { offers };
+    this.offer = { offers, ctx, rerolls: 0 };
+    this.offer.cost = this.rerollCost();
     this.combat.cancel();
-    this.events.emit('relicOffer', { offers });
+    this.events.emit('relicOffer', { offers, cost: this.offer.cost, gold: this.dungeon.gold });
+    return true;
+  }
+
+  // price of drawing three new cards: grows with depth (gold multiplier) and with each redraw
+  rerollCost() {
+    const r = this.config.relics.reroll, o = this.offer;
+    return Math.round(r.base * (o.ctx.goldMult || 1) * (1 + r.growth * o.rerolls));
+  }
+
+  rerollRelics() {
+    const o = this.offer;
+    if (!o || this.dungeon.gold < o.cost) return false;
+    this.dungeon.gold -= o.cost;
+    o.rerolls += 1;
+    o.offers = this.relics.roll(this.rng, o.ctx);
+    o.cost = this.rerollCost();
+    this.events.emit('relicReroll', { offers: o.offers, cost: o.cost, gold: this.dungeon.gold });
     return true;
   }
 

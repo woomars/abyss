@@ -8,22 +8,45 @@
     "deathElite": "assets/audio/death_elite.ogg",
     "deathBoss": "assets/audio/death_boss.ogg",
     "enemyAttack": "assets/audio/enemy_attack.ogg",
-    "hurt": "assets/audio/hurt.ogg"
+    "hurt": "assets/audio/hurt.ogg",
+    "skillSpin": "assets/audio/skill_spin.ogg",
+    "skillRush": "assets/audio/skill_rush.ogg",
+    "skillWave": "assets/audio/skill_wave.ogg",
+    "skillHit": "assets/audio/skill_hit.ogg"
   },
   "volume": {
     "slash": 0.7,
     "hit": 0.9,
-    "hitHeavy": 1.0,
-    "crit": 1.0,
+    "hitHeavy": 1,
+    "crit": 1,
     "deathSoldier": 0.8,
     "deathElite": 0.9,
-    "deathBoss": 1.0,
+    "deathBoss": 1,
     "enemyAttack": 0.8,
-    "hurt": 0.9
+    "hurt": 0.9,
+    "skillSpin": 0.9,
+    "skillRush": 1,
+    "skillWave": 0.8,
+    "skillHit": 0.9
   },
   "byType": {
-    "soldier": { "hit": "hit", "death": "deathSoldier" },
-    "elite": { "hit": "hitHeavy", "death": "deathElite" },
-    "boss": { "hit": "hitHeavy", "death": "deathBoss" }
-  }
+    "soldier": {
+      "hit": "hit",
+      "death": "deathSoldier"
+    },
+    "elite": {
+      "hit": "hitHeavy",
+      "death": "deathElite"
+    },
+    "boss": {
+      "hit": "hitHeavy",
+      "death": "deathBoss"
+    }
+  },
+  "bySkill": {
+    "spin": "skillSpin",
+    "rushStrike": "skillRush",
+    "bladeWave": "skillWave"
+  },
+  "skillHit": "skillHit"
 }

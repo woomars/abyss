@@ -1,12 +1,13 @@
 // Sound effects. Recorded samples (config.audio, see assets/audio/CREDITS.md) are used when loaded;
 // otherwise each event falls back to a synthesized Web Audio voice. All playback goes through play().
-import { hitSound, deathSound } from './soundMap.js';
+import { hitSound, deathSound, skillSound } from './soundMap.js';
 
 const MAX_VOICES = 24;
 // sample name -> synth voice used until (or if) the sample loads
 const FALLBACK = {
   slash: 'slash', hit: 'impact', hitHeavy: 'heavyImpact', crit: 'critImpact',
   deathSoldier: 'death', deathElite: 'death', deathBoss: 'death', enemyAttack: 'whoosh', hurt: 'hurt',
+  skillSpin: 'skill_spin', skillRush: 'skill_rushStrike', skillWave: 'skill_bladeWave', skillHit: 'heavyImpact',
 };
 
 export class AudioSystem {
@@ -26,12 +27,13 @@ export class AudioSystem {
     events.on('hit', (e) => {
       if (!this.budgetHit()) return;
       const name = this.cfg ? hitSound(e, this.cfg) : (e.crit ? 'crit' : e.enemy && e.enemy.isElite ? 'hitHeavy' : 'hit');
-      this.sample(name, { pitch: name === 'hit' ? 1 + e.chainIndex * 0.05 : 1 });
+      const pitch = name === 'hit' ? 1 + e.chainIndex * 0.05 : name === 'skillHit' ? 1 + Math.min(e.chainIndex, 6) * 0.03 : 1;
+      this.sample(name, { pitch, gain: e.skill && e.crit ? 1.2 : 1 });
     });
     events.on('kill', (e) => this.sample(this.cfg ? deathSound(e.enemy && e.enemy.type, this.cfg) : 'deathSoldier'));
     events.on('chainLink', (e) => this.play('link', { pitch: 1 + 0.12 * e.chainIndex }));
     events.on('turn', () => this.play('whoosh', { gain: 0.7 }));
-    events.on('skill', (e) => this.play(`skill_${e.id}`));
+    events.on('skill', (e) => this.sample(this.cfg ? skillSound(e.id, this.cfg) : `skill_${e.id}`));
     events.on('enemyStrike', () => this.sample('enemyAttack'));
     events.on('playerHit', () => this.sample('hurt'));
     events.on('playerDown', () => this.play('down'));

@@ -1,10 +1,13 @@
 import { DEBUG_PARAMS, getPath, setPath } from './debugParams.js';
 
-// ?debug=1 — FPS, live sliders over the config object, JSON export, spawn helper.
+const MUSIC_LABEL = { base: '거점', explore: '일반 전투', hard: '고난도', miniboss: '중간보스', boss: '대형 보스', rest: '보물방' };
+
+// ?debug=1 — FPS, live sliders over the config object, JSON export, spawn helper, music preview.
 export class DebugPanel {
-  constructor(root, { config, game, onLayout }) {
+  constructor(root, { config, game, onLayout, music = null }) {
     this.config = config;
     this.game = game;
+    this.music = music;
     this.onLayout = onLayout;
     this.frames = 0;
     this.fpsTime = performance.now();
@@ -19,12 +22,18 @@ export class DebugPanel {
       <div class="dhead"><button data-act="toggle">DEBUG</button><span class="fps">-- fps</span></div>
       <div class="dbody">
         <div class="dbtns"><button data-act="copy">JSON 복사</button><button data-act="spawn">적 무리 소환</button></div>
+        <div class="dbtns">배경음악 <select data-act="music">${Object.keys(config.music.playlists).map((k) =>
+          `<option value="${k}"${k === config.music.scenes.play ? ' selected' : ''}>${MUSIC_LABEL[k] || k} (${config.music.playlists[k].length}곡)</option>`).join('')}</select>
+          <button data-act="nextTrack">다음 곡</button></div>
         ${rows}
         <textarea class="dexport hidden" readonly></textarea>
       </div>`;
     root.appendChild(this.el);
     this.fpsEl = this.el.querySelector('.fps');
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
+    this.el.addEventListener('change', (e) => {
+      if (e.target.dataset.act === 'music' && this.music) this.music.play(e.target.value);
+    });
     this.el.addEventListener('input', (e) => {
       const i = e.target.dataset.i;
       if (i === undefined) return;
@@ -39,6 +48,7 @@ export class DebugPanel {
       if (b.dataset.act === 'toggle') { this.el.classList.toggle('collapsed'); this.onLayout(); }
       if (b.dataset.act === 'copy') this.copy();
       if (b.dataset.act === 'spawn') this.spawn();
+      if (b.dataset.act === 'nextTrack' && this.music) this.music.next();
     });
   }
 

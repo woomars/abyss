@@ -28,6 +28,7 @@ export const DEBUG_PARAMS = [
   { path: 'camera.freeRadiusFrac', min: 0, max: 0.5, step: 0.01 },
   { path: 'enemies.targetCount', min: 0, max: 60, step: 1 },
   { path: 'enemies.counterWindow', min: 0, max: 3, step: 0.1 },
+  { path: 'music.volume', min: 0, max: 1, step: 0.05 },
 ];
 
 export function getPath(obj, path) {

@@ -1,6 +1,6 @@
 // Versioned settings persistence. Storage is injected (localStorage in the browser).
 export const SETTINGS_VERSION = 1;
-const defaults = () => ({ version: SETTINGS_VERSION, shake: true, sound: true });
+const defaults = () => ({ version: SETTINGS_VERSION, shake: true, sound: true, music: true });
 
 export class SaveSystem {
   constructor(storage, key = 'abyss.settings') {
@@ -16,7 +16,8 @@ export class SaveSystem {
       const data = JSON.parse(raw);
       if (!data || data.version !== SETTINGS_VERSION) return defaults();
       const d = defaults();
-      return { version: SETTINGS_VERSION, shake: typeof data.shake === 'boolean' ? data.shake : d.shake, sound: typeof data.sound === 'boolean' ? data.sound : d.sound };
+      const pick = (k) => (typeof data[k] === 'boolean' ? data[k] : d[k]);
+      return { version: SETTINGS_VERSION, shake: pick('shake'), sound: pick('sound'), music: pick('music') };
     } catch (_) {
       return defaults();
     }

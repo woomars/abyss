@@ -114,7 +114,8 @@ html, body {
 }
 .fps { color: #9fd8ff; }
 .dbody { overflow-y: auto; padding: 4px 6px 8px; touch-action: pan-y; }
-.dbtns { display: flex; gap: 6px; margin-bottom: 6px; }
+.dbtns { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+.dbtns select { flex: 1; min-width: 0; font: inherit; font-size: 11px; padding: 5px 4px; border-radius: 6px; border: 1px solid #4a3d5c; background: #221a2c; color: #e8e3d6; }
 .drow { display: grid; grid-template-columns: 1fr; margin-bottom: 4px; }
 .drow input { width: 100%; }
 .drow output { color: #e8d9a8; }

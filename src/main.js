@@ -6,6 +6,7 @@ import { createRng } from './core/rng.js';
 import { Renderer } from './render/Renderer.js';
 import { bindInput } from './systems/InputBinder.js';
 import { AudioSystem } from './systems/AudioSystem.js';
+import { MusicSystem } from './systems/MusicSystem.js';
 import { SaveSystem } from './systems/SaveSystem.js';
 import { SkillButtons } from './ui/SkillButtons.js';
 import { HUD } from './ui/HUD.js';
@@ -39,12 +40,14 @@ async function boot() {
   const renderer = new Renderer(canvas, config);
   const game = new Game(config, { events, rng });
   const audio = new AudioSystem(events, rng, config.audio);
+  const music = new MusicSystem(config.music);
   const save = new SaveSystem(safeStorage());
   const settings = save.load();
 
   const applySettings = (s) => {
     game.camera.setShakeEnabled(s.shake);
     audio.setEnabled(s.sound);
+    music.setEnabled(s.music);
   };
   applySettings(settings);
 
@@ -95,7 +98,7 @@ async function boot() {
   };
   // in development the tuning panel is on by default; ?debug=0 hides it
   if (new URLSearchParams(location.search).get('debug') !== '0') {
-    debug = new DebugPanel(ui, { config, game, onLayout: () => layout() });
+    debug = new DebugPanel(ui, { config, game, music, onLayout: () => layout() });
   }
   window.addEventListener('resize', layout);
   // turning the phone 180° while auto-rotate is off: follow gravity
@@ -109,7 +112,7 @@ async function boot() {
 
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { menu.open(); audio.suspend(); } else { audio.resume(); }
+    if (document.hidden) { menu.open(); audio.suspend(); music.suspend(); } else { audio.resume(); music.resume(); }
   });
 
   bindInput(canvas, game.strokes, { toLocal });
@@ -117,6 +120,7 @@ async function boot() {
   // unlock audio and request fullscreen + landscape lock there, retrying until it sticks.
   const onGesture = (e) => {
     audio.unlock();
+    music.unlock();
     if (e.pointerType === 'touch' && !document.fullscreenElement) enterFullscreenLandscape().then(layout);
   };
   document.addEventListener('pointerup', onGesture, true);
@@ -126,14 +130,20 @@ async function boot() {
     e.preventDefault();
     started = true;
     startEl.classList.add('hidden');
+    music.play(config.music.scenes.play); // inside the tap, so the browser allows playback
     updatePaused();
   });
 
+  let lastRender = performance.now();
   const loop = new GameLoop({
     step: 1 / 60,
     maxFrame: 0.25,
     update: (dt) => game.update(dt),
     render: (alpha) => {
+      const now = performance.now();
+      music.setDuck((menu && menu.isOpen) || game.over);
+      music.update(Math.min(0.1, (now - lastRender) / 1000));
+      lastRender = now;
       renderer.render(game, alpha);
       skillButtons.render();
       hud.update(game);
@@ -143,7 +153,7 @@ async function boot() {
   const tick = (t) => { loop.frame(t / 1000); requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
 
-  window.__abyss = { game, config, renderer, loop, events, audio, menu };
+  window.__abyss = { game, config, renderer, loop, events, audio, music, menu };
 }
 
 boot().catch((err) => {

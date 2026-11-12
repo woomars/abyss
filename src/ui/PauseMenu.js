@@ -1,4 +1,4 @@
-// Pause overlay: resume, restart (with confirmation), screen-shake and sound toggles.
+// Pause overlay: resume, restart (with confirmation), screen-shake, sound and music toggles.
 export class PauseMenu {
   constructor(root, { settings, onChange, onRestart, onOpenChange }) {
     this.settings = settings;
@@ -16,6 +16,7 @@ export class PauseMenu {
         <button data-act="restart">재시작</button>
         <button data-act="shake" class="toggle"></button>
         <button data-act="sound" class="toggle"></button>
+        <button data-act="music" class="toggle"></button>
       </div>
       <div class="panel confirm-view hidden">
         <h2>정말 재시작할까요?</h2>
@@ -39,7 +40,8 @@ export class PauseMenu {
 
   renderToggles() {
     this.el.querySelector('[data-act="shake"]').textContent = `화면 흔들림: ${this.settings.shake ? '켜짐' : '꺼짐'}`;
-    this.el.querySelector('[data-act="sound"]').textContent = `소리: ${this.settings.sound ? '켜짐' : '꺼짐'}`;
+    this.el.querySelector('[data-act="sound"]').textContent = `효과음: ${this.settings.sound ? '켜짐' : '꺼짐'}`;
+    this.el.querySelector('[data-act="music"]').textContent = `배경음악: ${this.settings.music ? '켜짐' : '꺼짐'}`;
   }
 
   act(a) {
@@ -47,7 +49,7 @@ export class PauseMenu {
     else if (a === 'restart') { this.mainView.classList.add('hidden'); this.confirmView.classList.remove('hidden'); }
     else if (a === 'confirm-no') { this.confirmView.classList.add('hidden'); this.mainView.classList.remove('hidden'); }
     else if (a === 'confirm-yes') { this.onRestart(); this.close(); }
-    else if (a === 'shake' || a === 'sound') {
+    else if (a === 'shake' || a === 'sound' || a === 'music') {
       this.settings[a] = !this.settings[a];
       this.renderToggles();
       this.onChange(this.settings);

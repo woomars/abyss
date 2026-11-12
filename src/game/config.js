@@ -1,4 +1,4 @@
-export const CONFIG_FILES = ['combat', 'movement', 'camera', 'enemies', 'skills', 'feedback', 'input', 'audio'];
+export const CONFIG_FILES = ['combat', 'movement', 'camera', 'enemies', 'skills', 'feedback', 'input', 'audio', 'music'];
 
 // fetchJson: (path) => Promise<object>. Paths are relative to the site root.
 export async function loadConfig(fetchJson) {

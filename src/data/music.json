@@ -1,0 +1,33 @@
+{
+  "volume": 0.45,
+  "fadeTime": 0.8,
+  "duck": 0.4,
+  "playlists": {
+    "base": [
+      "assets/audio/bgm/base_1.mp3"
+    ],
+    "explore": [
+      "assets/audio/bgm/explore_1.mp3"
+    ],
+    "hard": [
+      "assets/audio/bgm/hard_6.mp3"
+    ],
+    "miniboss": [
+      "assets/audio/bgm/miniboss_6.mp3"
+    ],
+    "boss": [
+      "assets/audio/bgm/boss_1.mp3",
+      "assets/audio/bgm/boss_2.mp3",
+      "assets/audio/bgm/boss_3.mp3",
+      "assets/audio/bgm/boss_4.mp3",
+      "assets/audio/bgm/boss_5.mp3",
+      "assets/audio/bgm/boss_6.mp3"
+    ],
+    "rest": [
+      "assets/audio/bgm/rest_1.mp3"
+    ]
+  },
+  "scenes": {
+    "play": "explore"
+  }
+}

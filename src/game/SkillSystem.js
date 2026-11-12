@@ -68,14 +68,14 @@ export class SkillSystem {
     return true;
   }
 
-  hitEnemy(e, damage, dir, { critChance = this.combatCfg.critChance, chainIndex = 0 } = {}) {
+  hitEnemy(e, damage, dir, { critChance = this.combatCfg.critChance, chainIndex = 0, skill = null } = {}) {
     const c = this.combatCfg;
     const crit = this.rng() < critChance;
     const dmg = Math.round(damage * (crit ? c.critMultiplier : 1));
     const kind = crit ? 'crit' : 'strong';
     const { killed } = e.takeHit({ damage: dmg, knockDir: dir, knockback: c.knockback[kind], stagger: c.stagger[kind] });
     const pos = { x: e.pos.x, y: e.pos.y };
-    this.events.emit('hit', { enemy: e, damage: dmg, crit, strong: true, chainIndex, pos, dir });
+    this.events.emit('hit', { enemy: e, damage: dmg, crit, strong: true, chainIndex, pos, dir, skill });
     if (killed) this.events.emit('kill', { enemy: e, pos, dir, crit });
   }
 
@@ -104,7 +104,7 @@ export class SkillSystem {
       s.swept = Math.max(s.swept, firstRel);
       s.pause = def.hitPause;
       const damage = def.damage * (1 + def.chainDamageStep * s.hits);
-      this.hitEnemy(first, damage, firstDir, { critChance: this.spinCritChance(s.hits), chainIndex: s.hits });
+      this.hitEnemy(first, damage, firstDir, { critChance: this.spinCritChance(s.hits), chainIndex: s.hits, skill: 'spin' });
       s.hits += 1;
       return;
     }
@@ -113,12 +113,12 @@ export class SkillSystem {
   }
 
   // hits targetable enemies whose center is within halfWidth (+radius) of point (x, y)
-  sweep(x, y, halfWidth, hitSet, dir, damage) {
+  sweep(x, y, halfWidth, hitSet, dir, damage, skill = null) {
     for (const e of this.enemies.targetable()) {
       if (hitSet.has(e.id)) continue;
       if (Math.hypot(e.pos.x - x, e.pos.y - y) > halfWidth + e.radius) continue;
       hitSet.add(e.id);
-      this.hitEnemy(e, damage, dir);
+      this.hitEnemy(e, damage, dir, { skill });
     }
   }
 
@@ -142,7 +142,7 @@ export class SkillSystem {
       for (let k = 1; k <= n; k++) {
         const t = k / n;
         this.sweep(before.x + (this.player.pos.x - before.x) * t, before.y + (this.player.pos.y - before.y) * t,
-          r.def.width / 2, r.hit, r.dir, r.def.damage);
+          r.def.width / 2, r.hit, r.dir, r.def.damage, 'rushStrike');
       }
       if (blocked || r.traveled >= r.def.distance - 1e-6) {
         this.rush = null;
@@ -158,7 +158,7 @@ export class SkillSystem {
         pr.x += pr.dir.x * stepLen / n;
         pr.y += pr.dir.y * stepLen / n;
         pr.traveled += stepLen / n;
-        this.sweep(pr.x, pr.y, pr.def.width / 2, pr.hit, pr.dir, pr.def.damage);
+        this.sweep(pr.x, pr.y, pr.def.width / 2, pr.hit, pr.dir, pr.def.damage, 'bladeWave');
         if (pr.traveled >= pr.def.range) break;
       }
       const out = pr.x < 0 || pr.y < 0 || pr.x > this.arena.width || pr.y > this.arena.height;

@@ -1,0 +1,32 @@
+{
+  "tiers": {
+    "bronze": { "label": "동", "color": "#c98a5a" },
+    "silver": { "label": "은", "color": "#c9d2dc" },
+    "gold": { "label": "금", "color": "#ffd166" }
+  },
+  "list": [
+    { "id": "floor5", "name": "어둠에 내딛은 발", "tier": "bronze", "icon": "boots", "kind": "floor", "value": 5, "desc": "지하 5층에 닿는다" },
+    { "id": "floor10", "name": "깊은 곳의 방랑자", "tier": "bronze", "icon": "boots", "kind": "floor", "value": 10, "desc": "지하 10층에 닿는다" },
+    { "id": "floor20", "name": "수문장의 문 앞에서", "tier": "silver", "icon": "boots", "kind": "floor", "value": 20, "desc": "지하 20층에 닿는다" },
+    { "id": "floor40", "name": "끝없는 계단", "tier": "silver", "icon": "boots", "kind": "floor", "value": 40, "desc": "지하 40층에 닿는다" },
+    { "id": "floor60", "name": "빛이 닿지 않는 곳", "tier": "gold", "icon": "boots", "kind": "floor", "value": 60, "desc": "지하 60층에 닿는다" },
+    { "id": "floor100", "name": "심연의 밑바닥", "tier": "gold", "icon": "flame", "kind": "floor", "value": 100, "desc": "지하 100층에 닿는다" },
+    { "id": "boss1", "name": "첫 토벌", "tier": "bronze", "icon": "sword", "kind": "bosses", "value": 1, "desc": "한 생에 보스 1마리를 쓰러뜨린다" },
+    { "id": "boss3", "name": "토벌대장", "tier": "silver", "icon": "sword", "kind": "bosses", "value": 3, "desc": "한 생에 보스 3마리를 쓰러뜨린다" },
+    { "id": "boss10", "name": "보스 사냥꾼", "tier": "gold", "icon": "sword", "kind": "bosses", "value": 10, "desc": "한 생에 보스 10마리를 쓰러뜨린다" },
+    { "id": "flawless", "name": "흠 없는 승리", "tier": "gold", "icon": "shield", "kind": "flawless", "value": 1, "desc": "한 대도 맞지 않고 보스를 쓰러뜨린다" },
+    { "id": "combo25", "name": "몰아치는 칼", "tier": "bronze", "icon": "chain", "kind": "combo", "value": 25, "desc": "콤보 25를 잇는다" },
+    { "id": "combo50", "name": "멈추지 않는 칼", "tier": "silver", "icon": "chain", "kind": "combo", "value": 50, "desc": "콤보 50을 잇는다" },
+    { "id": "combo100", "name": "백 번의 칼날", "tier": "gold", "icon": "chain", "kind": "combo", "value": 100, "desc": "콤보 100을 잇는다" },
+    { "id": "kills100", "name": "백의 무덤", "tier": "bronze", "icon": "fang", "kind": "kills", "value": 100, "desc": "한 생에 적 100마리를 쓰러뜨린다" },
+    { "id": "kills500", "name": "오백의 무덤", "tier": "silver", "icon": "fang", "kind": "kills", "value": 500, "desc": "한 생에 적 500마리를 쓰러뜨린다" },
+    { "id": "kills2000", "name": "무덤 위의 왕", "tier": "gold", "icon": "fang", "kind": "kills", "value": 2000, "desc": "한 생에 적 2000마리를 쓰러뜨린다" },
+    { "id": "level10", "name": "단련된 핏줄", "tier": "bronze", "icon": "heart", "kind": "level", "value": 10, "desc": "가문이 레벨 10에 오른다" },
+    { "id": "level30", "name": "강철의 핏줄", "tier": "silver", "icon": "heart", "kind": "level", "value": 30, "desc": "가문이 레벨 30에 오른다" },
+    { "id": "level60", "name": "전설의 핏줄", "tier": "gold", "icon": "heart", "kind": "level", "value": 60, "desc": "가문이 레벨 60에 오른다" },
+    { "id": "legendary", "name": "전설을 쥔 손", "tier": "silver", "icon": "amulet", "kind": "legendary", "value": 1, "desc": "전설 장비를 줍는다" },
+    { "id": "enhance10", "name": "장인의 망치", "tier": "silver", "icon": "anvil", "kind": "enhance", "value": 10, "desc": "장비 하나를 +10까지 강화한다" },
+    { "id": "set", "name": "갖춰 입은 자", "tier": "gold", "icon": "helm", "kind": "set", "value": 1, "desc": "세트 장비를 모두 갖춰 입는다" },
+    { "id": "token", "name": "영원한 유산", "tier": "gold", "icon": "ring", "kind": "token", "value": 1, "desc": "장비에 유산의 증표를 새긴다" }
+  ]
+}

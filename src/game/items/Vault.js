@@ -19,6 +19,10 @@ export class Vault {
     this.lastFloor = 0; // floor of the run in progress (for a run cut short by closing the game)
     this.carry = [];    // pocket while at the start forge (taken along into the run)
     this.tokens = 0;    // 유산의 증표 not yet put on an item
+    this.medals = {};   // medalId -> { count, first: { given, family, generation, floor, at } }
+    this.bestiary = {}; // bossKey -> { name, title, kills, deepest, first }
+    this.runStats = null; // the run in progress (kills, medals, bosses) for a run cut short
+    this.medalsFilled = true; // older saves get their fallen's medals filled in once
   }
 
   allocId() { return this.nextId++; }
@@ -41,6 +45,7 @@ export class Vault {
     return {
       version: VAULT_VERSION, stash: this.stash, powder: this.powder, seen: this.seen, equipped: this.equipped,
       state: this.state, run: this.run, nextId: this.nextId, lineage: this.lineage, progress: this.progress, savedAt: this.savedAt, lastFloor: this.lastFloor, carry: this.carry, tokens: this.tokens,
+      medals: this.medals, bestiary: this.bestiary, runStats: this.runStats, medalsFilled: this.medalsFilled,
     };
   }
 
@@ -71,6 +76,11 @@ export class Vault {
     v.lastFloor = Number.isFinite(data.lastFloor) ? data.lastFloor : 0;
     v.carry = Array.isArray(data.carry) ? data.carry.filter((i) => i && typeof i === 'object') : [];
     v.tokens = Number.isFinite(data.tokens) ? Math.max(0, data.tokens) : 0;
+    const obj = (o) => (o && typeof o === 'object' && !Array.isArray(o) ? o : {});
+    v.medals = obj(data.medals);
+    v.bestiary = obj(data.bestiary);
+    v.runStats = data.state === 'run' && data.runStats && typeof data.runStats === 'object' ? data.runStats : null;
+    v.medalsFilled = data.medalsFilled === true;
     // never hand out an id that a saved item already has
     const ids = [...v.stash, ...v.carry, ...Object.values(v.equipped), ...((v.run && v.run.pocket) || [])].map((i) => (i && Number.isFinite(i.id) ? i.id : 0));
     v.nextId = Math.max(v.nextId, ...ids.map((n) => n + 1), 1);

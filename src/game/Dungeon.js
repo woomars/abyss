@@ -1,4 +1,5 @@
 import { floorInfo, pickWeighted, randInt } from './floorPlan.js';
+import { bossKey } from './Medals.js';
 import { buildRoom } from './RoomBuilder.js';
 import { floorLabel } from '../core/floorLabel.js';
 
@@ -73,6 +74,7 @@ export class Dungeon {
       this.boss = g.enemies.spawnAt(b.type, pos, { hp: info.mods.hp * b.hp, attack: info.mods.attack * b.attack, speed: info.mods.speed });
       this.boss.patterns = b.patterns.slice();
       bossName = tcfg.name;
+      this.boss.bossInfo = { key: bossKey(b.type, info.band), name: tcfg.name, title: info.band.title }; // for the family's bestiary
       title = `${floorLabel(this.floor)} ${info.band.title} — ${bossName}`;
     } else if (kind === 'treasure') {
       this.chest = { x: room.center.x, y: room.center.y, r: c.chestRadius, opened: false, big: false };

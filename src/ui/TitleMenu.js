@@ -1,5 +1,5 @@
 // Title inside the (landscape) stage: 이어하기 / 새로하기, the save-slot list, and naming a new family.
-// store: VaultStore; names: config.names; onContinue(slot); onNew(slot, family, given)
+// store: VaultStore; names: config.names; onContinue(slot); onHall(slot); onNew(slot, family, given)
 import { floorLabel } from '../core/floorLabel.js';
 
 
@@ -12,7 +12,8 @@ function when(ms) {
 }
 
 export class TitleMenu {
-  constructor(root, { store, names, rng = Math.random, onContinue, onNew }) {
+  constructor(root, { store, names, rng = Math.random, onContinue, onHall = () => {}, onNew }) {
+    this.onHall = onHall;
     this.store = store;
     this.names = names;
     this.rng = rng;
@@ -75,6 +76,26 @@ export class TitleMenu {
       </div>`;
   }
 
+  // 이어하기 -> a family: go down into the dungeon, or visit the hall of ancestors
+  showFamily(slot) {
+    const v = this.store.load(slot);
+    if (!v) { this.showSlots('continue'); return; }
+    this.slot = slot;
+    const s = v.summary(), fallen = v.lineage.history.length;
+    const where = s.state === 'rest' ? `${floorLabel(s.floor)} 대장간에서 쉬는 중` : s.state === 'run' ? '싸우던 중 중단됨' : '대장간에서 출발 준비';
+    this.el.innerHTML = `
+      <div class="tm-panel tm-family">
+        <h2>${esc(s.family)} 가문</h2>
+        <p><b>${s.generation}대손 ${esc(s.family)} ${esc(s.given)}</b> · Lv ${s.level} · ${where}</p>
+        <p class="dim">${fallen ? `앞서 쓰러진 선조 ${fallen}명` : '아직 쓰러진 선조가 없습니다'}</p>
+        <div class="tm-row">
+          <button class="tm-btn primary" data-act="dungeon">던전으로</button>
+          <button class="tm-btn" data-act="hall">선조의 전당</button>
+        </div>
+        <div class="tm-row"><button class="tm-btn small" data-act="continue">뒤로</button></div>
+      </div>`;
+  }
+
   showConfirm(slot) {
     this.el.innerHTML = `
       <div class="tm-panel">
@@ -109,10 +130,12 @@ export class TitleMenu {
     else if (a === 'slot') {
       const slot = Number(data.slot);
       const filled = !!this.store.load(slot);
-      if (this.mode === 'continue') { if (filled) { this.hide(); this.onContinue(slot); } }
+      if (this.mode === 'continue') { if (filled) this.showFamily(slot); }
       else if (filled) this.showConfirm(slot);
       else this.showName(slot);
-    } else if (a === 'overwrite') this.showName(Number(data.slot));
+    } else if (a === 'dungeon') { this.hide(); this.onContinue(this.slot); }
+    else if (a === 'hall') this.onHall(this.slot);
+    else if (a === 'overwrite') this.showName(Number(data.slot));
     else if (a === 'rollFamily') this.el.querySelector('.tm-family').value = this.pickName('family');
     else if (a === 'rollGiven') this.el.querySelector('.tm-given').value = this.pickName('given');
     else if (a === 'begin') {

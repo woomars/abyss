@@ -16,6 +16,7 @@ import { Loot } from './Loot.js';
 import { Loadout } from './items/Loadout.js';
 import { Vault } from './items/Vault.js';
 import { resolveDeath, applyToken } from './items/Forge.js';
+import { installMedals, emptyRunStats, backfillMedals } from './Medals.js';
 import { addXp, xpForKill, levelStats } from './Progress.js';
 import { succeed } from './Family.js';
 import { floorInfo } from './floorPlan.js';
@@ -57,7 +58,7 @@ export class Game {
     this.pendingFlick = null;
     events.on('flick', (f) => { this.pendingFlick = { x: f.dir.x, y: f.dir.y }; });
     events.on('hit', (h) => this.onHit(h));
-    this.stats = { kills: 0, bestCombo: 0 };
+    this.stats = emptyRunStats();
     // equipment on the floor and this run's pocket
     // the save slot in play (main attaches the real one); worn gear; the forge screen when open
     this.vault = new Vault({ family: '', given: '' });
@@ -106,6 +107,7 @@ export class Game {
     this.mode = 'practice';
     this.dungeon = new Dungeon(config.dungeon, this);
     installGearEffects(this);
+    installMedals(this);
   }
 
   // begin a dungeon run at the given floor (debug can start deeper)
@@ -197,6 +199,7 @@ export class Game {
   // ---- save slot, forge and the family line ----
   attachVault(vault) {
     this.vault = vault;
+    if (this.config.medals) backfillMedals(vault, this.config.medals);
     this.loadout = Loadout.fromJSON(vault.equipped, this.config.items);
     this.refreshBonus();
     this.resetHealth();
@@ -207,6 +210,7 @@ export class Game {
   saveVault() {
     this.vault.equipped = this.loadout.toJSON();
     if (this.vault.state === 'rest') this.vault.run = this.snapshotRun();
+    if (this.vault.state === 'run') this.vault.runStats = JSON.parse(JSON.stringify(this.stats));
     if (this.forge && this.forge.start) this.vault.carry = this.loot.pocket.slice();
     this.events.emit('vaultChanged', { vault: this.vault });
   }
@@ -290,7 +294,7 @@ export class Game {
     return {
       floor: d.floor, startFloor: d.startFloor || 1, gold: d.gold, hp: this.player.hp,
       pocket: this.loot.pocket.slice(), relics: { owned: { ...this.relics.owned }, stats: { ...this.relics.stats } },
-      stats: { ...this.stats },
+      stats: JSON.parse(JSON.stringify(this.stats)),
     };
   }
 
@@ -321,6 +325,8 @@ export class Game {
     const record = {
       given: l.given, family: l.family, generation: l.generation, level: this.vault.progress.level,
       floor: floor || this.vault.lastFloor || 1, kills: this.stats.kills, bestCombo: this.stats.bestCombo,
+      medals: (this.stats.medals || []).slice(), bosses: JSON.parse(JSON.stringify(this.stats.bosses || {})),
+      killer: this.stats.killer || null, at: Date.now(),
     };
     const { survived, lost } = resolveDeath(this.forgeCtx(), this.rng, record);
     record.survived = survived.map((i) => i.name);
@@ -330,6 +336,7 @@ export class Game {
     this.vault.run = null;
     this.vault.lastFloor = 0;
     this.vault.carry = [];
+    this.vault.runStats = null;
     this.refreshBonus();
     this.saveVault();
     return { record, heir, survived, lost };
@@ -430,7 +437,12 @@ export class Game {
     this.hitStop.trigger('normal');
     const shake = this.config.camera.shake.strong;
     if (shake) this.camera.addShake(shake);
-    if (p.hp <= 0) this.die();
+    if (p.hp <= 0) {
+      // who struck the last blow (area attacks in a boss room belong to the boss)
+      const d = this.dungeon, boss = d && d.roomKind === 'boss' && d.boss ? d.boss : null;
+      this.stats.killer = source && source.tcfg ? source.tcfg.name : boss ? boss.tcfg.name : null;
+      this.die();
+    }
     return true;
   }
 
@@ -477,8 +489,7 @@ export class Game {
     this.camera.snapTo(this.player.pos);
     this.pendingStroke = null;
     this.pendingFlick = null;
-    this.stats.kills = 0;
-    this.stats.bestCombo = 0;
+    Object.assign(this.stats, emptyRunStats());
     this.time = 0;
     this.over = false;
     this.offer = null;

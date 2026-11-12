@@ -21,6 +21,7 @@ import { TitleMenu } from './ui/TitleMenu.js';
 import { HeirScreen } from './ui/HeirScreen.js';
 import { ForgeScreen } from './ui/ForgeScreen.js';
 import { LegacyScene } from './ui/LegacyScene.js';
+import { HallScreen } from './ui/HallScreen.js';
 import { VaultStore } from './systems/VaultStore.js';
 import { Vault } from './game/items/Vault.js';
 import { chooseRotation, stageSize, stageTransform, toStage } from './systems/orientation.js';
@@ -126,10 +127,11 @@ async function boot() {
     onOpenChange: updatePaused,
   });
   events.on('setComplete', (e) => { if (forge.isOpen) forge.flash(`${e.name} 세트 완성! 연쇄 마지막 타격에서 폭발`, true); });
+  events.on('medal', (e) => toast.medal(e.medal, config.medals, e.first));
   events.on('levelUp', (e) => banner.show('레벨 업!', `Lv ${e.level} · 공격력과 최대 체력이 올랐습니다`, { kind: 'reward', ms: 1600 }));
 
   // --- family, forge and title (all inside the landscape stage) ---
-  const heir = new HeirScreen(ui, { onContinue: () => game.beginRun() });
+  const heir = new HeirScreen(ui, { onContinue: () => game.beginRun(), medals: config.medals });
   // 유산의 증표: opened on reaching every 100th floor, or from the forge while tokens are in hand
   const legacy = new LegacyScene(ui, {
     game, toLocal: (x, y) => toLocal(x, y),
@@ -153,8 +155,11 @@ async function boot() {
     started = true;
     updatePaused();
   };
+  // 선조의 전당 (from 이어하기 -> a family)
+  const hall = new HallScreen(ui, { config, onBack: () => {} });
   const title = new TitleMenu(ui, {
     store, names: config.names,
+    onHall: (n) => { const v = store.load(n); if (v) hall.show(v); },
     onContinue: (n) => {
       const v = store.load(n);
       if (!v) { title.open(); return; }
@@ -163,6 +168,7 @@ async function boot() {
       else if (v.state === 'run') {
         // the game was closed in the middle of a fight: that run counts as a death
         game.enterLimbo();
+        if (v.runStats) Object.assign(game.stats, v.runStats); // what he did before the game closed
         const fate = game.endRunByDeath(v.lastFloor);
         heir.show(fate, { note: '지난 판이 싸움 도중 중단되어, 쓰러진 것으로 처리했습니다.', label: game.hasGear() ? '대장간으로' : '지하 1층으로' });
       } else game.beginRun();
@@ -208,7 +214,7 @@ async function boot() {
       // jump straight to a floor (or the practice arena) to test bosses
       onFloor: (floor) => {
         gameOver.hide();
-        title.hide(); forge.hide(); heir.hide();
+        title.hide(); forge.hide(); heir.hide(); hall.hide();
         if (slot != null || !started) enterSlot(null, new Vault({ family: '시험', given: '기사' })); // debug runs use a throwaway family
         if (floor === -2) { game.startRun(4); game.dungeon.enterForge(); return; }
         if (floor === -3) { // debug: a legacy token right now
@@ -267,7 +273,7 @@ async function boot() {
   const tick = (t) => { loop.frame(t / 1000); requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
 
-  window.__abyss = { game, config, renderer, loop, events, audio, music, menu, store, forge, title, heir, legacy };
+  window.__abyss = { game, config, renderer, loop, events, audio, music, menu, store, forge, title, heir, legacy, hall };
 }
 
 boot().catch((err) => {

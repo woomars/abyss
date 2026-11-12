@@ -17,7 +17,8 @@ const PARTS = ['weapon', 'helm', 'armor', 'gloves', 'boots', 'amulet', 'ring'];
 // The forge: 장비 (paper doll, pocket / stash, compare), 분해 (multi-select into powder), 강화 (powder into
 // any item, worn / pocket / stash). Every action goes through the pure Forge rules, then game.forgeChanged().
 export class ForgeScreen {
-  constructor(root, { game, onDepart, onTitle, onSets }) {
+  constructor(root, { game, onDepart, onTitle, onSets, onToken }) {
+    this.onToken = onToken;
     this.game = game;
     this.onDepart = onDepart;
     this.onTitle = onTitle;
@@ -71,6 +72,7 @@ export class ForgeScreen {
           `<button class="fg-tab${this.tab === k ? ' on' : ''}" data-act="tab" data-v="${k}">${n}</button>`).join('')}</div>
         <span class="fg-sp"></span>
         ${this.start ? '' : `<span class="fg-gold">${relicIcon('gold', 13)} ${g.dungeon.gold}</span>`}
+        ${g.vault.tokens > 0 ? `<button class="fg-btn fg-token" data-act="token">유산의 증표 ×${g.vault.tokens}</button>` : ''}
         <button class="fg-btn small" data-act="title">타이틀</button>
         <button class="fg-btn pri" data-act="depart">${floorLabel(this.start ? 1 : g.dungeon.floor + 1)}으로 ▶</button>
       </div>
@@ -201,7 +203,7 @@ export class ForgeScreen {
           <div class="fg-actions">
             <button class="fg-btn" data-act="clearChecks">모두 해제</button>
             <button class="fg-btn" data-act="checkCommon">일반만 고르기</button>
-            ${this.confirm ? `<span class="fg-ask">정말 분해할까요?</span><button class="fg-btn red" data-act="salvageYes">분해</button><button class="fg-btn" data-act="salvageNo">아니오</button>`
+            ${this.confirm ? `<span class="fg-ask">${[...this.checked].some((id) => { const f = findItem(c, id); return f && f.item.token; }) ? '유산의 증표가 새겨진 장비도 사라집니다. ' : ''}정말 분해할까요?</span><button class="fg-btn red" data-act="salvageYes">분해</button><button class="fg-btn" data-act="salvageNo">아니오</button>`
               : `<button class="fg-btn red" data-act="salvage" ${pre.count ? '' : 'disabled'}>분해 확인</button>`}
           </div>
         </div>
@@ -252,6 +254,7 @@ export class ForgeScreen {
     else if (a === 'bag') { this.bag = v; this.render(); }
     else if (a === 'depart') this.onDepart();
     else if (a === 'title') this.onTitle();
+    else if (a === 'token') this.onToken();
     else if (a === 'sets') { this.tab = 'sets'; this.sel = null; this.render(); }
     else if (a === 'equip') { if (equipItem(c, this.sel, v || null).ok) this.changed('equip'); }
     else if (a === 'unequip') { const s = c.loadout.find(this.sel); if (s && unequipItem(c, s).ok) this.changed('unequip'); }
@@ -260,7 +263,7 @@ export class ForgeScreen {
       if (r.ok) { this.sel = null; this.changed('store'); } else if (r.reason === 'stashFull') this.flash('보관함이 가득 찼습니다');
     } else if (a === 'take') { if (takeItem(c, this.sel).ok) this.changed('take'); }
     else if (a === 'clearChecks') { this.checked.clear(); this.confirm = false; this.render(); }
-    else if (a === 'checkCommon') { for (const it of this.bagItems()) if (it.grade === 'common' && !it.scar) this.checked.add(it.id); this.render(); }
+    else if (a === 'checkCommon') { for (const it of this.bagItems()) if (it.grade === 'common' && !it.scar && !it.token) this.checked.add(it.id); this.render(); }
     else if (a === 'salvage') { this.confirm = true; this.render(); }
     else if (a === 'salvageNo') { this.confirm = false; this.render(); }
     else if (a === 'salvageYes') { salvageItems(c, [...this.checked]); this.checked.clear(); this.confirm = false; this.changed('salvage'); }

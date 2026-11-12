@@ -94,6 +94,27 @@ export function salvageItems(ctx, ids) {
   return { ok: true, powder, count };
 }
 
+// ---- legacy token ----
+export function canTakeToken(item) { return !!item && !item.token; }
+
+export function applyToken(ctx, id) {
+  const f = findItem(ctx, id);
+  if (!f || !canTakeToken(f.item) || ctx.vault.tokens <= 0) return { ok: false };
+  f.item.token = true;
+  f.item.scar = false;
+  ctx.vault.tokens -= 1;
+  return { ok: true, item: f.item };
+}
+
+// every item the token could go on: worn, stash, pocket (with where it is)
+export function tokenCandidates(ctx) {
+  const out = [];
+  for (const s of LOADOUT_SLOTS) if (ctx.loadout.slots[s]) out.push({ item: ctx.loadout.slots[s], where: 'equipped' });
+  for (const it of ctx.vault.stash) out.push({ item: it, where: 'stash' });
+  for (const it of ctx.pocket) out.push({ item: it, where: 'pocket' });
+  return out;
+}
+
 // ---- strengthen ----
 // adds `points` to an item copy; returns the level it would reach
 function applyPoints(cfg, item, points) {
@@ -138,8 +159,10 @@ export function enhanceItem(ctx, id, tier, count) {
 
 // ---- death ----
 export function survivalChance(item, cfg) {
+  if (item.token) return 1; // 유산의 증표: always passes down
   if (item.scar) return 0;
-  const g = cfg.grades[item.grade].survive;
+  // set pieces have their own (high) chance; legendary gets its high chance from its grade
+  const g = item.set ? cfg.setSurvive : cfg.grades[item.grade].survive;
   return g > 0 ? g + cfg.qualities[item.quality].survive : 0; // 일반·고급 never survive
 }
 
@@ -171,13 +194,17 @@ export function stripLifesteal(item, cfg) {
 // record: { given, family, generation, floor } of the one who died. Survivors stay worn,
 // get the scar and an heirloom entry.
 export function resolveDeath(ctx, rng, record) {
-  const cfg = ctx.cfg, survived = [], lost = [...ctx.pocket];
+  const cfg = ctx.cfg, survived = [], lost = [];
+  // pocket: lost, except items carrying the legacy token (they go to the stash)
+  for (const it of ctx.pocket) {
+    if (it.token) { ctx.vault.stash.push(it); survived.push(it); } else lost.push(it);
+  }
   ctx.pocket.length = 0;
   for (const s of LOADOUT_SLOTS) {
     const it = ctx.loadout.slots[s];
     if (!it) continue;
     if (rng() < survivalChance(it, cfg)) {
-      it.scar = true;
+      if (!it.token) it.scar = true; // the token ignores the once-only rule
       (it.legacy = it.legacy || []).push({
         given: record.given, family: record.family, generation: record.generation,
         feat: isNotable(it, cfg) ? featText(it, cfg, record) : null,

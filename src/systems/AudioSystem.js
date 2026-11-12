@@ -62,6 +62,8 @@ export class AudioSystem {
       else if (e.kind === 'enhanceUp') { this.play('hammer'); setTimeout(() => this.play('chime', { pitch: 1.3 }), 90); }
       else this.play('coins', { gain: 0.5, pitch: 0.7 });
     });
+    events.on('legacyToken', () => { this.play('roar', { pitch: 0.8, gain: 0.5 }); this.play('chime', { pitch: 0.7, gain: 1.3 }); });
+    events.on('tokenApplied', () => { this.play('hammer', { pitch: 0.8 }); setTimeout(() => this.play('chime', { pitch: 1.1, gain: 1.4 }), 150); });
     events.on('stun', () => this.play('chime', { pitch: 2.2, gain: 0.35 }));
     events.on('stormZap', () => this.play('blink', { pitch: 1.8, gain: 0.5 }));
     events.on('quake', () => this.play('roar', { pitch: 2, gain: 0.35 }));

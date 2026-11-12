@@ -5,7 +5,7 @@ import { describeItem } from '../game/items/itemStats.js';
 export function itemCell(item, cfg, { cls = '', size = 22 } = {}) {
   const d = describeItem(item, cfg);
   const q = item.quality ? ` q${item.quality}` : '';
-  return `<button class="icell g-${item.grade}${q}${item.scar ? ' scar' : ''} ${cls}" data-id="${item.id}" style="--gc:${d.gradeColor};--qc:${d.qualityColor || 'transparent'}">`
+  return `<button class="icell g-${item.grade}${q}${item.scar ? ' scar' : ''}${item.token ? ' tok' : ''} ${cls}" data-id="${item.id}" style="--gc:${d.gradeColor};--qc:${d.qualityColor || 'transparent'}">`
     + `${item.enhance ? `<span class="ilv">+${item.enhance}</span>` : ''}${relicIcon(d.icon, size)}</button>`;
 }
 
@@ -24,6 +24,7 @@ export function itemDetail(item, cfg) {
     ${d.lines.map((l, i) => `<div class="iline${i === 0 ? ' ibase' : ''}">${l}</div>`).join('')}
     ${d.effectText ? `<div class="ieffect">${d.effectText}</div>` : ''}
     ${d.lostPower ? `<div class="ilost">${d.lostPower}</div>` : ''}
+    ${d.token ? `<div class="itoken">${d.token}</div>` : ''}
     ${d.setText ? `<div class="iset">세트: ${d.setText}</div>` : ''}
     ${d.heirloom ? `<div class="iheir">물려받음: ${d.heirloom.generation}대손 ${d.heirloom.given} ${d.heirloom.family}${d.heirloom.feat ? `<br><i>${d.heirloom.feat}</i>` : ''}</div>` : ''}
   </div>`;

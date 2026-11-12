@@ -15,7 +15,7 @@ import { zeroStats, addStats } from './Stats.js';
 import { Loot } from './Loot.js';
 import { Loadout } from './items/Loadout.js';
 import { Vault } from './items/Vault.js';
-import { resolveDeath } from './items/Forge.js';
+import { resolveDeath, applyToken } from './items/Forge.js';
 import { addXp, xpForKill, levelStats } from './Progress.js';
 import { succeed } from './Family.js';
 import { floorInfo } from './floorPlan.js';
@@ -65,6 +65,8 @@ export class Game {
     this.gearEffects = new Set();
     this.gearSets = {};
     this.forge = null; // { start: bool } while the forge screen is open — the world waits
+    this.tokenScene = false; // the legacy-token scene is open — the world waits
+    this.tokenFloors = new Set(); // floors that already gave a token this run
     this.loot = new Loot(config.items, this);
     events.on('kill', (e) => { this.loot.onKill(e.enemy); this.gainXp(e.enemy); });
     events.on('roomCleared', () => this.loot.magnet());
@@ -88,6 +90,14 @@ export class Game {
     this.enemies.game = this;
     events.on('bossEnrage', () => this.camera.addShake(this.config.camera.shake.crit));
     events.on('floorStart', (e) => {
+      // every 100th floor: a legacy token, and the scene to put it on an item (once per floor per run)
+      const tk = this.config.items.legacyToken;
+      if (this.mode === 'dungeon' && tk && e.floor % tk.every === 0 && !this.tokenFloors.has(e.floor)) {
+        this.tokenFloors.add(e.floor);
+        this.vault.tokens += 1;
+        this.tokenScene = true;
+        this.events.emit('legacyToken', { floor: e.floor, tokens: this.vault.tokens });
+      }
       if (this.vault.state !== 'run') return;
       this.vault.lastFloor = e.floor;
       this.saveVault();
@@ -172,6 +182,17 @@ export class Game {
       if (this.vault.state === 'run') this.saveVault(); // levels survive even a closed game
     }
   }
+
+  // put a legacy token on an item (from the scene); returns the item or null
+  useToken(id) {
+    const r = applyToken(this.forgeCtx(), id);
+    if (!r.ok) return null;
+    this.saveVault();
+    this.events.emit('tokenApplied', { item: r.item });
+    return r.item;
+  }
+
+  closeTokenScene() { this.tokenScene = false; this.saveVault(); }
 
   // ---- save slot, forge and the family line ----
   attachVault(vault) {
@@ -462,6 +483,8 @@ export class Game {
     this.over = false;
     this.offer = null;
     this.forge = null;
+    this.tokenScene = false;
+    this.tokenFloors = new Set();
     this.loot.reset();
     this.relics.reset();
     this.refreshBonus();
@@ -502,7 +525,7 @@ export class Game {
 
   update(realDt) {
     if (this.paused) return;
-    if (this.offer || this.forge) return; // choosing a treasure card / at the forge
+    if (this.offer || this.forge || this.tokenScene) return; // cards / forge / legacy token
     if (this.over) { this.effects.update(realDt, this.player, false); return; }
     const dt = this.hitStop.update(realDt);
     this.time += dt;

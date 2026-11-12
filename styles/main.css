@@ -453,3 +453,40 @@ html, body {
 .relic-picker.static { background: radial-gradient(ellipse at 50% 60%, rgba(70, 48, 14, 0.95), rgba(8, 6, 4, 0.98) 70%); }
 .rp-room { font-size: 13px; color: #c9a86a; letter-spacing: 2px; margin-bottom: -4px; }
 .rp-room b { color: #ffe08a; font-size: 15px; }
+
+/* ---------- 유산의 증표 ---------- */
+.legacy-scene { z-index: 26; background: radial-gradient(ellipse at 50% 45%, rgba(60, 44, 12, 0.96), rgba(6, 4, 2, 0.98) 72%); }
+.lg-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; max-width: 100%; }
+.lg-title { font-size: 22px; font-weight: 800; letter-spacing: 3px; color: #ffe08a; text-shadow: 0 0 16px rgba(255, 200, 90, 0.6), 0 2px 0 #000; }
+.lg-title span { font-size: 15px; color: #f0d890; margin-left: 6px; }
+.lg-sub2 { font-size: 12px; color: #c9bfa8; text-align: center; padding: 0 16px; }
+.lg-stage { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+.lg-ring { position: relative; flex: 0 1 560px; width: 64%; height: 230px; perspective: 900px; transform-style: preserve-3d; touch-action: none; }
+.lg-card {
+  --gc: #a7b0ba;
+  position: absolute; left: 50%; top: 0; width: 160px; height: 100%; margin-left: -80px; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 8px 10px;
+  border: 2px solid var(--gc); border-radius: 12px; text-align: center;
+  background: linear-gradient(180deg, #241c30, #120e18 75%);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6); transition: transform 0.35s cubic-bezier(.2, .8, .3, 1), opacity 0.35s;
+}
+.lg-card.front { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5), 0 8px 26px rgba(0, 0, 0, 0.7); }
+.lg-card .icell { width: 52px; height: 52px; }
+.lg-where { font-size: 10px; color: #9c91ad; letter-spacing: 1px; }
+.lg-name { font-size: 13px; font-weight: 800; line-height: 1.2; }
+.lg-sub { font-size: 10px; color: #9c91ad; }
+.lg-lines { font-size: 10.5px; color: #c9bfd8; line-height: 1.35; }
+.lg-card.sealed { border-color: #ffcf5a; box-shadow: 0 0 22px rgba(255, 207, 90, 0.75), inset 0 0 18px rgba(255, 207, 90, 0.25); }
+.lg-card.sealed::before { content: ""; position: absolute; inset: -10px; border-radius: 18px; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 40%, rgba(255, 220, 120, 0.28), transparent 70%); animation: lg-halo 1.8s ease-in-out infinite; }
+.lg-sealed { margin-top: auto; font-size: 11px; font-weight: 700; color: #ffcf5a; }
+.lg-card.blessed { animation: lg-bless 0.9s ease-out; }
+@keyframes lg-halo { 50% { opacity: 0.45; } }
+@keyframes lg-bless { 0% { box-shadow: 0 0 0 rgba(255, 220, 120, 0); } 40% { box-shadow: 0 0 60px rgba(255, 220, 120, 1); background: #4a3a14; } 100% { box-shadow: 0 0 22px rgba(255, 207, 90, 0.75); } }
+.lg-arrow { position: relative; z-index: 200; flex: none; width: 40px; height: 64px; border-radius: 10px; border: 1px solid #6a5630; background: rgba(30, 22, 10, 0.8); color: #ffe08a; font-size: 28px; touch-action: manipulation; }
+.lg-pick { min-height: 16px; font-size: 13px; color: #f0e6cf; }
+.lg-empty { margin: 30px 0; color: #c9bfa8; }
+.lg-buttons { display: flex; gap: 10px; }
+.icell.tok { box-shadow: 0 0 0 2px #ffcf5a, 0 0 14px rgba(255, 207, 90, 0.8); }
+.idetail .itoken { font-size: 11px; color: #ffcf5a; margin-top: 3px; font-weight: 700; }
+.fg-token { color: #ffcf5a; border-color: #b8913a; }

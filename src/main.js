@@ -20,6 +20,7 @@ import { LootToast } from './ui/LootToast.js';
 import { TitleMenu } from './ui/TitleMenu.js';
 import { HeirScreen } from './ui/HeirScreen.js';
 import { ForgeScreen } from './ui/ForgeScreen.js';
+import { LegacyScene } from './ui/LegacyScene.js';
 import { VaultStore } from './systems/VaultStore.js';
 import { Vault } from './game/items/Vault.js';
 import { chooseRotation, stageSize, stageTransform, toStage } from './systems/orientation.js';
@@ -129,8 +130,15 @@ async function boot() {
 
   // --- family, forge and title (all inside the landscape stage) ---
   const heir = new HeirScreen(ui, { onContinue: () => game.beginRun() });
+  // 유산의 증표: opened on reaching every 100th floor, or from the forge while tokens are in hand
+  const legacy = new LegacyScene(ui, {
+    game, toLocal: (x, y) => toLocal(x, y),
+    onClose: () => { if (game.tokenScene) game.closeTokenScene(); if (forge.isOpen) forge.render(); },
+  });
+  events.on('legacyToken', (e) => { banner.hide(); legacy.show({ floor: e.floor }); });
   const forge = new ForgeScreen(ui, {
     game,
+    onToken: () => legacy.show(),
     onDepart: () => { forge.hide(); game.departForge(); },
     onTitle: () => { forge.hide(); started = false; updatePaused(); title.open(); music.play('base'); },
   });
@@ -203,6 +211,10 @@ async function boot() {
         title.hide(); forge.hide(); heir.hide();
         if (slot != null || !started) enterSlot(null, new Vault({ family: '시험', given: '기사' })); // debug runs use a throwaway family
         if (floor === -2) { game.startRun(4); game.dungeon.enterForge(); return; }
+        if (floor === -3) { // debug: a legacy token right now
+          if (!game.forge) { game.startRun(4); game.dungeon.enterForge(); }
+          game.vault.tokens += 1; legacy.show(); return;
+        }
         if (floor > 0) game.startRun(floor);
         else if (floor === -1) { game.startRun(3); game.dungeon.enterTreasure(); }
         else { game.startPractice(); music.play(config.music.scenes.play); banner.show('연습장'); }
@@ -255,7 +267,7 @@ async function boot() {
   const tick = (t) => { loop.frame(t / 1000); requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
 
-  window.__abyss = { game, config, renderer, loop, events, audio, music, menu, store, forge, title, heir };
+  window.__abyss = { game, config, renderer, loop, events, audio, music, menu, store, forge, title, heir, legacy };
 }
 
 boot().catch((err) => {

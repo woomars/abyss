@@ -194,7 +194,7 @@
       "affixes": 3,
       "mult": 1.75,
       "powder": 5,
-      "survive": 0.4
+      "survive": 0.8
     }
   },
   "gradeOrder": [
@@ -503,5 +503,11 @@
     ],
     "refund": 0.5
   },
-  "inheritNote": "흡혈의 힘은 대를 잇지 못했다"
+  "inheritNote": "흡혈의 힘은 대를 잇지 못했다",
+  "legacyToken": {
+    "every": 100,
+    "label": "유산의 증표",
+    "text": "유산의 증표 — 분해하지 않는 한 영원히 대를 잇는다"
+  },
+  "setSurvive": 0.6
 }

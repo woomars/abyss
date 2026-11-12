@@ -76,7 +76,7 @@ async function boot() {
   let lastFate = null;
   const gameOver = new GameOver(ui, {
     onRetry: () => {
-      if (lastFate) heir.show(lastFate);
+      if (lastFate) heir.show(lastFate, { label: game.hasGear() ? '대장간으로' : '1층으로' });
       else game.restart();
     },
   });
@@ -128,7 +128,7 @@ async function boot() {
   events.on('levelUp', (e) => banner.show('레벨 업!', `Lv ${e.level} · 공격력과 최대 체력이 올랐습니다`, { kind: 'reward', ms: 1600 }));
 
   // --- family, forge and title (all inside the landscape stage) ---
-  const heir = new HeirScreen(ui, { onContinue: () => game.openStartForge() });
+  const heir = new HeirScreen(ui, { onContinue: () => game.beginRun() });
   const forge = new ForgeScreen(ui, {
     game,
     onDepart: () => { forge.hide(); game.departForge(); },
@@ -156,14 +156,14 @@ async function boot() {
         // the game was closed in the middle of a fight: that run counts as a death
         game.enterLimbo();
         const fate = game.endRunByDeath(v.lastFloor);
-        heir.show(fate, { note: '지난 판이 싸움 도중 중단되어, 쓰러진 것으로 처리했습니다.' });
-      } else game.openStartForge();
+        heir.show(fate, { note: '지난 판이 싸움 도중 중단되어, 쓰러진 것으로 처리했습니다.', label: game.hasGear() ? '대장간으로' : '1층으로' });
+      } else game.beginRun();
     },
     onNew: (n, family, given) => {
       const v = new Vault({ family, given });
       store.save(n, v);
       enterSlot(n, v);
-      game.openStartForge();
+      game.beginRun();
     },
   });
 

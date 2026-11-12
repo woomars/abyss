@@ -18,7 +18,7 @@ export class HeirScreen {
   get isOpen() { return !this.el.classList.contains('hidden'); }
   hide() { this.el.classList.add('hidden'); }
 
-  show(fate, { note = '' } = {}) {
+  show(fate, { note = '', label = '대장간으로' } = {}) {
     const r = fate.record, h = fate.heir;
     const kept = fate.survived.length
       ? `<div class="hs-kept">물려받은 장비: ${fate.survived.map((i) => `<b>${esc(i.name)}</b>`).join(', ')}</div>`
@@ -37,7 +37,7 @@ export class HeirScreen {
         </div>
         <div class="hs-arrow">▼</div>
         <div class="hs-heir">그의 아들 <b>${esc(josa(h.given, '이', '가'))}</b> 뜻을 잇습니다 <small>${h.generation}대손 ${esc(h.family)} ${esc(h.given)}</small></div>
-        <button class="tm-btn primary" data-act="go">대장간으로</button>
+        <button class="tm-btn primary" data-act="go">${label}</button>
       </div>`;
     this.el.classList.remove('hidden');
   }

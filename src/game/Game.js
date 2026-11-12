@@ -209,8 +209,19 @@ export class Game {
     this.dungeon.reset();
   }
 
+  // any gear to manage before setting out (worn, stashed or set aside)
+  hasGear() { return this.loadout.items().length > 0 || this.vault.stash.length > 0 || this.vault.carry.length > 0; }
+
+  // start a run: through the start forge when there is gear to manage, else straight to floor 1
+  beginRun() {
+    if (this.hasGear()) { this.openStartForge(); return true; }
+    this.openStartForge({ silent: true });
+    this.departForge();
+    return false;
+  }
+
   // the forge before floor 1 (new hero or a new run)
-  openStartForge() {
+  openStartForge({ silent = false } = {}) {
     this.mode = 'dungeon';
     this.enemies.autoSpawn = false;
     this.resetRun();
@@ -220,7 +231,7 @@ export class Game {
     this.vault.state = 'idle';
     this.vault.run = null;
     this.saveVault();
-    this.events.emit('forgeOpen', { start: true, floor: 0 });
+    if (!silent) this.events.emit('forgeOpen', { start: true, floor: 0 });
   }
 
   // the forge after a boss / floor 15 (called by Dungeon): the run is saved whole while resting here

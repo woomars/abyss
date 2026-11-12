@@ -14,6 +14,7 @@
   "chain": { "count": 3, "range": 140, "minDistance": 35, "coneDeg": 90, "damageMultiplier": 1.0, "linkDelay": 0.04 },
   "dashMaxTime": 0.35,
   "retryDelay": 0.2,
+  "player": { "maxHp": 100, "hurtInvuln": 0.5, "regenDelay": 3, "regenPerSec": 4 },
   "rushWindow": 0.6,
   "normalAttackInterval": 0.35
 }

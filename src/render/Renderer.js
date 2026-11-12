@@ -70,6 +70,7 @@ export class Renderer {
     this.drawWinds(fx);
     this.drawPlayer(game.player, alpha);
     this.drawSpin(game.skills, game.player, alpha);
+    this.drawAim(game.skills, game.player, alpha);
     this.drawSlashes(fx);
     this.drawProjectiles(game.skills);
     this.drawRings(fx);
@@ -203,6 +204,37 @@ export class Renderer {
     ctx.stroke();
   }
 
+  // directional skill aim preview: dashed line + arrowhead from the player
+  drawAim(skills, player, alpha) {
+    const a = skills.aim;
+    if (!a) return;
+    const def = skills.cfg.defs[skills.cfg.slots[a.slot]];
+    const len = Math.hypot(a.dir.x, a.dir.y) || 1;
+    const ux = a.dir.x / len, uy = a.dir.y / len;
+    const reach = def.distance || def.range || 300;
+    const { x, y } = lerpPos(player.prevPos, player.pos, alpha);
+    const ex = x + ux * reach, ey = y + uy * reach;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.setLineDash([14, 10]);
+    ctx.strokeStyle = 'rgba(159,216,255,0.8)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x + ux * 20, y + uy * 20);
+    ctx.lineTo(ex, ey);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const ang = Math.atan2(uy, ux);
+    ctx.translate(ex, ey);
+    ctx.rotate(ang);
+    ctx.beginPath();
+    ctx.moveTo(10, 0); ctx.lineTo(-12, 10); ctx.lineTo(-12, -10);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(159,216,255,0.9)';
+    ctx.fill();
+    ctx.restore();
+  }
+
   // blade wave: glowing crescent flying forward
   drawProjectiles(skills) {
     const ctx = this.ctx;
@@ -244,7 +276,7 @@ export class Renderer {
     const ctx = this.ctx;
     fx.particles.forEachActive((p) => {
       if (!this.isVisible(p, 10)) return;
-      ctx.globalAlpha = Math.max(0, p.life / p.max);
+      ctx.globalAlpha = Math.max(0, p.life / p.max) * (p.a0 == null ? 1 : p.a0);
       ctx.fillStyle = p.color;
       ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
     });
@@ -277,7 +309,7 @@ export class Renderer {
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#000000';
       ctx.strokeText(String(n.value), n.x, n.y);
-      ctx.fillStyle = n.crit ? '#ffb347' : '#f4f0e6';
+      ctx.fillStyle = n.hurt ? '#ff4a4a' : n.crit ? '#ffb347' : '#f4f0e6';
       ctx.fillText(String(n.value), n.x, n.y);
     });
     ctx.globalAlpha = 1;
@@ -299,12 +331,26 @@ export class Renderer {
       // stagger wobble
       const wob = e.staggerTime > 0 && !e.dying ? Math.sin(e.staggerTime * 60) * 2 : 0;
       ctx.globalAlpha = a;
-      ctx.fillStyle = e.flashTime > 0 ? '#ffffff' : e.tcfg.color;
+      ctx.fillStyle = e.flashTime > 0 ? '#ffffff' : e.strikeTime > 0 ? '#ff3b30' : e.tcfg.color;
       ctx.fillRect(x - size / 2 + wob, y - size / 2, size, size);
       ctx.strokeStyle = e.isElite ? '#e0a050' : '#2b2e36';
       ctx.lineWidth = e.isElite ? 3 : 2;
       ctx.strokeRect(x - size / 2 + wob, y - size / 2, size, size);
       ctx.globalAlpha = 1;
+      // counterattack telegraph: reach circle that fills in as the strike approaches
+      if (e.windupTime > 0 && !e.dying) {
+        const reach = r + (e.tcfg.attackRange || 0) + 16;
+        const k = 1 - e.windupTime / (e.tcfg.attackWindup || 0.2);
+        ctx.beginPath();
+        ctx.arc(x, y, reach, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,70,60,0.55)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, reach * k, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,60,50,${0.12 + 0.18 * k})`;
+        ctx.fill();
+      }
       if (e.isElite && !e.dying) {
         const w = r * 2.2, h = 5;
         ctx.fillStyle = '#20141a';
@@ -405,7 +451,8 @@ export class Renderer {
     ctx.lineTo(-r * 0.5, 0);
     ctx.lineTo(-r * 0.9, -r * 0.85);
     ctx.closePath();
-    ctx.fillStyle = COLORS.player;
+    const blink = p.invuln > 0 && Math.floor(p.invuln * 20) % 2 === 0;
+    ctx.fillStyle = blink ? '#ff6a5c' : COLORS.player;
     ctx.fill();
     ctx.strokeStyle = COLORS.playerEdge;
     ctx.lineWidth = 2;

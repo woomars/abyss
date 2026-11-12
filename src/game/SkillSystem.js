@@ -15,6 +15,7 @@ export class SkillSystem {
     this.rush = null;
     this.spin = null;
     this.projectiles = [];
+    this.aim = null;
   }
 
   get slots() {
@@ -32,19 +33,33 @@ export class SkillSystem {
     this.rush = null;
     this.spin = null;
     this.projectiles.length = 0;
+    this.aim = null;
   }
 
   spinCritChance(hitIndex) {
     return this.combatCfg.critChance + this.cfg.defs.spin.chainCritStep * hitIndex;
   }
 
-  use(slot) {
+  isDirectional(slot) {
+    const id = this.cfg.slots[slot];
+    return !!(id && this.cfg.defs[id].directional);
+  }
+
+  // aim preview while a directional button is held (drawn by the renderer)
+  setAim(slot, dir) { this.aim = { slot, dir: { x: dir.x, y: dir.y } }; }
+  clearAim() { this.aim = null; }
+
+  // aimDir: optional direction for directional skills (button drag); defaults to the input direction
+  use(slot, aimDir = null) {
     const id = this.cfg.slots[slot];
     if (!id || this.remaining[slot] > 0 || this.busy || this.spinning) return false;
     const def = this.cfg.defs[id];
     this.combat.cancel();
     const p = this.player;
-    const dir = { x: this.combat.inputDir.x, y: this.combat.inputDir.y };
+    const len = aimDir ? Math.hypot(aimDir.x, aimDir.y) : 0;
+    const dir = len > 1e-6 && def.directional
+      ? { x: aimDir.x / len, y: aimDir.y / len }
+      : { x: this.combat.inputDir.x, y: this.combat.inputDir.y };
     this.events.emit('skill', { id, pos: { x: p.pos.x, y: p.pos.y }, dir });
     if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
     else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, hit: new Set() };

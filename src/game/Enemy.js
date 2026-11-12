@@ -14,6 +14,17 @@ export class Enemy {
     this.deathTimer = 0;
     this.staggerTime = 0;
     this.flashTime = 0;
+    // counterattack: a hit opens a short window in which the enemy strikes back once if the player is in reach
+    this.counterTime = 0;
+    this.canCounter = false;
+    this.windupTime = 0;
+    this.strikeTime = 0; // visual flash after a strike
+  }
+
+  // distance at which a strike connects (edge to edge reach)
+  inReach(playerPos, playerRadius) {
+    const d = Math.hypot(playerPos.x - this.pos.x, playerPos.y - this.pos.y);
+    return d <= this.radius + playerRadius + (this.tcfg.attackRange || 0);
   }
 
   get tcfg() { return this.root.types[this.type]; }
@@ -29,25 +40,43 @@ export class Enemy {
     this.vel.x += knockDir.x * k;
     this.vel.y += knockDir.y * k;
     this.staggerTime = Math.max(this.staggerTime, stagger * (1 - this.tcfg.knockbackResist * 0.5));
+    // being hit interrupts a windup and (re)opens the counter window
+    this.windupTime = 0;
     if (this.hp <= 0) {
       this.hp = 0;
       this.dying = true;
       this.deathTimer = this.root.deathTime;
+      this.canCounter = false;
       return { killed: true };
     }
+    this.counterTime = this.root.counterWindow || 0;
+    this.canCounter = this.counterTime > 0;
     return { killed: false };
   }
 
-  update(dt, playerPos, arena) {
+  update(dt, playerPos, arena, playerRadius = 16, onAttack = null) {
     this.prevPos.x = this.pos.x;
     this.prevPos.y = this.pos.y;
     if (this.flashTime > 0) this.flashTime -= dt;
+    if (this.strikeTime > 0) this.strikeTime -= dt;
+    if (this.counterTime > 0) this.counterTime -= dt;
     let mx = this.vel.x, my = this.vel.y;
     if (this.dying) {
       this.deathTimer -= dt;
       if (this.deathTimer <= 0) this.alive = false;
     } else if (this.staggerTime > 0) {
       this.staggerTime -= dt;
+    } else if (this.windupTime > 0) {
+      // telegraph: stand still, then strike; misses if the player already left the reach
+      this.windupTime -= dt;
+      if (this.windupTime <= 0) {
+        this.windupTime = 0;
+        this.canCounter = false;
+        this.strikeTime = 0.15;
+        if (this.inReach(playerPos, playerRadius) && onAttack) onAttack(this);
+      }
+    } else if (this.canCounter && this.counterTime > 0 && this.inReach(playerPos, playerRadius)) {
+      this.windupTime = this.tcfg.attackWindup || 0.2;
     } else {
       const dx = playerPos.x - this.pos.x, dy = playerPos.y - this.pos.y;
       const d = Math.hypot(dx, dy);

@@ -28,5 +28,14 @@ export class HUD {
       this.lastKills = k;
       this.killsEl.textContent = String(k);
     }
+    const p = game.player;
+    const hp = Math.ceil(p.hp);
+    if (hp !== this.lastHp) {
+      this.lastHp = hp;
+      if (!this.hpFill) { this.hpFill = this.el.querySelector('.hp-fill'); this.hpText = this.el.querySelector('.hp-text'); }
+      this.hpFill.style.width = `${(100 * p.hp) / p.maxHp}%`;
+      this.hpText.textContent = `HP ${hp} / ${p.maxHp}`;
+      this.el.classList.toggle('low-hp', p.hp / p.maxHp <= 0.3);
+    }
   }
 }

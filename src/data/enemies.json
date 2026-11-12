@@ -8,9 +8,10 @@
   "maxElites": 2,
   "eliteChance": 0.12,
   "types": {
-    "soldier": { "hp": 20, "attack": 5, "speed": 95, "radius": 14, "knockbackResist": 0, "color": "#8a8f98" },
-    "elite": { "hp": 90, "attack": 25, "speed": 70, "radius": 26, "knockbackResist": 0.75, "color": "#b0413e" }
+    "soldier": { "hp": 20, "attack": 5, "speed": 95, "radius": 14, "knockbackResist": 0, "color": "#8a8f98", "attackRange": 22, "attackWindup": 0.25 },
+    "elite": { "hp": 90, "attack": 25, "speed": 70, "radius": 26, "knockbackResist": 0.75, "color": "#b0413e", "attackRange": 34, "attackWindup": 0.4 }
   },
+  "counterWindow": 1.0,
   "separation": 0.6,
   "knockbackDecay": 8,
   "spawnAheadChance": 0.65,

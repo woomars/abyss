@@ -11,6 +11,7 @@ import { SkillButtons } from './ui/SkillButtons.js';
 import { HUD } from './ui/HUD.js';
 import { PauseMenu } from './ui/PauseMenu.js';
 import { DebugPanel } from './ui/DebugPanel.js';
+import { GameOver } from './ui/GameOver.js';
 import { chooseRotation, stageSize, stageTransform, toStage } from './systems/orientation.js';
 
 function safeStorage() {
@@ -55,12 +56,14 @@ async function boot() {
     game.paused = !started || (menu && menu.isOpen);
   };
 
-  const skillButtons = new SkillButtons(ui, game.skills);
+  const skillButtons = new SkillButtons(ui, game.skills, { toLocal: (x, y) => toLocal(x, y) });
   const hud = new HUD(ui, { onPause: () => menu.open() });
+  const gameOver = new GameOver(ui, { onRetry: () => game.restart() });
+  events.on('playerDown', (s) => gameOver.show(s));
   menu = new PauseMenu(ui, {
     settings,
     onChange: (s) => { applySettings(s); save.save(s); },
-    onRestart: () => game.restart(),
+    onRestart: () => { game.restart(); gameOver.hide(); },
     onOpenChange: updatePaused,
   });
 

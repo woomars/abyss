@@ -11,8 +11,8 @@ export class EffectManager {
     this.config = config; // full config (live); uses config.feedback
     this.rng = rng;
     const f = config.feedback;
-    this.particles = new Pool(() => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: '#fff' }), f.particles.max);
-    this.numbers = new Pool(() => ({ x: 0, y: 0, value: 0, crit: false, life: 0, max: 1 }), 64);
+    this.particles = new Pool(() => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: '#fff', dust: false, a0: 1 }), f.particles.max);
+    this.numbers = new Pool(() => ({ x: 0, y: 0, value: 0, crit: false, hurt: false, life: 0, max: 1 }), 64);
     this.rings = new Pool(() => ({ x: 0, y: 0, r0: 0, r1: 0, life: 0, max: 1, color: '#fff' }), 32);
     this.slashes = new Pool(() => ({ x: 0, y: 0, angle: 0, radius: 0, arc: 0, life: 0, max: 1, strong: false, sweep: 1 }), 32);
     this.nextSweep = 1; // blade swings alternate clockwise / counter-clockwise
@@ -26,6 +26,7 @@ export class EffectManager {
     events.on('kill', (e) => this.onKill(e));
     events.on('chainLink', (e) => this.onLink(e));
     events.on('turn', (e) => this.onTurn(e));
+    events.on('playerHit', (e) => this.onPlayerHit(e));
   }
 
   get fb() { return this.config.feedback; }
@@ -40,7 +41,50 @@ export class EffectManager {
       p.life = p.max = life * (0.6 + this.rng() * 0.6);
       p.size = size * (0.6 + this.rng() * 0.8);
       p.color = color;
+      p.dust = false;
+      p.a0 = 1;
     }
+  }
+
+  // short, weak dust puffs kicked up behind a dashing player
+  emitDust(player, dt) {
+    const d = this.fb.dust;
+    if (!d) return;
+    this.dustTimer = (this.dustTimer || 0) + dt;
+    let mx = player.pos.x - player.prevPos.x, my = player.pos.y - player.prevPos.y;
+    let m = Math.hypot(mx, my);
+    if (m < 1e-6) { mx = Math.cos(player.visualAngle); my = Math.sin(player.visualAngle); m = 1; }
+    const bx = -mx / m, by = -my / m; // backward
+    while (this.dustTimer >= d.interval) {
+      this.dustTimer -= d.interval;
+      for (let i = 0; i < d.count; i++) {
+        const p = this.particles.acquire();
+        const side = (this.rng() * 2 - 1) * 6;
+        p.x = player.pos.x + bx * 14 - by * side;
+        p.y = player.pos.y + by * 14 + bx * side;
+        const a = Math.atan2(by, bx) + (this.rng() * 2 - 1) * 0.6;
+        const v = d.speed * (0.5 + this.rng() * 0.5);
+        p.vx = Math.cos(a) * v; p.vy = Math.sin(a) * v;
+        p.life = p.max = d.life * (0.7 + this.rng() * 0.3);
+        p.size = d.size * (0.7 + this.rng() * 0.6);
+        p.color = '#8c8296';
+        p.dust = true;
+        p.a0 = d.alpha;
+      }
+    }
+  }
+
+  onPlayerHit({ damage, pos, from }) {
+    const n = this.numbers.acquire();
+    n.x = pos.x; n.y = pos.y - 30;
+    n.value = damage; n.crit = false; n.hurt = true;
+    n.life = n.max = this.fb.damageNumberLife;
+    const dir = from ? { x: pos.x - from.x, y: pos.y - from.y } : { x: 0, y: -1 };
+    const l = Math.hypot(dir.x, dir.y) || 1;
+    this.spark(pos.x, pos.y, { x: dir.x / l, y: dir.y / l }, 6, 260, '#ff4a4a', 3, 0.3);
+    const r = this.rings.acquire();
+    r.x = pos.x; r.y = pos.y; r.r0 = 10; r.r1 = 40; r.color = '#ff4a4a';
+    r.life = r.max = RING_LIFE;
   }
 
   onSlash({ pos, dir, radius, arcDeg, strong }) {
@@ -57,7 +101,7 @@ export class EffectManager {
     this.spark(pos.x, pos.y, dir, this.fb.particles.hit, crit ? 520 : 380, color, crit ? 3.5 : 2.5, 0.25);
     const n = this.numbers.acquire();
     n.x = pos.x + (this.rng() * 2 - 1) * 8; n.y = pos.y - 18;
-    n.value = damage; n.crit = crit;
+    n.value = damage; n.crit = crit; n.hurt = false;
     n.life = n.max = this.fb.damageNumberLife;
     if (crit || strong) {
       const r = this.rings.acquire();
@@ -103,6 +147,9 @@ export class EffectManager {
     if (player && fast) {
       this.afterimages.push({ x: player.pos.x, y: player.pos.y, angle: player.visualAngle, age: 0 });
       while (this.afterimages.length > this.fb.afterimageCount) this.afterimages.shift();
+      this.emitDust(player, dt);
+    } else {
+      this.dustTimer = 0;
     }
 
     if (this.combo.timer > 0) {

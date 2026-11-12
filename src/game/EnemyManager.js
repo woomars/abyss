@@ -9,6 +9,7 @@ export class EnemyManager {
     this.list = [];
     this.nextId = 1;
     this.spawnTimer = 0;
+    this.onAttack = null; // (enemy) => void, set by Game: an enemy strike connected
   }
 
   all() { return this.list; }
@@ -23,8 +24,8 @@ export class EnemyManager {
     return e;
   }
 
-  update(dt, playerPos, viewRect, heading = null) {
-    for (const e of this.list) e.update(dt, playerPos, this.arena);
+  update(dt, playerPos, viewRect, heading = null, playerRadius = 16) {
+    for (const e of this.list) e.update(dt, playerPos, this.arena, playerRadius, this.onAttack);
     this.separate();
     const far = this.cfg.despawnDistance;
     for (let i = this.list.length - 1; i >= 0; i--) {

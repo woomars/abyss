@@ -24,6 +24,8 @@ export class AudioSystem {
     events.on('chainLink', (e) => this.play('link', { pitch: 1 + 0.12 * e.chainIndex }));
     events.on('turn', () => this.play('whoosh', { gain: 0.7 }));
     events.on('skill', (e) => this.play(`skill_${e.id}`));
+    events.on('playerHit', () => this.play('hurt'));
+    events.on('playerDown', () => this.play('down'));
   }
 
   // must be called from a user gesture (first pointerdown)
@@ -139,6 +141,14 @@ const VOICES = {
   },
   link: (a, p, g) => a.tone('sine', 880 * p, 1320 * p, 0.14 * g, 0.08, 0.002),
   whoosh: (a, p, g) => a.noiseBurst('bandpass', 500 * p, 1700 * p, 2.5, 0.12 * g, 0.12, 0.02),
+  hurt: (a, p, g) => {
+    a.tone('square', 220 * p, 90, 0.12 * g, 0.16);
+    a.noiseBurst('lowpass', 1200, 200, 0.8, 0.3 * g, 0.1);
+  },
+  down: (a, p, g) => {
+    a.tone('sawtooth', 180 * p, 40, 0.18 * g, 0.9, 0.01);
+    a.noiseBurst('lowpass', 800, 60, 0.7, 0.35 * g, 0.7, 0.01);
+  },
   skill_spin: (a, p, g) => {
     a.noiseBurst('bandpass', 400 * p, 2400 * p, 1.5, 0.3 * g, 0.3, 0.04);
     a.tone('sawtooth', 220 * p, 90, 0.08 * g, 0.3);

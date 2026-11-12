@@ -44,6 +44,10 @@ export class AudioSystem {
     events.on('wraithBlink', () => this.play('blink'));
     events.on('bossPattern', (e) => this.play(e.kind === 'summon' ? 'summon' : 'warn'));
     events.on('bossEnrage', () => this.play('roar'));
+    events.on('bossBasic', () => this.play('warn', { gain: 0.55, pitch: 1.35 }));
+    events.on('chainBroken', () => this.play('whoosh', { gain: 0.6, pitch: 0.6 }));
+    events.on('relicOffer', () => this.play('chime', { pitch: 0.8 }));
+    events.on('relicPick', () => this.play('chime', { pitch: 1.25, gain: 1.2 }));
   }
 
   // fetch + decode every configured sample (after the AudioContext exists)

@@ -150,7 +150,8 @@
   "enhanced": {
     "hp": 2.2,
     "attack": 1.4,
-    "size": 1.15
+    "size": 1.15,
+    "riposte": true
   },
   "maxAlive": 14,
   "spawn": {
@@ -177,7 +178,6 @@
       30,
       60
     ],
-    "chestHeal": 0.4,
     "bossChestGold": [
       120,
       200
@@ -369,5 +369,9 @@
   "startInset": 180,
   "exitInset": 140,
   "exitArmDelay": 0.8,
-  "stragglerMargin": 100
+  "stragglerMargin": 100,
+  "riposteWindow": [
+    1,
+    2
+  ]
 }

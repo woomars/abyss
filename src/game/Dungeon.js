@@ -102,7 +102,7 @@ export class Dungeon {
         const type = pickWeighted(band.mix, rng);
         const mods = { ...this.info.mods };
         if (band.enhancedChance && rng() < band.enhancedChance) {
-          mods.hp *= c.enhanced.hp; mods.attack *= c.enhanced.attack; mods.size = c.enhanced.size; mods.enhanced = true;
+          mods.hp *= c.enhanced.hp; mods.attack *= c.enhanced.attack; mods.size = c.enhanced.size; mods.enhanced = true; mods.riposte = !!c.enhanced.riposte;
         }
         const s = c.spawn.groupSpread;
         g.enemies.spawnAt(type, { x: center.x + (rng() * 2 - 1) * s, y: center.y + (rng() * 2 - 1) * s }, mods);
@@ -156,16 +156,18 @@ export class Dungeon {
     this.openExit();
   }
 
+  // boss chest: gold and a full heal. Treasure-room chest: gold, then three treasure cards to pick from.
   openChest() {
     const c = this.cfg, g = this.game, ch = this.chest;
     ch.opened = true;
     const mult = 1 + c.rewards.goldPerFloor * (this.floor - 1);
     const gold = Math.round(randInt(ch.big ? c.rewards.bossChestGold : c.rewards.chestGold, g.rng) * mult);
-    const heal = ch.big ? c.rewards.bossChestHeal : c.rewards.chestHeal;
+    const heal = ch.big ? c.rewards.bossChestHeal : 0;
     this.gold += gold;
-    g.healPlayer(heal);
+    if (heal) g.healPlayer(heal);
     g.events.emit('chestOpen', { pos: { x: ch.x, y: ch.y }, gold, heal, big: ch.big });
     if (!this.exit.open) this.openExit();
+    if (!ch.big) g.offerRelics(g.relics.roll(g.rng, { goldMult: mult }));
   }
 
   // enemies left far away (stuck behind pillars, wandering) come back near the player

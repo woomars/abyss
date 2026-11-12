@@ -2,6 +2,9 @@ import { AI } from './ai/index.js';
 
 // Single enemy: reacts to hits (stagger, knockback, flash), plays a death fade. Movement and attacks
 // come from its type's brain (ai/*), or the default melee behaviour: chase, counterattack when hit.
+// Heavy enemies (riposte: elites, enhanced) stay angry for a while after a hit: a player who dashes
+// into their reach then is struck at once and the chain breaks — no rushing back and forth for free.
+// Boss minions (mods.minion) do not wait to be hit: they chase hard and swing on their own.
 export class Enemy {
   constructor(id, type, root, pos, mods = null) {
     this.id = id;
@@ -25,6 +28,12 @@ export class Enemy {
     this.windupTime = 0;
     this.strikeTime = 0; // visual flash after a strike
     this.hidden = false; // untargetable while faded out (wraith)
+    this.windupMax = 0; // length of the current windup (telegraph fill)
+    this.lunge = 0; // minion strike: steps this far toward the player when the windup ends
+    this.angerTime = 0; // > 0: a hit made it ready to strike back at anyone entering its reach
+    this.riposteCd = 0;
+    this.wasInReach = false;
+    this.minionCd = this.mods.minion ? this.root.minion.attackEvery[0] * 0.5 : 0;
     this.brain = AI[this.tcfg.ai] || null;
     if (this.brain) this.brain.init(this);
   }
@@ -44,6 +53,14 @@ export class Enemy {
   get isElite() { return this.rank === 'elite' || this.rank === 'boss' || this.type === 'elite'; }
   get isBoss() { return this.rank === 'boss'; }
   get targetable() { return this.alive && !this.dying && !this.hidden; }
+  get canRiposte() { return !!(this.tcfg.riposte || this.mods.riposte); }
+  get riposteWindow() { return this.mods.riposteWindow || this.root.counterWindow || 1; }
+
+  startWindup(time, lunge = 0) {
+    this.windupTime = time;
+    this.windupMax = time;
+    this.lunge = lunge;
+  }
 
   takeHit({ damage, knockDir, knockback, stagger }) {
     if (!this.targetable) return { killed: false };
@@ -64,9 +81,28 @@ export class Enemy {
       this.canCounter = false;
       return { killed: true };
     }
+    if (this.canRiposte) {
+      this.angerTime = this.riposteWindow;
+      this.wasInReach = true; // the strike that angered it does not count as stepping in
+    }
     this.counterTime = this.root.counterWindow || 0;
     this.canCounter = this.counterTime > 0;
     return { killed: false };
+  }
+
+  // angry after a hit: the moment a dashing player comes into reach (from outside) it strikes at once.
+  // Runs even while staggered, and a further hit cannot cancel it. When the enemy itself walks up to
+  // the player it uses the ordinary telegraphed counter instead (no unseen instant blows).
+  updateRiposte(playerPos, playerRadius, onAttack, onStrike, dashing) {
+    const inReach = this.inReach(playerPos, playerRadius);
+    const entered = inReach && !this.wasInReach;
+    this.wasInReach = inReach;
+    if (!entered || !dashing || this.angerTime <= 0 || this.riposteCd > 0 || this.hidden) return;
+    this.riposteCd = (this.root.riposte && this.root.riposte.cooldown) || 0.6;
+    this.strikeTime = 0.18;
+    this.windupTime = 0;
+    if (onStrike) onStrike(this, true, true);
+    if (onAttack) onAttack(this, true);
   }
 
   // game: the Game (brains read the player, hazards, view); null in plain melee tests
@@ -76,6 +112,9 @@ export class Enemy {
     if (this.flashTime > 0) this.flashTime -= dt;
     if (this.strikeTime > 0) this.strikeTime -= dt;
     if (this.counterTime > 0) this.counterTime -= dt;
+    if (this.riposteCd > 0) this.riposteCd -= dt;
+    if (this.angerTime > 0) this.angerTime -= dt;
+    if (!this.dying && this.canRiposte) this.updateRiposte(playerPos, playerRadius, onAttack, onStrike, game ? game.combat.inCombat : true);
     let mx = this.vel.x, my = this.vel.y;
     if (this.dying) {
       this.deathTimer -= dt;
@@ -92,18 +131,33 @@ export class Enemy {
         this.windupTime = 0;
         this.canCounter = false;
         this.strikeTime = 0.15;
+        if (this.lunge > 0) { // minion: leap at the player as it swings
+          const dx = playerPos.x - this.pos.x, dy = playerPos.y - this.pos.y, d = Math.hypot(dx, dy);
+          const gap = Math.max(0, d - this.radius - playerRadius);
+          const step = Math.min(this.lunge, gap);
+          if (d > 1e-6 && step > 0) this.pos = arena.resolveCircle({ x: this.pos.x + (dx / d) * step, y: this.pos.y + (dy / d) * step }, this.radius).pos;
+          this.lunge = 0;
+        }
         const hit = this.inReach(playerPos, playerRadius);
         if (onStrike) onStrike(this, hit);
         if (hit && onAttack) onAttack(this);
       }
     } else if (this.canCounter && this.counterTime > 0 && this.inReach(playerPos, playerRadius)) {
-      this.windupTime = this.tcfg.attackWindup || 0.2;
+      this.startWindup(this.tcfg.attackWindup || 0.2);
     } else {
       const dx = playerPos.x - this.pos.x, dy = playerPos.y - this.pos.y;
       const d = Math.hypot(dx, dy);
-      if (d > this.radius) {
-        mx += (dx / d) * this.speed;
-        my += (dy / d) * this.speed;
+      const mc = this.mods.minion ? this.root.minion : null;
+      if (mc) this.minionCd -= dt;
+      if (mc && this.minionCd <= 0 && d - this.radius - playerRadius <= mc.engageRange) {
+        // minion: show the swing whether or not the player is in reach yet, then leap and strike
+        const [a, b] = mc.attackEvery;
+        this.minionCd = a + ((this.id * 0.61) % 1) * (b - a);
+        this.startWindup(mc.windup, mc.lunge);
+      } else if (d > this.radius) {
+        const sp = this.speed * (mc ? mc.speed : 1);
+        mx += (dx / d) * sp;
+        my += (dy / d) * sp;
       }
     }
     const decay = Math.exp(-this.root.knockbackDecay * dt);

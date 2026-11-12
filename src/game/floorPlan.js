@@ -9,6 +9,11 @@ export function floorInfo(n, cfg) {
     attack: (1 + cfg.perFloor.attack * (base - 1)) * (1 + cfg.perLoop.attack * cycle),
     speed: 1 + cfg.perLoop.speed * cycle,
   };
+  // how long a hit enemy stays ready to strike back: grows over the cycle, full on later loops
+  if (cfg.riposteWindow) {
+    const [a, b] = cfg.riposteWindow;
+    mods.riposteWindow = cycle > 0 ? b : a + (b - a) * ((base - 1) / Math.max(1, len - 1));
+  }
   return {
     floor: n, base, cycle, band, mods,
     kind: band.kind,

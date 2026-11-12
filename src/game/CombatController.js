@@ -1,4 +1,5 @@
 import { selectAttackTarget, selectChainTarget, slashHits } from './Targeting.js';
+import { NO_BONUS } from './Relics.js';
 
 const CONTACT_PAD = 8;
 const LINK_MAX_TIME = 0.15;
@@ -6,8 +7,9 @@ const LINK_MAX_TIME = 0.15;
 // Auto-attack state machine: move -> dash -> (strike) -> link -> dash ... -> move.
 // Attack-first: once a target is chosen the character leaves its line to rush and chain.
 export class CombatController {
-  constructor(cfg, { player, movement, enemies, camera, events, rng, viewRect = null }) {
+  constructor(cfg, { player, movement, enemies, camera, events, rng, viewRect = null, bonus = null }) {
     this.cfg = cfg; // config.combat (live)
+    this.bonus = bonus || (() => NO_BONUS); // () => relic stat bonuses (damage, crit, chain)
     this.viewRect = viewRect; // () => world rect on screen; off-screen enemies are never targeted
     this.player = player;
     this.movement = movement;
@@ -29,6 +31,8 @@ export class CombatController {
   }
 
   get armed() { return this.armTimer > 0; }
+
+  get chainCount() { return this.cfg.chain.count + this.bonus().chain; }
 
   get state() { return this._state; }
 
@@ -59,6 +63,17 @@ export class CombatController {
 
   cancel() {
     if (this.inCombat) this.finish();
+  }
+
+  // the player was struck mid dash/chain: the chain breaks and a fresh swipe must wait a moment
+  interrupt() {
+    if (!this.inCombat) return false;
+    const pos = { x: this.player.pos.x, y: this.player.pos.y };
+    this.armTimer = 0;
+    this.retryTimer = this.cfg.hurtLockout || 0;
+    this.finish();
+    this.events.emit('chainBroken', { pos });
+    return true;
   }
 
   // hard reset for restart (no events)
@@ -142,7 +157,7 @@ export class CombatController {
     const dir = d > 1e-6 ? { x: dx / d, y: dy / d } : { x: this.inputDir.x, y: this.inputDir.y };
     const hits = slashHits(p.pos, dir, this.enemies.targetable(), { radius: c.slashRadius, arcDeg: c.slashArcDeg, maxTargets: c.maxTargets });
     if (!hits.includes(t)) hits.unshift(t);
-    this.applySlash(dir, hits, this.chainIndex, this.chainIndex >= c.chain.count);
+    this.applySlash(dir, hits, this.chainIndex, this.chainIndex >= this.chainCount);
     // slash through: continue a little past the target
     this.linkPoint = { x: t.pos.x + dir.x * c.overshoot, y: t.pos.y + dir.y * c.overshoot };
     this.linkTime = 0;
@@ -150,15 +165,15 @@ export class CombatController {
   }
 
   applySlash(dir, hits, chainIndex, last) {
-    const c = this.cfg;
+    const c = this.cfg, b = this.bonus();
     const p = this.player;
     this.events.emit('slash', { pos: { x: p.pos.x, y: p.pos.y }, dir, radius: c.slashRadius, arcDeg: c.slashArcDeg, chainIndex, strong: last });
     for (const e of hits) {
-      const crit = this.rng() < c.critChance;
+      const crit = this.rng() < c.critChance + b.crit;
       const strong = last;
       const kind = crit ? 'crit' : strong ? 'strong' : 'normal';
       const mult = (chainIndex > 0 ? c.chain.damageMultiplier : 1) * (crit ? c.critMultiplier : 1);
-      const damage = Math.round(c.attackDamage * mult);
+      const damage = Math.round(c.attackDamage * mult * (1 + b.damage));
       let kdx = e.pos.x - p.pos.x, kdy = e.pos.y - p.pos.y;
       const kd = Math.hypot(kdx, kdy);
       const knockDir = kd > 1e-6 ? { x: kdx / kd, y: kdy / kd } : dir;
@@ -176,7 +191,7 @@ export class CombatController {
     const r = this.movement.moveToward(this.linkPoint, c.dashSpeed, dt);
     if (!(r.arrived || r.blocked || this.linkTime >= LINK_MAX_TIME)) return;
     if (this.linkTime < c.chain.linkDelay && !r.blocked) return;
-    if (this.chainIndex >= c.chain.count) { this.finish(); return; }
+    if (this.chainIndex >= this.chainCount) { this.finish(); return; }
     const next = this.findChainTarget();
     if (!next) { this.finish(); return; }
     const from = { x: this.player.pos.x, y: this.player.pos.y };

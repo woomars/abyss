@@ -15,6 +15,7 @@ import { DebugPanel } from './ui/DebugPanel.js';
 import { GameOver } from './ui/GameOver.js';
 import { Banner } from './ui/Banner.js';
 import { RecordStore } from './systems/RecordStore.js';
+import { RelicPicker } from './ui/RelicPicker.js';
 import { chooseRotation, stageSize, stageTransform, toStage } from './systems/orientation.js';
 
 function safeStorage() {
@@ -83,7 +84,20 @@ async function boot() {
     else banner.show('방 정리', `출구가 열렸습니다 · 골드 +${e.gold}`);
   });
   events.on('bossEnrage', () => banner.show('분노!', '', { kind: 'boss', ms: 1200 }));
-  events.on('chestOpen', (e) => banner.show(`골드 +${e.gold}`, e.heal >= 1 ? '체력을 모두 회복했습니다' : `체력 ${Math.round(e.heal * 100)}% 회복`, { kind: 'reward' }));
+  events.on('chestOpen', (e) => {
+    if (e.big) banner.show(`골드 +${e.gold}`, '체력을 모두 회복했습니다', { kind: 'reward' });
+  });
+  // treasure room: pick one of three cards (the game waits meanwhile)
+  let chestGold = 0;
+  events.on('chestOpen', (e) => { chestGold = e.big ? 0 : e.gold; });
+  const picker = new RelicPicker(ui, {
+    pickDelay: () => config.relics.pickDelay,
+    onPick: (i) => {
+      const o = game.chooseRelic(i);
+      if (o) banner.show(`${o.name} 획득`, chestGold ? `${o.desc} · 골드 +${chestGold}` : o.desc, { kind: 'reward' });
+    },
+  });
+  events.on('relicOffer', (e) => picker.show(e.offers));
   menu = new PauseMenu(ui, {
     settings,
     onChange: (s) => { applySettings(s); save.save(s); },
@@ -125,6 +139,7 @@ async function boot() {
       onFloor: (floor) => {
         gameOver.hide();
         if (floor > 0) game.startRun(floor);
+        else if (floor === -1) { game.startRun(3); game.dungeon.enterRoom('treasure'); }
         else { game.startPractice(); music.play(config.music.scenes.play); banner.show('연습장'); }
       },
     });
@@ -173,6 +188,7 @@ async function boot() {
       music.setDuck((menu && menu.isOpen) || game.over);
       music.update(Math.min(0.1, (now - lastRender) / 1000));
       lastRender = now;
+      if (picker.isOpen && !game.offer && !picker.chosen) picker.hide(); // run restarted under the cards
       renderer.render(game, alpha);
       skillButtons.render();
       hud.update(game);

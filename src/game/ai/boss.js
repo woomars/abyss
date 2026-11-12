@@ -1,12 +1,16 @@
 // Boss: chase -> pick a pattern -> windup (the telegraph is the hazard's own delay) -> recover -> chase.
 // Patterns come from the floor (enemy.patterns) or the type config. Under enrageAt hp the boss moves
-// faster and telegraphs/rests shorter. Returns the movement vector for this step.
+// faster and telegraphs/rests shorter. Between patterns, while the player is close, the boss also
+// swings basic attacks around itself on a fixed rhythm, cycling through its list (tcfg.basics).
+// Returns the movement vector for this step.
 const rand = ([a, b], rng) => a + rng() * (b - a);
 const CALM = { speed: 1, windup: 1, cooldown: 1 };
 
 export const bossAI = {
   init(e) {
-    e.ai = { state: 'chase', t: e.tcfg.openingDelay, pattern: null, last: null, enraged: false, dir: { x: -1, y: 0 } };
+    const b = e.tcfg.basics;
+    e.ai = { state: 'chase', t: e.tcfg.openingDelay, pattern: null, last: null, enraged: false, dir: { x: -1, y: 0 },
+      bt: b ? b.every : Infinity, bw: 0, bi: 0 };
   },
 
   mods(e) { return e.ai.enraged ? e.tcfg.enrage : CALM; },
@@ -40,13 +44,38 @@ export const bossAI = {
     game.events.emit('bossPattern', { enemy: e, pattern: name, kind: p.kind, pos: { x: e.pos.x, y: e.pos.y } });
   },
 
+  // basic attack around the boss (circle / cone / ring of small circles); the boss holds still for it
+  basic(e, game) {
+    const b = e.tcfg.basics, s = e.ai, m = this.mods(e);
+    const a = b.list[s.bi % b.list.length];
+    s.bi += 1;
+    const windup = a.windup * m.windup;
+    const pp = game.player.pos;
+    const dx = pp.x - e.pos.x, dy = pp.y - e.pos.y, d = Math.hypot(dx, dy) || 1;
+    const dir = { x: dx / d, y: dy / d };
+    const dmg = (a.damage || 0) * e.mods.attack;
+    if (a.kind === 'circle') game.hazards.circle({ x: e.pos.x, y: e.pos.y, radius: a.radius, delay: windup, damage: dmg });
+    else if (a.kind === 'cone') game.hazards.cone({ x: e.pos.x, y: e.pos.y, dir, radius: a.radius + e.radius * 0.5, arcDeg: a.arcDeg, delay: windup, damage: dmg });
+    else if (a.kind === 'circles') {
+      const base = Math.atan2(dir.y, dir.x);
+      for (let i = 0; i < a.count; i++) {
+        const ang = base + (i / a.count) * Math.PI * 2;
+        game.hazards.circle({ x: e.pos.x + Math.cos(ang) * a.distance, y: e.pos.y + Math.sin(ang) * a.distance, radius: a.radius, delay: windup, damage: dmg });
+      }
+    }
+    s.state = 'basic';
+    s.bw = windup + a.recover;
+    s.bt = b.every * m.cooldown;
+    game.events.emit('bossBasic', { enemy: e, name: a.name, kind: a.kind, pos: { x: e.pos.x, y: e.pos.y } });
+  },
+
   summon(e, game, p) {
     const room = Math.max(0, p.maxMinions - this.minions(e, game));
     const list = [];
     for (let i = 0; i < p.count; i++) list.push(p.type);
     for (let i = 0; i < (p.extraCount || 0); i++) list.push(p.extraType);
     const info = game.dungeon && game.dungeon.info;
-    const mods = info ? { ...info.mods } : null;
+    const mods = { ...(info ? info.mods : {}), minion: true }; // minions press the attack on their own
     list.slice(0, room).forEach((type, i, arr) => {
       const a = (i / arr.length) * Math.PI * 2 + game.rng() * 0.5;
       const r = e.radius + e.tcfg.summonRing;
@@ -61,6 +90,11 @@ export const bossAI = {
       game.events.emit('bossEnrage', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } });
     }
     const m = this.mods(e);
+    if (s.state === 'basic') { // the pattern clock waits while a basic attack plays out
+      s.bw -= dt;
+      if (s.bw <= 0) s.state = 'chase';
+      return { x: 0, y: 0 };
+    }
     s.t -= dt;
     if (s.state === 'windup') {
       if (s.t <= 0) {
@@ -83,6 +117,10 @@ export const bossAI = {
     }
     const pp = game.player.pos;
     const dx = pp.x - e.pos.x, dy = pp.y - e.pos.y, d = Math.hypot(dx, dy) || 1;
+    if (t.basics) {
+      s.bt -= dt;
+      if (s.bt <= 0 && d - e.radius <= t.basics.triggerRange) { this.basic(e, game); return { x: 0, y: 0 }; }
+    }
     if (d < e.radius + game.player.radius + t.stopDistance) return { x: 0, y: 0 };
     const sp = e.speed * m.speed;
     return { x: (dx / d) * sp, y: (dy / d) * sp };

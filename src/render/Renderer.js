@@ -343,7 +343,7 @@ export class Renderer {
       const ai = e.tcfg.ai;
       ctx.fillStyle = fill;
       ctx.lineWidth = e.isElite || e.mods.enhanced ? 3 : 2;
-      ctx.strokeStyle = e.mods.enhanced ? '#ffcf5a' : e.isElite ? '#e0a050' : '#2b2e36';
+      ctx.strokeStyle = e.mods.enhanced ? '#ffcf5a' : e.isElite ? '#e0a050' : e.mods.minion ? '#c8443a' : '#2b2e36'; // minion: red rim
       if (ai === 'archer') {
         const ang = Math.atan2(pp.y - y, pp.x - x);
         ctx.save();
@@ -384,10 +384,28 @@ export class Renderer {
         ctx.lineTo(x + e.ai.aimDir.x * 320, y + e.ai.aimDir.y * 320);
         ctx.stroke();
       }
+      // angry (riposte ready): a pulsing red reach ring that fades as the anger runs out
+      if (e.angerTime > 0 && !e.dying && !e.hidden) {
+        const reach = r + (e.tcfg.attackRange || 0) + game.player.radius;
+        const fade = Math.min(1, e.angerTime / 0.4);
+        const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 70);
+        ctx.setLineDash([6, 5]);
+        ctx.beginPath();
+        ctx.arc(x, y, reach, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255,60,40,${(0.35 + 0.35 * pulse) * fade})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(x, y, r * 1.25, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255,80,50,${0.6 * fade})`;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      }
       // counterattack telegraph: reach circle that fills in as the strike approaches
       if (e.windupTime > 0 && !e.dying) {
-        const reach = r + (e.tcfg.attackRange || 0) + 16;
-        const k = 1 - e.windupTime / (e.tcfg.attackWindup || 0.2);
+        const reach = r + (e.tcfg.attackRange || 0) + 16 + (e.lunge || 0);
+        const k = 1 - e.windupTime / (e.windupMax || e.tcfg.attackWindup || 0.2);
         ctx.beginPath();
         ctx.arc(x, y, reach, 0, Math.PI * 2);
         ctx.strokeStyle = 'rgba(255,70,60,0.55)';

@@ -23,7 +23,7 @@ export class DebugPanel {
       <div class="dhead"><button data-act="toggle">DEBUG</button><span class="fps">-- fps</span></div>
       <div class="dbody">
         <div class="dbtns"><button data-act="copy">JSON 복사</button><button data-act="spawn">적 무리 소환</button></div>
-        <div class="dbtns">층 이동 <select data-act="floor"><option value="">고르기</option><option value="0">연습장</option>${
+        <div class="dbtns">층 이동 <select data-act="floor"><option value="">고르기</option><option value="0">연습장</option><option value="-1">보물방</option>${
           Array.from({ length: 21 }, (_, i) => `<option value="${i + 1}">${i + 1}층</option>`).join('')}</select></div>
         <div class="dbtns">배경음악 <select data-act="music">${Object.keys(config.music.playlists).map((k) =>
           `<option value="${k}"${k === config.music.scenes.play ? ' selected' : ''}>${MUSIC_LABEL[k] || k} (${config.music.playlists[k].length}곡)</option>`).join('')}</select>

@@ -197,3 +197,44 @@ html, body {
 .banner.boss .banner-title { color: #ff8a70; text-shadow: 0 0 18px rgba(255, 70, 50, 0.7), 0 2px 0 #000; }
 .banner.reward .banner-title { font-size: 24px; color: #ffe08a; }
 @keyframes banner-in { from { opacity: 0; transform: translateY(10px) scale(0.96); } to { opacity: 1; transform: none; } }
+
+/* treasure cards */
+.relic-picker { z-index: 12; background: radial-gradient(ellipse at center, rgba(40, 28, 10, 0.78), rgba(4, 3, 8, 0.88)); }
+.rp-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 16px; max-width: 100%; }
+.rp-title { margin: 0; font-size: 20px; color: #ffe08a; letter-spacing: 2px; text-shadow: 0 0 14px rgba(255, 200, 90, 0.5), 0 2px 0 #000; animation: banner-in 0.35s ease-out; }
+.rp-hint { margin: 0; font-size: 12px; color: #9c91ad; opacity: 0; transition: opacity 0.3s; }
+.relic-picker.ready .rp-hint { opacity: 1; }
+.rp-cards { display: flex; gap: 14px; justify-content: center; max-width: 100%; }
+.rp-card {
+  --rc: #a7b0ba;
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  width: min(30vw, 168px); min-height: min(58vh, 230px); padding: 12px 10px 14px;
+  border: 2px solid var(--rc); border-radius: 12px; color: #e8e3d6; font: inherit; text-align: center;
+  background: linear-gradient(180deg, #241c30, #120e18 70%);
+  box-shadow: 0 0 0 1px #000, 0 6px 18px rgba(0, 0, 0, 0.6), inset 0 0 22px rgba(0, 0, 0, 0.6);
+  opacity: 0; transform: translateY(40px) rotateY(80deg) scale(0.9);
+  animation: rp-in 0.45s cubic-bezier(.2, .9, .3, 1.2) var(--d) forwards;
+  pointer-events: none; touch-action: manipulation;
+}
+.relic-picker.ready .rp-card { pointer-events: auto; }
+.rp-card.r-rare { box-shadow: 0 0 14px rgba(90, 160, 255, 0.45), 0 6px 18px rgba(0, 0, 0, 0.6), inset 0 0 22px rgba(0, 0, 0, 0.6); }
+.rp-card.r-epic { box-shadow: 0 0 20px rgba(194, 124, 255, 0.6), 0 6px 18px rgba(0, 0, 0, 0.6), inset 0 0 22px rgba(0, 0, 0, 0.6); }
+.rp-rarity { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--rc); }
+.rp-icon {
+  display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; margin: 2px 0 4px;
+  border-radius: 50%; border: 1px solid var(--rc); color: var(--rc);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08), transparent 70%);
+}
+.rp-name { font-size: 16px; color: #f4e6c4; }
+.rp-desc { font-size: 13px; line-height: 1.35; color: #c9bfd8; }
+.rp-owned { position: absolute; top: 8px; right: 9px; font-size: 10px; color: #9c91ad; }
+.rp-card.picked { animation: rp-pick 0.42s ease-out forwards; }
+.rp-card.dropped { animation: rp-drop 0.3s ease-in forwards; }
+@keyframes rp-in { to { opacity: 1; transform: none; } }
+@keyframes rp-pick { 0% { opacity: 1; transform: none; } 40% { transform: scale(1.12); box-shadow: 0 0 34px var(--rc); } 100% { opacity: 0; transform: translateY(-30px) scale(0.8); } }
+@keyframes rp-drop { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(30px) scale(0.92); } }
+
+/* owned treasures under the HUD */
+.relics { display: flex; flex-wrap: wrap; gap: 4px; max-width: 220px; }
+.relics .rl { position: relative; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 5px; border: 1px solid #4a3d5c; background: rgba(23, 18, 29, 0.75); color: #e8d9a8; }
+.relics .rl b { position: absolute; right: -3px; bottom: -4px; font-size: 9px; color: #fff; text-shadow: 0 0 2px #000, 0 0 2px #000; }

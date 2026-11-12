@@ -1,8 +1,11 @@
 // Three equipped special attacks with individual cooldowns.
 // Skills are data-defined (config.skills.defs) and equipped into slots (config.skills.slots).
+import { NO_BONUS } from './Relics.js';
+
 export class SkillSystem {
-  constructor(cfg, { player, movement, enemies, combat, combatCfg, events, rng, arena }) {
+  constructor(cfg, { player, movement, enemies, combat, combatCfg, events, rng, arena, bonus = null }) {
     this.cfg = cfg; // config.skills (live)
+    this.bonus = bonus || (() => NO_BONUS); // () => relic stat bonuses (damage, crit, cooldown)
     this.player = player;
     this.movement = movement;
     this.enemies = enemies;
@@ -21,9 +24,11 @@ export class SkillSystem {
   get slots() {
     return this.cfg.slots.map((id, i) => {
       const d = this.cfg.defs[id];
-      return { id, name: d.name, cooldown: d.cooldown, remaining: this.remaining[i] };
+      return { id, name: d.name, cooldown: this.cooldownOf(d), remaining: this.remaining[i] };
     });
   }
+
+  cooldownOf(def) { return def.cooldown * Math.max(0.2, 1 - this.bonus().cooldown); }
 
   get busy() { return this.rush !== null; } // blocks movement and auto attacks
   get spinning() { return this.spin !== null; } // blocks auto attacks, player keeps moving
@@ -45,7 +50,7 @@ export class SkillSystem {
   }
 
   spinCritChance(hitIndex) {
-    return this.combatCfg.critChance + this.cfg.defs.spin.chainCritStep * hitIndex;
+    return this.combatCfg.critChance + this.bonus().crit + this.cfg.defs.spin.chainCritStep * hitIndex;
   }
 
   isDirectional(slot) {
@@ -72,14 +77,14 @@ export class SkillSystem {
     if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
     else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, hit: new Set() };
     else if (id === 'bladeWave') this.projectiles.push({ def, x: p.pos.x, y: p.pos.y, dir, traveled: 0, hit: new Set() });
-    this.remaining[slot] = def.cooldown;
+    this.remaining[slot] = this.cooldownOf(def);
     return true;
   }
 
-  hitEnemy(e, damage, dir, { critChance = this.combatCfg.critChance, chainIndex = 0, skill = null } = {}) {
+  hitEnemy(e, damage, dir, { critChance = this.combatCfg.critChance + this.bonus().crit, chainIndex = 0, skill = null } = {}) {
     const c = this.combatCfg;
     const crit = this.rng() < critChance;
-    const dmg = Math.round(damage * (crit ? c.critMultiplier : 1));
+    const dmg = Math.round(damage * (1 + this.bonus().damage) * (crit ? c.critMultiplier : 1));
     const kind = crit ? 'crit' : 'strong';
     const { killed } = e.takeHit({ damage: dmg, knockDir: dir, knockback: c.knockback[kind], stagger: c.stagger[kind] });
     const pos = { x: e.pos.x, y: e.pos.y };

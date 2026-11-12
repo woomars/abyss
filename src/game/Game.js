@@ -10,6 +10,7 @@ import { SkillSystem } from './SkillSystem.js';
 import { EffectManager } from './EffectManager.js';
 import { Dungeon } from './Dungeon.js';
 import { Hazards } from './Hazards.js';
+import { Relics } from './Relics.js';
 
 // Assembles all game systems. No DOM access here.
 export class Game {
@@ -26,13 +27,18 @@ export class Game {
     this.enemies = new EnemyManager(config.enemies, this.arena, rng);
     this.camera = new Camera(config.camera, rng);
     this.camera.snapTo(this.player.pos);
+    // treasures picked this run (treasure-room cards); their bonuses feed combat, skills, movement
+    this.relics = new Relics(config.relics);
+    const bonus = () => this.relics.stats;
+    this.movement.speedMul = () => 1 + this.relics.stats.speed;
+    this.offer = null; // cards on screen: the world waits until one is picked
     this.combat = new CombatController(config.combat, {
       player: this.player, movement: this.movement, enemies: this.enemies, camera: this.camera, events, rng,
-      viewRect: () => this.viewRect(),
+      viewRect: () => this.viewRect(), bonus,
     });
     this.skills = new SkillSystem(config.skills, {
       player: this.player, movement: this.movement, enemies: this.enemies, combat: this.combat,
-      combatCfg: config.combat, events, rng, arena: this.arena,
+      combatCfg: config.combat, events, rng, arena: this.arena, bonus,
     });
     this.hitStop = new HitStop(config.feedback);
     this.effects = new EffectManager(config, events, rng);
@@ -43,14 +49,18 @@ export class Game {
     events.on('hit', (h) => this.onHit(h));
     this.stats = { kills: 0, bestCombo: 0 };
     events.on('kill', () => {
+      if (this.relics.stats.lifesteal && !this.over) this.healFlat(this.relics.stats.lifesteal);
       this.stats.kills += 1;
       this.stats.bestCombo = Math.max(this.stats.bestCombo, this.effects.combo.count);
     });
     // player health: enemy counterattacks hurt, a short invulnerability follows, regen after a quiet delay
     this.over = false;
     this.resetHealth();
-    this.enemies.onAttack = (e) => this.damagePlayer(e.attack, e);
-    this.enemies.onStrike = (e, hit) => events.emit('enemyStrike', { enemy: e, pos: { x: e.pos.x, y: e.pos.y }, hit });
+    this.enemies.onAttack = (e, riposte = false) => {
+      const r = this.config.enemies.riposte;
+      this.damagePlayer(e.attack * (riposte && r ? r.damageMul : 1), e);
+    };
+    this.enemies.onStrike = (e, hit, riposte = false) => events.emit('enemyStrike', { enemy: e, pos: { x: e.pos.x, y: e.pos.y }, hit, riposte });
     // enemy attacks in the world (arrows, telegraphed areas)
     this.hazards = new Hazards(this.arena, config.enemies);
     this.hazards.onHit = (dmg, h) => this.damagePlayer(dmg, { pos: { x: h.x, y: h.y } });
@@ -102,10 +112,37 @@ export class Game {
     p.hp = Math.min(p.maxHp, p.hp + p.maxHp * frac);
   }
 
+  healFlat(amount) {
+    const p = this.player;
+    p.hp = Math.min(p.maxHp, p.hp + amount);
+  }
+
+  // show treasure cards; the world pauses until chooseRelic()
+  offerRelics(offers) {
+    if (!offers.length) return false;
+    this.offer = { offers };
+    this.combat.cancel();
+    this.events.emit('relicOffer', { offers });
+    return true;
+  }
+
+  chooseRelic(i) {
+    if (!this.offer) return null;
+    const o = this.offer.offers[i];
+    if (!o) return null;
+    this.relics.take(o, this);
+    this.offer = null;
+    this.pendingStroke = null;
+    this.pendingFlick = null;
+    this.combat.reset();
+    this.events.emit('relicPick', { relic: o, pos: { x: this.player.pos.x, y: this.player.pos.y } });
+    return o;
+  }
+
   resetHealth() {
     const c = this.config.combat.player;
-    this.player.maxHp = c.maxHp;
-    this.player.hp = c.maxHp;
+    this.player.maxHp = c.maxHp + this.relics.stats.maxHp;
+    this.player.hp = this.player.maxHp;
     this.player.invuln = 0;
     this.sinceHit = Infinity;
   }
@@ -115,7 +152,9 @@ export class Game {
     const p = this.player;
     if (this.over || p.invuln > 0 || amount <= 0) return false;
     if (this.mode === 'dungeon' && this.dungeon.state === 'fadeOut') return false; // already leaving
+    amount *= Math.max(0.2, 1 - this.relics.stats.armor);
     p.hp = Math.max(0, p.hp - amount);
+    this.combat.interrupt(); // a blow taken mid dash/chain breaks the chain
     p.invuln = this.config.combat.player.hurtInvuln;
     this.sinceHit = 0;
     const from = source ? { x: source.pos.x, y: source.pos.y } : null;
@@ -162,6 +201,8 @@ export class Game {
     this.stats.bestCombo = 0;
     this.time = 0;
     this.over = false;
+    this.offer = null;
+    this.relics.reset();
     this.resetHealth();
   }
 
@@ -199,6 +240,7 @@ export class Game {
 
   update(realDt) {
     if (this.paused) return;
+    if (this.offer) return; // choosing a treasure card
     if (this.over) { this.effects.update(realDt, this.player, false); return; }
     const dt = this.hitStop.update(realDt);
     this.time += dt;

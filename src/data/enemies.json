@@ -33,7 +33,8 @@
       "attackRange": 34,
       "attackWindup": 0.4,
       "name": "오크 전사",
-      "rank": "elite"
+      "rank": "elite",
+      "riposte": true
     },
     "archer": {
       "name": "고블린 궁수",
@@ -131,7 +132,31 @@
       "openingDelay": 1.2,
       "retryDelay": 0.5,
       "stopDistance": 30,
-      "summonRing": 50
+      "summonRing": 50,
+      "attackRange": 36,
+      "basics": {
+        "every": 2.4,
+        "triggerRange": 220,
+        "list": [
+          {
+            "name": "sweep",
+            "kind": "circle",
+            "radius": 115,
+            "windup": 0.5,
+            "damage": 12,
+            "recover": 0.25
+          },
+          {
+            "name": "jab",
+            "kind": "cone",
+            "radius": 175,
+            "arcDeg": 70,
+            "windup": 0.4,
+            "damage": 14,
+            "recover": 0.2
+          }
+        ]
+      }
     },
     "gatekeeper": {
       "rank": "boss",
@@ -186,7 +211,41 @@
       "openingDelay": 1.2,
       "retryDelay": 0.5,
       "stopDistance": 30,
-      "summonRing": 50
+      "summonRing": 50,
+      "attackRange": 36,
+      "basics": {
+        "every": 2.1,
+        "triggerRange": 240,
+        "list": [
+          {
+            "name": "sweep",
+            "kind": "circle",
+            "radius": 135,
+            "windup": 0.5,
+            "damage": 15,
+            "recover": 0.25
+          },
+          {
+            "name": "cleave",
+            "kind": "cone",
+            "radius": 210,
+            "arcDeg": 80,
+            "windup": 0.45,
+            "damage": 17,
+            "recover": 0.2
+          },
+          {
+            "name": "spikes",
+            "kind": "circles",
+            "count": 3,
+            "distance": 125,
+            "radius": 55,
+            "windup": 0.55,
+            "damage": 15,
+            "recover": 0.25
+          }
+        ]
+      }
     }
   },
   "counterWindow": 1,
@@ -196,5 +255,19 @@
   "spawnAheadDeg": 60,
   "despawnDistance": 1400,
   "deathTime": 0.35,
-  "hazardFlash": 0.15
+  "hazardFlash": 0.15,
+  "riposte": {
+    "cooldown": 0.6,
+    "damageMul": 0.6
+  },
+  "minion": {
+    "speed": 1.2,
+    "engageRange": 200,
+    "attackEvery": [
+      1.3,
+      2.1
+    ],
+    "windup": 0.45,
+    "lunge": 40
+  }
 }

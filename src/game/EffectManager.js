@@ -27,6 +27,19 @@ export class EffectManager {
     events.on('chainLink', (e) => this.onLink(e));
     events.on('turn', (e) => this.onTurn(e));
     events.on('playerHit', (e) => this.onPlayerHit(e));
+    events.on('chainBroken', (e) => this.text(e.pos.x, e.pos.y - 52, '끊김'));
+    events.on('enemyStrike', (e) => {
+      if (!e.riposte) return; // riposte: a red burst on the angry enemy
+      const r = this.rings.acquire();
+      r.x = e.pos.x; r.y = e.pos.y; r.r0 = e.enemy.radius; r.r1 = e.enemy.radius + 50; r.color = '#ff3b30';
+      r.life = r.max = RING_LIFE;
+    });
+  }
+
+  text(x, y, value) {
+    const n = this.numbers.acquire();
+    n.x = x; n.y = y; n.value = value; n.crit = false; n.hurt = true;
+    n.life = n.max = this.fb.damageNumberLife;
   }
 
   get fb() { return this.config.feedback; }
@@ -77,7 +90,7 @@ export class EffectManager {
   onPlayerHit({ damage, pos, from }) {
     const n = this.numbers.acquire();
     n.x = pos.x; n.y = pos.y - 30;
-    n.value = damage; n.crit = false; n.hurt = true;
+    n.value = Math.max(1, Math.round(damage)); n.crit = false; n.hurt = true;
     n.life = n.max = this.fb.damageNumberLife;
     const dir = from ? { x: pos.x - from.x, y: pos.y - from.y } : { x: 0, y: -1 };
     const l = Math.hypot(dir.x, dir.y) || 1;

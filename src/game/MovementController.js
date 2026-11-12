@@ -11,6 +11,7 @@ export class MovementController {
     this.arena = arena;
     this.events = events;
     this.burstTime = Infinity; // time since last burst start
+    this.speedMul = () => 1; // relic bonus, set by Game
   }
 
   get burstActive() {
@@ -41,7 +42,7 @@ export class MovementController {
   update(dt) {
     const p = this.player;
     this.burstTime += dt;
-    p.speed = this.currentSpeed();
+    p.speed = this.currentSpeed() * this.speedMul();
     this.step(p.heading, p.speed * dt);
     this.updateVisual(dt);
   }

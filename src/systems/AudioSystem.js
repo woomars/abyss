@@ -1,10 +1,18 @@
-// Synthesized sound effects (no audio files). All playback goes through play(name, opts),
-// so real samples can replace the synth voices later.
+// Sound effects. Recorded samples (config.audio, see assets/audio/CREDITS.md) are used when loaded;
+// otherwise each event falls back to a synthesized Web Audio voice. All playback goes through play().
+import { hitSound, deathSound } from './soundMap.js';
+
 const MAX_VOICES = 24;
+// sample name -> synth voice used until (or if) the sample loads
+const FALLBACK = {
+  slash: 'slash', hit: 'impact', hitHeavy: 'heavyImpact', crit: 'critImpact',
+  deathSoldier: 'death', deathElite: 'death', deathBoss: 'death', enemyAttack: 'whoosh', hurt: 'hurt',
+};
 
 export class AudioSystem {
-  constructor(events, rng) {
+  constructor(events, rng, audioCfg = null) {
     this.rng = rng;
+    this.cfg = audioCfg; // config.audio (files, volume, byType)
     this.ctx = null;
     this.master = null;
     this.noise = null;
@@ -12,20 +20,53 @@ export class AudioSystem {
     this.voices = 0;
     this.hitsThisFrame = 0;
     this.frameTag = 0;
+    this.buffers = new Map();
 
-    events.on('slash', (e) => this.play('slash', { pitch: 1 + e.chainIndex * 0.06, gain: e.strong ? 1.2 : 1 }));
+    events.on('slash', (e) => this.sample('slash', { pitch: 1 + e.chainIndex * 0.06, gain: e.strong ? 1.2 : 1 }));
     events.on('hit', (e) => {
       if (!this.budgetHit()) return;
-      if (e.crit) this.play('critImpact');
-      else if (e.enemy && e.enemy.isElite) this.play('heavyImpact');
-      else this.play('impact', { pitch: 1 + e.chainIndex * 0.05 });
+      const name = this.cfg ? hitSound(e, this.cfg) : (e.crit ? 'crit' : e.enemy && e.enemy.isElite ? 'hitHeavy' : 'hit');
+      this.sample(name, { pitch: name === 'hit' ? 1 + e.chainIndex * 0.05 : 1 });
     });
-    events.on('kill', () => this.play('death'));
+    events.on('kill', (e) => this.sample(this.cfg ? deathSound(e.enemy && e.enemy.type, this.cfg) : 'deathSoldier'));
     events.on('chainLink', (e) => this.play('link', { pitch: 1 + 0.12 * e.chainIndex }));
     events.on('turn', () => this.play('whoosh', { gain: 0.7 }));
     events.on('skill', (e) => this.play(`skill_${e.id}`));
-    events.on('playerHit', () => this.play('hurt'));
+    events.on('enemyStrike', () => this.sample('enemyAttack'));
+    events.on('playerHit', () => this.sample('hurt'));
     events.on('playerDown', () => this.play('down'));
+  }
+
+  // fetch + decode every configured sample (after the AudioContext exists)
+  loadSamples() {
+    if (!this.cfg || this.loading) return;
+    this.loading = true;
+    for (const [name, url] of Object.entries(this.cfg.files)) {
+      fetch(url)
+        .then((r) => { if (!r.ok) throw new Error(url); return r.arrayBuffer(); })
+        .then((a) => this.ctx.decodeAudioData(a))
+        .then((buf) => { this.buffers.set(name, buf); })
+        .catch((err) => console.warn('sound not loaded, using synth', name, err));
+    }
+  }
+
+  // recorded sample if loaded, else the synthesized fallback voice
+  sample(name, { pitch = 1, gain = 1 } = {}) {
+    const buf = this.buffers.get(name);
+    if (!buf) { this.play(FALLBACK[name] || name, { pitch, gain }); return; }
+    if (!this.ctx || !this.enabled || this.ctx.state !== 'running') return;
+    if (this.voices >= MAX_VOICES) return;
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    src.playbackRate.value = pitch * (1 + (this.rng() * 2 - 1) * 0.04);
+    const g = this.ctx.createGain();
+    const vol = this.cfg && this.cfg.volume[name] != null ? this.cfg.volume[name] : 1;
+    g.gain.value = vol * gain * (1 + (this.rng() * 2 - 1) * 0.08);
+    src.connect(g);
+    g.connect(this.master);
+    src.start();
+    this.voices++;
+    src.onended = () => { this.voices--; };
   }
 
   // must be called from a user gesture (first pointerdown)
@@ -44,6 +85,7 @@ export class AudioSystem {
         this.noise = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
         const d = this.noise.getChannelData(0);
         for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+        this.loadSamples();
       }
       if (this.ctx.state === 'suspended') this.ctx.resume();
     } catch (err) {

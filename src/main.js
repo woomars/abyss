@@ -38,7 +38,7 @@ async function boot() {
   const ui = document.getElementById('ui');
   const renderer = new Renderer(canvas, config);
   const game = new Game(config, { events, rng });
-  const audio = new AudioSystem(events, rng);
+  const audio = new AudioSystem(events, rng, config.audio);
   const save = new SaveSystem(safeStorage());
   const settings = save.load();
 

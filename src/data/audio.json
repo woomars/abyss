@@ -1,0 +1,29 @@
+{
+  "files": {
+    "slash": "assets/audio/slash.ogg",
+    "hit": "assets/audio/hit.ogg",
+    "hitHeavy": "assets/audio/hit_heavy.ogg",
+    "crit": "assets/audio/crit.ogg",
+    "deathSoldier": "assets/audio/death_soldier.ogg",
+    "deathElite": "assets/audio/death_elite.ogg",
+    "deathBoss": "assets/audio/death_boss.ogg",
+    "enemyAttack": "assets/audio/enemy_attack.ogg",
+    "hurt": "assets/audio/hurt.ogg"
+  },
+  "volume": {
+    "slash": 0.7,
+    "hit": 0.9,
+    "hitHeavy": 1.0,
+    "crit": 1.0,
+    "deathSoldier": 0.8,
+    "deathElite": 0.9,
+    "deathBoss": 1.0,
+    "enemyAttack": 0.8,
+    "hurt": 0.9
+  },
+  "byType": {
+    "soldier": { "hit": "hit", "death": "deathSoldier" },
+    "elite": { "hit": "hitHeavy", "death": "deathElite" },
+    "boss": { "hit": "hitHeavy", "death": "deathBoss" }
+  }
+}

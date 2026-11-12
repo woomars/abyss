@@ -48,6 +48,7 @@ export class Game {
     this.over = false;
     this.resetHealth();
     this.enemies.onAttack = (e) => this.damagePlayer(e.tcfg.attack, e);
+    this.enemies.onStrike = (e, hit) => events.emit('enemyStrike', { enemy: e, pos: { x: e.pos.x, y: e.pos.y }, hit });
   }
 
   resetHealth() {

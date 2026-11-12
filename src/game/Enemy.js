@@ -54,7 +54,7 @@ export class Enemy {
     return { killed: false };
   }
 
-  update(dt, playerPos, arena, playerRadius = 16, onAttack = null) {
+  update(dt, playerPos, arena, playerRadius = 16, onAttack = null, onStrike = null) {
     this.prevPos.x = this.pos.x;
     this.prevPos.y = this.pos.y;
     if (this.flashTime > 0) this.flashTime -= dt;
@@ -73,7 +73,9 @@ export class Enemy {
         this.windupTime = 0;
         this.canCounter = false;
         this.strikeTime = 0.15;
-        if (this.inReach(playerPos, playerRadius) && onAttack) onAttack(this);
+        const hit = this.inReach(playerPos, playerRadius);
+        if (onStrike) onStrike(this, hit);
+        if (hit && onAttack) onAttack(this);
       }
     } else if (this.canCounter && this.counterTime > 0 && this.inReach(playerPos, playerRadius)) {
       this.windupTime = this.tcfg.attackWindup || 0.2;

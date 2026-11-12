@@ -13,6 +13,15 @@ export const bossAI = {
       bt: b ? b.every : Infinity, bw: 0, bi: 0 };
   },
 
+  // stunned: whatever it was winding up is dropped; the pattern clock and basic rhythm start over
+  onStun(e) {
+    const s = e.ai, t = e.tcfg;
+    s.state = 'chase';
+    s.t = t.retryDelay + t.cooldown[0];
+    if (t.basics) s.bt = t.basics.every;
+    s.bw = 0;
+  },
+
   mods(e) { return e.ai.enraged ? e.tcfg.enrage : CALM; },
 
   minions(e, game) { return game.enemies.all().filter((m) => m !== e && m.alive && !m.dying && !m.isBoss).length; },

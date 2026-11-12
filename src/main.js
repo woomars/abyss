@@ -92,7 +92,7 @@ async function boot() {
   events.on('floorStart', (e) => {
     music.play(e.music);
     if (e.kind === 'boss') banner.show(e.boss, e.title.replace(` — ${e.boss}`, ''), { kind: 'boss', ms: 2400 });
-    else if (e.kind === 'treasure') banner.show('보물방', '상자를 열어 보세요');
+    else if (e.kind === 'treasure') { /* the card screen says it all */ }
     else banner.show(e.title);
   });
   events.on('roomCleared', (e) => {
@@ -108,16 +108,16 @@ async function boot() {
     onPick: (i) => {
       const o = game.chooseRelic(i);
       if (!o) return;
-      const sub = [o.desc, chest ? `골드 +${chest.gold}` : '', chest && chest.big ? '체력 모두 회복' : ''].filter(Boolean).join(' · ');
+      const sub = [o.desc, chest ? `골드 +${chest.gold}` : ''].filter(Boolean).join(' · ');
       banner.show(`${o.tierLabel ? o.tierLabel + ' ' : ''}${o.name} 획득`, sub, { kind: 'reward' });
     },
     onReroll: () => game.rerollRelics(),
   });
-  events.on('relicOffer', (e) => picker.show(e.offers, e));
+  events.on('relicOffer', (e) => picker.show(e.offers, { ...e, title: game.dungeon.state === 'treasure' ? '보물방' : '', gold: game.dungeon.gold, found: chest ? chest.gold : 0 }));
   const toast = new LootToast(ui, config.items);
   events.on('lootPickup', (e) => toast.show(e.item));
   events.on('pocketFull', () => toast.text('주머니가 가득 찼습니다'));
-  events.on('relicReroll', (e) => picker.show(e.offers, e));
+  events.on('relicReroll', (e) => picker.show(e.offers, { ...e, title: game.dungeon.state === 'treasure' ? '보물방' : '', found: chest ? chest.gold : 0 }));
   menu = new PauseMenu(ui, {
     settings,
     onChange: (s) => { applySettings(s); save.save(s); },
@@ -204,7 +204,7 @@ async function boot() {
         if (slot != null || !started) enterSlot(null, new Vault({ family: '시험', given: '기사' })); // debug runs use a throwaway family
         if (floor === -2) { game.startRun(4); game.dungeon.enterForge(); return; }
         if (floor > 0) game.startRun(floor);
-        else if (floor === -1) { game.startRun(3); game.dungeon.enterRoom('treasure'); }
+        else if (floor === -1) { game.startRun(3); game.dungeon.enterTreasure(); }
         else { game.startPractice(); music.play(config.music.scenes.play); banner.show('연습장'); }
       },
     });

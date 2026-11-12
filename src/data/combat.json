@@ -33,7 +33,7 @@
     "maxHp": 100,
     "hurtInvuln": 0.5,
     "regenDelay": 3,
-    "regenPerSec": 4
+    "regenPerSec": 0
   },
   "rushWindow": 0.6,
   "normalAttackInterval": 0.35,

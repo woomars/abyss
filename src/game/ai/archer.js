@@ -8,6 +8,7 @@ export const archerAI = {
   },
 
   onHit(e) { e.ai.aim = 0; }, // a hit spoils the shot
+  onStun(e) { e.ai.aim = 0; e.ai.cd = e.tcfg.cooldown; }, // starts its aim over
 
   update(e, dt, game) {
     const t = e.tcfg, s = e.ai, p = game.player;

@@ -67,7 +67,7 @@ export function createItem(cfg, rng, opts) {
   let base;
   if (b.stat) base = { stat: b.stat, value: b.value };
   else { // rings: their base is one random affix
-    const [a] = rollAffixes(cfg, rng, 'common', 1, ['chain']);
+    const [a] = rollAffixes(cfg, rng, 'common', 1, []); // grade-limited affixes are filtered by 'common'
     base = { stat: a.stat, value: a.value };
   }
   const affixes = rollAffixes(cfg, rng, grade, cfg.grades[grade].affixes, [base.stat]);

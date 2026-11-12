@@ -29,6 +29,7 @@ export class Enemy {
     this.strikeTime = 0; // visual flash after a strike
     this.hidden = false; // untargetable while faded out (wraith)
     this.windupMax = 0; // length of the current windup (telegraph fill)
+    this.stunTime = 0; // > 0: stunned by a special attack (no moving, no attacking, no riposte)
     this.lunge = 0; // minion strike: steps this far toward the player when the windup ends
     this.angerTime = 0; // > 0: a hit made it ready to strike back at anyone entering its reach
     this.riposteCd = 0;
@@ -56,6 +57,23 @@ export class Enemy {
   get canRiposte() { return !!(this.tcfg.riposte || this.mods.riposte); }
   get riposteWindow() { return this.mods.riposteWindow || this.root.counterWindow || 1; }
 
+  // stunned: hold still for t, and forget every attack in progress (anger, counter, windup, timers)
+  stun(t) {
+    if (!this.alive || this.dying) return;
+    this.stunTime = Math.max(this.stunTime, t);
+    this.staggerTime = Math.max(this.staggerTime, t);
+    this.angerTime = 0;
+    this.counterTime = 0;
+    this.canCounter = false;
+    this.windupTime = 0;
+    this.windupMax = 0;
+    this.lunge = 0;
+    this.riposteCd = 0;
+    this.wasInReach = true; // waking up next to the player is not "stepping in"
+    if (this.mods.minion) this.minionCd = this.root.minion.attackEvery[0];
+    if (this.brain && this.brain.onStun) this.brain.onStun(this);
+  }
+
   startWindup(time, lunge = 0) {
     this.windupTime = time;
     this.windupMax = time;
@@ -81,11 +99,11 @@ export class Enemy {
       this.canCounter = false;
       return { killed: true };
     }
-    if (this.canRiposte) {
+    if (this.canRiposte && this.stunTime <= 0) {
       this.angerTime = this.riposteWindow;
       this.wasInReach = true; // the strike that angered it does not count as stepping in
     }
-    this.counterTime = this.root.counterWindow || 0;
+    this.counterTime = this.stunTime > 0 ? 0 : this.root.counterWindow || 0;
     this.canCounter = this.counterTime > 0;
     return { killed: false };
   }
@@ -113,8 +131,9 @@ export class Enemy {
     if (this.strikeTime > 0) this.strikeTime -= dt;
     if (this.counterTime > 0) this.counterTime -= dt;
     if (this.riposteCd > 0) this.riposteCd -= dt;
+    if (this.stunTime > 0) this.stunTime = Math.max(0, this.stunTime - dt);
     if (this.angerTime > 0) this.angerTime -= dt;
-    if (!this.dying && this.canRiposte) this.updateRiposte(playerPos, playerRadius, onAttack, onStrike, game ? game.combat.inCombat : true);
+    if (!this.dying && this.canRiposte && this.stunTime <= 0) this.updateRiposte(playerPos, playerRadius, onAttack, onStrike, game ? game.combat.inCombat : true);
     let mx = this.vel.x, my = this.vel.y;
     if (this.dying) {
       this.deathTimer -= dt;

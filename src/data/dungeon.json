@@ -182,7 +182,7 @@
       120,
       200
     ],
-    "bossChestHeal": 1,
+    "bossChestHeal": 0,
     "goldPerFloor": 0.1
   },
   "rooms": {

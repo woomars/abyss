@@ -41,5 +41,6 @@ export function describeItem(item, cfg) {
     scar: !!item.scar,
     // heirloom: the latest owner who passed it down (and his feat for notable items)
     heirloom: item.legacy && item.legacy.length ? item.legacy[item.legacy.length - 1] : null,
+    lostPower: item.lostPower || null,
   };
 }

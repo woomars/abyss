@@ -384,6 +384,17 @@ export class Renderer {
         ctx.lineTo(x + e.ai.aimDir.x * 320, y + e.ai.aimDir.y * 320);
         ctx.stroke();
       }
+      // stunned: little stars circling over the head
+      if (e.stunTime > 0 && !e.dying) {
+        const t = performance.now() / 160;
+        ctx.fillStyle = '#ffe08a';
+        for (let i = 0; i < 3; i++) {
+          const a = t + (i * Math.PI * 2) / 3;
+          ctx.beginPath();
+          ctx.arc(x + Math.cos(a) * r * 0.8, y - r * 1.25 + Math.sin(a) * r * 0.25, 2.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
       // angry (riposte ready): a pulsing red reach ring that fades as the anger runs out
       if (e.angerTime > 0 && !e.dying && !e.hidden) {
         const reach = r + (e.tcfg.attackRange || 0) + game.player.radius;

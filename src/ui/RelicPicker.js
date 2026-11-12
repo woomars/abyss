@@ -13,6 +13,7 @@ export class RelicPicker {
     this.el.className = 'overlay relic-picker interactive hidden';
     this.el.innerHTML = `
       <div class="rp-wrap">
+        <div class="rp-room"></div>
         <h2 class="rp-title">보물을 하나 고르세요</h2>
         <div class="rp-cards"></div>
         <div class="rp-bottom">
@@ -36,7 +37,11 @@ export class RelicPicker {
   }
 
   // cost / gold: price of a redraw and the gold the player has
-  show(offers, { cost = 0, gold = 0 } = {}) {
+  show(offers, { cost = 0, gold = 0, title = '', found = 0 } = {}) {
+    const room = this.el.querySelector('.rp-room');
+    room.innerHTML = title ? `<b>${title}</b>${found ? ` · 골드 +${found}` : ''}` : '';
+    room.classList.toggle('hidden', !title);
+    this.el.classList.toggle('static', !!title);
     this.isOpen = true;
     this.ready = false;
     this.chosen = false;

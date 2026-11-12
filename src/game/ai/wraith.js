@@ -10,6 +10,12 @@ export const wraithAI = {
     e.fade = 1; // 1 visible .. 0 gone (render)
   },
 
+  // stunned while appearing or casting: back to drifting, the next blink waits a full cooldown
+  onStun(e) {
+    if (e.ai.phase === 'in' || e.ai.phase === 'cast') { e.ai.phase = 'drift'; e.hidden = false; e.fade = 1; }
+    e.ai.cd = e.tcfg.blinkCooldown[0];
+  },
+
   update(e, dt, game) {
     const t = e.tcfg, s = e.ai, p = game.player;
     if (s.phase === 'drift') {

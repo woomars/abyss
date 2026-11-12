@@ -1,5 +1,6 @@
 {
   "slots": ["spin", "rushStrike", "bladeWave"],
+  "stun": { "chance": 0.8, "duration": 1.2, "bossChance": 0.35, "bossDuration": 0.5 },
   "defs": {
     "spin": { "name": "회전 베기", "cooldown": 8, "damage": 25, "radius": 150, "duration": 0.35, "hitPause": 0.06, "chainDamageStep": 0.15, "chainCritStep": 0.05 },
     "rushStrike": { "name": "돌진 일격", "directional": true, "cooldown": 10, "damage": 40, "distance": 320, "speed": 1200, "width": 60 },

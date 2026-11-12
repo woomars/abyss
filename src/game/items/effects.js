@@ -36,8 +36,8 @@ export function installGearEffects(game) {
   });
 
   // 흡혈 군주의 검: heal a share of max hp per kill
-  ev.on('kill', () => {
-    if (on('vampLord') && !game.over) game.healFlat(game.player.maxHp * cfg().vampLord.heal);
+  ev.on('kill', (e) => {
+    if (on('vampLord') && !game.over && e.enemy && e.enemy.isBoss) game.healFlat(game.player.maxHp * cfg().vampLord.heal);
   });
 
   // 대지 파쇄자: a shockwave along the dash path

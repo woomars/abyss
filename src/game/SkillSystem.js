@@ -90,7 +90,13 @@ export class SkillSystem {
     const { killed } = e.takeHit({ damage: dmg, knockDir: dir, knockback: c.knockback[kind] * (1 + b.knockback), stagger: c.stagger[kind] });
     const pos = { x: e.pos.x, y: e.pos.y };
     this.events.emit('hit', { enemy: e, damage: dmg, crit, strong: true, chainIndex, pos, dir, skill });
-    if (killed) this.events.emit('kill', { enemy: e, pos, dir, crit });
+    if (killed) { this.events.emit('kill', { enemy: e, pos, dir, crit }); return; }
+    // special attacks usually stun, and a stunned enemy forgets the attack it was building up
+    const st = this.cfg.stun;
+    if (st && this.rng() < (e.isBoss ? st.bossChance : st.chance)) {
+      e.stun(e.isBoss ? st.bossDuration : st.duration);
+      this.events.emit('stun', { enemy: e, pos });
+    }
   }
 
   // Clockwise blade sweep around the player. Enemies are hit in the order the blade passes them;

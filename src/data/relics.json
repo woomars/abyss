@@ -28,7 +28,7 @@
     "boots": { "name": "바람 장화", "desc": "이동 속도 +{v}", "fmt": "pct", "icon": "boots", "rarity": "common", "stat": "speed", "add": 0.08, "max": 3 },
     "goldbag": { "name": "금화 주머니", "desc": "골드 +{v}", "fmt": "int", "icon": "gold", "rarity": "common", "gold": [50, 90] },
     "hourglass": { "name": "모래시계", "desc": "특수기 재사용 대기 -{v}", "fmt": "pct", "icon": "hourglass", "rarity": "rare", "stat": "cooldown", "add": 0.12, "max": 3 },
-    "fang": { "name": "흡혈 송곳니", "desc": "적을 처치할 때마다 체력 +{v}", "fmt": "int", "icon": "fang", "rarity": "rare", "stat": "lifesteal", "add": 2, "max": 3 },
+    "fang": { "name": "흡혈 송곳니", "desc": "중간 보스 이상을 쓰러뜨리면 체력 +{v}", "fmt": "int", "icon": "fang", "rarity": "rare", "stat": "lifesteal", "add": 15, "max": 3 },
     "plate": { "name": "강철 흉갑", "desc": "받는 피해 -{v}", "fmt": "pct", "icon": "shield", "rarity": "rare", "stat": "armor", "add": 0.1, "max": 3 },
     "chain": { "name": "연쇄의 고리", "desc": "연쇄 공격 +{v}회", "fmt": "int", "icon": "chain", "rarity": "epic", "stat": "chain", "add": 1, "max": 2, "fixed": true }
   }

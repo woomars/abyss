@@ -68,12 +68,13 @@ export class Game {
     this.loot = new Loot(config.items, this);
     events.on('kill', (e) => { this.loot.onKill(e.enemy); this.gainXp(e.enemy); });
     events.on('roomCleared', () => this.loot.magnet());
-    events.on('kill', () => {
-      if (this.bonusStats.lifesteal && !this.over) this.healFlat(this.bonusStats.lifesteal);
+    events.on('kill', (e) => {
+      // hp is precious: lifesteal only works on mid-boss-class kills and up
+      if (this.bonusStats.lifesteal && !this.over && e.enemy && e.enemy.isBoss) this.healFlat(this.bonusStats.lifesteal);
       this.stats.kills += 1;
       this.stats.bestCombo = Math.max(this.stats.bestCombo, this.effects.combo.count);
     });
-    // player health: enemy counterattacks hurt, a short invulnerability follows, regen after a quiet delay
+    // player health: enemy counterattacks hurt, a short invulnerability follows; it only comes back from cards
     this.over = false;
     this.resetHealth();
     this.enemies.onAttack = (e, riposte = false) => {
@@ -365,6 +366,7 @@ export class Game {
     this.pendingFlick = null;
     this.combat.reset();
     this.events.emit('relicPick', { relic: o, pos: { x: this.player.pos.x, y: this.player.pos.y } });
+    if (this.mode === 'dungeon' && this.dungeon.state === 'treasure') this.dungeon.advance(); // on to the next room
     return o;
   }
 

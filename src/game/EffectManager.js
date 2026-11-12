@@ -29,6 +29,7 @@ export class EffectManager {
     events.on('playerHit', (e) => this.onPlayerHit(e));
     events.on('chainBroken', (e) => this.text(e.pos.x, e.pos.y - 52, '끊김'));
     events.on('evade', (e) => this.text(e.pos.x, e.pos.y - 52, '회피'));
+    events.on('stun', (e) => this.ring(e.pos.x, e.pos.y, e.enemy.radius, e.enemy.radius + 26, '#ffe08a'));
     events.on('stormZap', (e) => { this.onLink({ ...e, chainIndex: 4 }); this.ring(e.to.x, e.to.y, 6, 34, '#9fd8ff'); });
     events.on('quake', (e) => {
       const n = Math.max(2, Math.ceil(Math.hypot(e.to.x - e.from.x, e.to.y - e.from.y) / 50));

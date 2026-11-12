@@ -1,106 +1,499 @@
 {
-  "slots": ["weapon", "helm", "armor", "gloves", "boots", "amulet", "ring"],
-  "loadoutSlots": ["weapon", "helm", "armor", "gloves", "boots", "amulet", "ring1", "ring2"],
+  "slots": [
+    "weapon",
+    "helm",
+    "armor",
+    "gloves",
+    "boots",
+    "amulet",
+    "ring"
+  ],
+  "loadoutSlots": [
+    "weapon",
+    "helm",
+    "armor",
+    "gloves",
+    "boots",
+    "amulet",
+    "ring1",
+    "ring2"
+  ],
   "parts": {
-    "weapon": { "label": "무기", "icon": "sword", "names": ["장검", "도끼", "단검", "대검"] },
-    "helm": { "label": "투구", "icon": "helm", "names": ["투구", "두건", "철모"] },
-    "armor": { "label": "갑옷", "icon": "shield", "names": ["갑옷", "사슬 갑옷", "판금"] },
-    "gloves": { "label": "장갑", "icon": "gloves", "names": ["장갑", "건틀릿"] },
-    "boots": { "label": "신발", "icon": "boots", "names": ["장화", "군화", "신발"] },
-    "amulet": { "label": "목걸이", "icon": "amulet", "names": ["목걸이", "부적"] },
-    "ring": { "label": "반지", "icon": "ring", "names": ["반지", "인장 반지"] }
+    "weapon": {
+      "label": "무기",
+      "icon": "sword",
+      "names": [
+        "장검",
+        "도끼",
+        "단검",
+        "대검"
+      ]
+    },
+    "helm": {
+      "label": "투구",
+      "icon": "helm",
+      "names": [
+        "투구",
+        "두건",
+        "철모"
+      ]
+    },
+    "armor": {
+      "label": "갑옷",
+      "icon": "shield",
+      "names": [
+        "갑옷",
+        "사슬 갑옷",
+        "판금"
+      ]
+    },
+    "gloves": {
+      "label": "장갑",
+      "icon": "gloves",
+      "names": [
+        "장갑",
+        "건틀릿"
+      ]
+    },
+    "boots": {
+      "label": "신발",
+      "icon": "boots",
+      "names": [
+        "장화",
+        "군화",
+        "신발"
+      ]
+    },
+    "amulet": {
+      "label": "목걸이",
+      "icon": "amulet",
+      "names": [
+        "목걸이",
+        "부적"
+      ]
+    },
+    "ring": {
+      "label": "반지",
+      "icon": "ring",
+      "names": [
+        "반지",
+        "인장 반지"
+      ]
+    }
   },
   "statLabels": {
-    "damage": ["공격력", "pct"], "attackFlat": ["공격력", "int"], "maxHp": ["최대 체력", "int"],
-    "crit": ["치명타 확률", "pct"], "critDamage": ["치명타 피해", "pct"], "speed": ["이동 속도", "pct"],
-    "cooldown": ["특수기 재사용 대기", "pctMinus"], "lifesteal": ["처치 시 체력", "int"], "armor": ["받는 피해", "pctMinus"],
-    "chain": ["연쇄 횟수", "int"], "chainRange": ["연쇄 거리", "pct"], "chainDamage": ["연쇄 피해", "pct"],
-    "range": ["공격 범위", "pct"], "dashRange": ["돌진 거리", "pct"], "knockback": ["넉백", "pct"],
-    "attackSpeed": ["기본 공격 속도", "pct"], "skillDamage": ["특수기 피해", "pct"]
+    "damage": [
+      "공격력",
+      "pct"
+    ],
+    "attackFlat": [
+      "공격력",
+      "int"
+    ],
+    "maxHp": [
+      "최대 체력",
+      "int"
+    ],
+    "crit": [
+      "치명타 확률",
+      "pct"
+    ],
+    "critDamage": [
+      "치명타 피해",
+      "pct"
+    ],
+    "speed": [
+      "이동 속도",
+      "pct"
+    ],
+    "cooldown": [
+      "특수기 재사용 대기",
+      "pctMinus"
+    ],
+    "lifesteal": [
+      "보스 처치 시 체력",
+      "int"
+    ],
+    "armor": [
+      "받는 피해",
+      "pctMinus"
+    ],
+    "chain": [
+      "연쇄 횟수",
+      "int"
+    ],
+    "chainRange": [
+      "연쇄 거리",
+      "pct"
+    ],
+    "chainDamage": [
+      "연쇄 피해",
+      "pct"
+    ],
+    "range": [
+      "공격 범위",
+      "pct"
+    ],
+    "dashRange": [
+      "돌진 거리",
+      "pct"
+    ],
+    "knockback": [
+      "넉백",
+      "pct"
+    ],
+    "attackSpeed": [
+      "기본 공격 속도",
+      "pct"
+    ],
+    "skillDamage": [
+      "특수기 피해",
+      "pct"
+    ]
   },
   "grades": {
-    "common": { "label": "일반", "color": "#a7b0ba", "affixes": 0, "mult": 1, "powder": 1, "survive": 0 },
-    "uncommon": { "label": "고급", "color": "#4fd1c5", "affixes": 1, "mult": 1.15, "powder": 1, "survive": 0 },
-    "rare": { "label": "희귀", "color": "#5aa0ff", "affixes": 2, "mult": 1.3, "powder": 2, "survive": 0.1 },
-    "epic": { "label": "영웅", "color": "#c27cff", "affixes": 3, "mult": 1.5, "powder": 3, "survive": 0.25 },
-    "legendary": { "label": "전설", "color": "#ff9a3c", "affixes": 3, "mult": 1.75, "powder": 5, "survive": 0.4 }
+    "common": {
+      "label": "일반",
+      "color": "#a7b0ba",
+      "affixes": 0,
+      "mult": 1,
+      "powder": 1,
+      "survive": 0
+    },
+    "uncommon": {
+      "label": "고급",
+      "color": "#4fd1c5",
+      "affixes": 1,
+      "mult": 1.15,
+      "powder": 1,
+      "survive": 0
+    },
+    "rare": {
+      "label": "희귀",
+      "color": "#5aa0ff",
+      "affixes": 2,
+      "mult": 1.3,
+      "powder": 2,
+      "survive": 0.1
+    },
+    "epic": {
+      "label": "영웅",
+      "color": "#c27cff",
+      "affixes": 3,
+      "mult": 1.5,
+      "powder": 3,
+      "survive": 0.25
+    },
+    "legendary": {
+      "label": "전설",
+      "color": "#ff9a3c",
+      "affixes": 3,
+      "mult": 1.75,
+      "powder": 5,
+      "survive": 0.4
+    }
   },
-  "gradeOrder": ["common", "uncommon", "rare", "epic", "legendary"],
+  "gradeOrder": [
+    "common",
+    "uncommon",
+    "rare",
+    "epic",
+    "legendary"
+  ],
   "qualities": [
-    { "label": "", "mult": 1, "survive": 0, "color": null },
-    { "label": "상급", "mult": 1.25, "survive": 0.05, "color": "#7fe0a0" },
-    { "label": "최상급", "mult": 1.5, "survive": 0.1, "color": "#ffcf5a" }
+    {
+      "label": "",
+      "mult": 1,
+      "survive": 0,
+      "color": null
+    },
+    {
+      "label": "상급",
+      "mult": 1.25,
+      "survive": 0.05,
+      "color": "#7fe0a0"
+    },
+    {
+      "label": "최상급",
+      "mult": 1.5,
+      "survive": 0.1,
+      "color": "#ffcf5a"
+    }
   ],
   "base": {
-    "weapon": { "stat": "attackFlat", "value": 3 },
-    "helm": { "stat": "maxHp", "value": 12 },
-    "armor": { "stat": "armor", "value": 0.04 },
-    "gloves": { "stat": "crit", "value": 0.03 },
-    "boots": { "stat": "speed", "value": 0.04 },
-    "amulet": { "stat": "skillDamage", "value": 0.08 },
-    "ring": { "stat": null, "value": 0 }
+    "weapon": {
+      "stat": "attackFlat",
+      "value": 3
+    },
+    "helm": {
+      "stat": "maxHp",
+      "value": 12
+    },
+    "armor": {
+      "stat": "armor",
+      "value": 0.04
+    },
+    "gloves": {
+      "stat": "crit",
+      "value": 0.03
+    },
+    "boots": {
+      "stat": "speed",
+      "value": 0.04
+    },
+    "amulet": {
+      "stat": "skillDamage",
+      "value": 0.08
+    },
+    "ring": {
+      "stat": null,
+      "value": 0
+    }
   },
   "perLevel": 0.05,
   "affixes": {
-    "damage": { "value": 0.05, "prefix": "날카로운" },
-    "range": { "value": 0.06, "prefix": "넓게 베는" },
-    "attackSpeed": { "value": 0.06, "prefix": "재빠른" },
-    "chain": { "value": 1, "minGrade": "rare", "fixed": true, "prefix": "연쇄하는" },
-    "chainRange": { "value": 0.08, "prefix": "뻗어 가는" },
-    "chainDamage": { "value": 0.08, "prefix": "몰아치는" },
-    "speed": { "value": 0.04, "prefix": "가벼운" },
-    "dashRange": { "value": 0.08, "prefix": "질주하는" },
-    "crit": { "value": 0.03, "prefix": "정확한" },
-    "critDamage": { "value": 0.15, "prefix": "잔혹한" },
-    "armor": { "value": 0.03, "prefix": "단단한" },
-    "maxHp": { "value": 10, "prefix": "강인한" },
-    "lifesteal": { "value": 1, "prefix": "피에 굶주린" },
-    "knockback": { "value": 0.1, "prefix": "육중한" },
-    "cooldown": { "value": 0.05, "prefix": "현자의" }
+    "damage": {
+      "value": 0.05,
+      "prefix": "날카로운"
+    },
+    "range": {
+      "value": 0.06,
+      "prefix": "넓게 베는"
+    },
+    "attackSpeed": {
+      "value": 0.06,
+      "prefix": "재빠른"
+    },
+    "chain": {
+      "value": 1,
+      "minGrade": "rare",
+      "fixed": true,
+      "prefix": "연쇄하는"
+    },
+    "chainRange": {
+      "value": 0.08,
+      "prefix": "뻗어 가는"
+    },
+    "chainDamage": {
+      "value": 0.08,
+      "prefix": "몰아치는"
+    },
+    "speed": {
+      "value": 0.04,
+      "prefix": "가벼운"
+    },
+    "dashRange": {
+      "value": 0.08,
+      "prefix": "질주하는"
+    },
+    "crit": {
+      "value": 0.03,
+      "prefix": "정확한"
+    },
+    "critDamage": {
+      "value": 0.15,
+      "prefix": "잔혹한"
+    },
+    "armor": {
+      "value": 0.03,
+      "prefix": "단단한"
+    },
+    "maxHp": {
+      "value": 10,
+      "prefix": "강인한"
+    },
+    "lifesteal": {
+      "value": 12,
+      "minGrade": "epic",
+      "prefix": "피에 굶주린"
+    },
+    "knockback": {
+      "value": 0.1,
+      "prefix": "육중한"
+    },
+    "cooldown": {
+      "value": 0.05,
+      "prefix": "현자의"
+    }
   },
   "legendaries": {
-    "stormblade": { "name": "폭풍의 대검", "slot": "weapon", "effect": "storm" },
-    "vampLord": { "name": "흡혈 군주의 검", "slot": "weapon", "effect": "vampLord" },
-    "earthshatter": { "name": "대지 파쇄자", "slot": "gloves", "effect": "earthshatter" },
-    "wraithArmor": { "name": "망령의 갑옷", "slot": "armor", "effect": "wraithArmor" },
-    "abyssRing": { "name": "심연의 반지", "slot": "ring", "effect": "abyssRing" }
+    "stormblade": {
+      "name": "폭풍의 대검",
+      "slot": "weapon",
+      "effect": "storm"
+    },
+    "vampLord": {
+      "name": "흡혈 군주의 검",
+      "slot": "weapon",
+      "effect": "vampLord"
+    },
+    "earthshatter": {
+      "name": "대지 파쇄자",
+      "slot": "gloves",
+      "effect": "earthshatter"
+    },
+    "wraithArmor": {
+      "name": "망령의 갑옷",
+      "slot": "armor",
+      "effect": "wraithArmor"
+    },
+    "abyssRing": {
+      "name": "심연의 반지",
+      "slot": "ring",
+      "effect": "abyssRing"
+    }
   },
   "effects": {
-    "storm": { "label": "연쇄 공격이 번개로 바뀌어 근처 적 하나에게 튄다 · 연쇄 거리 +30%", "chainRange": 0.3, "zapDamage": 0.5, "zapRadius": 140 },
-    "vampLord": { "label": "적을 처치할 때마다 최대 체력의 3% 회복", "heal": 0.03 },
-    "earthshatter": { "label": "돌진 경로를 따라 충격파가 일어난다", "damage": 0.6, "width": 45 },
-    "wraithArmor": { "label": "15% 확률로 받는 피해를 무효로 한다", "chance": 0.15, "invuln": 0.3 },
-    "abyssRing": { "label": "체력이 낮을수록 공격력 증가 (30% 이하에서 +40%)", "max": 0.4, "fullAt": 0.3 },
-    "setBlast": { "label": "연쇄 마지막 타격에서 폭발", "radius": 110, "damage": 2 }
+    "storm": {
+      "label": "연쇄 공격이 번개로 바뀌어 근처 적 하나에게 튄다 · 연쇄 거리 +30%",
+      "chainRange": 0.3,
+      "zapDamage": 0.5,
+      "zapRadius": 140
+    },
+    "vampLord": {
+      "label": "중간 보스 이상을 쓰러뜨리면 최대 체력의 25% 회복",
+      "heal": 0.25
+    },
+    "earthshatter": {
+      "label": "돌진 경로를 따라 충격파가 일어난다",
+      "damage": 0.6,
+      "width": 45
+    },
+    "wraithArmor": {
+      "label": "15% 확률로 받는 피해를 무효로 한다",
+      "chance": 0.15,
+      "invuln": 0.3
+    },
+    "abyssRing": {
+      "label": "체력이 낮을수록 공격력 증가 (30% 이하에서 +40%)",
+      "max": 0.4,
+      "fullAt": 0.3
+    },
+    "setBlast": {
+      "label": "연쇄 마지막 타격에서 폭발",
+      "radius": 110,
+      "damage": 2
+    }
   },
   "sets": {
     "abyss": {
       "name": "심연의 군주",
-      "pieces": { "helm": "심연의 투구", "armor": "심연의 판금", "gloves": "심연의 장갑", "boots": "심연의 군화", "weapon": "심연의 검" },
-      "bonuses": { "2": { "damage": 0.1 }, "3": { "chain": 1 }, "4": { "chainDamage": 0.25 }, "5": { "effect": "setBlast" } },
-      "labels": { "2": "공격력 +10%", "3": "연쇄 횟수 +1", "4": "연쇄 피해 +25%", "5": "연쇄 마지막 타격에서 폭발" }
+      "pieces": {
+        "helm": "심연의 투구",
+        "armor": "심연의 판금",
+        "gloves": "심연의 장갑",
+        "boots": "심연의 군화",
+        "weapon": "심연의 검"
+      },
+      "bonuses": {
+        "2": {
+          "damage": 0.1
+        },
+        "3": {
+          "chain": 1
+        },
+        "4": {
+          "chainDamage": 0.25
+        },
+        "5": {
+          "effect": "setBlast"
+        }
+      },
+      "labels": {
+        "2": "공격력 +10%",
+        "3": "연쇄 횟수 +1",
+        "4": "연쇄 피해 +25%",
+        "5": "연쇄 마지막 타격에서 폭발"
+      }
     }
   },
   "drops": {
-    "chance": { "normal": 0.03, "enhanced": 0.12, "elite": 0.15 },
-    "boss": { "count": 2, "minGrade": "rare", "floorBonus": 10 },
-    "gradeWeights": { "common": 55, "uncommon": 28, "rare": 12, "epic": 4, "legendary": 1 },
-    "gradePerFloor": { "common": -1.2, "uncommon": 0.4, "rare": 0.5, "epic": 0.25, "legendary": 0.08 },
+    "chance": {
+      "normal": 0.03,
+      "enhanced": 0.12,
+      "elite": 0.15
+    },
+    "boss": {
+      "count": 2,
+      "minGrade": "rare",
+      "floorBonus": 10
+    },
+    "gradeWeights": {
+      "common": 55,
+      "uncommon": 28,
+      "rare": 12,
+      "epic": 4,
+      "legendary": 1
+    },
+    "gradePerFloor": {
+      "common": -1.2,
+      "uncommon": 0.4,
+      "rare": 0.5,
+      "epic": 0.25,
+      "legendary": 0.08
+    },
     "gradeMin": 5,
-    "setChance": { "base": 0.06, "perFloor": 0.006, "max": 0.25 },
+    "setChance": {
+      "base": 0.06,
+      "perFloor": 0.006,
+      "max": 0.25
+    },
     "quality": {
-      "chance": [null, { "base": 0.15, "perFloor": 0.015, "max": 0.45 }, { "base": 0.03, "perFloor": 0.01, "max": 0.3 }],
+      "chance": [
+        null,
+        {
+          "base": 0.15,
+          "perFloor": 0.015,
+          "max": 0.45
+        },
+        {
+          "base": 0.03,
+          "perFloor": 0.01,
+          "max": 0.3
+        }
+      ],
       "bossBonus": 0.1
     }
   },
-  "pickup": { "radius": 90, "flyTime": 0.28, "scatter": 40 },
+  "pickup": {
+    "radius": 90,
+    "flyTime": 0.28,
+    "scatter": 40
+  },
   "pocketSize": 30,
   "stashSize": 60,
   "enhance": {
     "max": 10,
-    "points": [5, 12, 30],
-    "need": [10, 15, 20, 25, 30, 40, 50, 60, 75, 90],
-    "bonus": [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.75, 1.0],
+    "points": [
+      5,
+      12,
+      30
+    ],
+    "need": [
+      10,
+      15,
+      20,
+      25,
+      30,
+      40,
+      50,
+      60,
+      75,
+      90
+    ],
+    "bonus": [
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.75,
+      1.0
+    ],
     "refund": 0.5
-  }
+  },
+  "inheritNote": "흡혈의 힘은 대를 잇지 못했다"
 }

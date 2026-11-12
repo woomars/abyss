@@ -447,3 +447,9 @@ html, body {
 .fg-actions.sticky { position: sticky; bottom: -6px; margin: 2px 0 -6px; padding: 5px 0 6px; background: rgba(12, 9, 16, 0.97); }
 .fg-flash.good { background: rgba(40, 20, 60, 0.95); border-color: #c27cff; color: #f0dcff; font-size: 15px; font-weight: 700; box-shadow: 0 0 24px rgba(194, 124, 255, 0.6); }
 .pause-menu { z-index: 40; }
+.idetail .ilost { font-size: 11px; color: #8a7a9a; font-style: italic; }
+
+/* treasure room: a static screen, no walking */
+.relic-picker.static { background: radial-gradient(ellipse at 50% 60%, rgba(70, 48, 14, 0.95), rgba(8, 6, 4, 0.98) 70%); }
+.rp-room { font-size: 13px; color: #c9a86a; letter-spacing: 2px; margin-bottom: -4px; }
+.rp-room b { color: #ffe08a; font-size: 15px; }

@@ -154,6 +154,18 @@ export function featText(item, cfg, record) {
   return `${got}. 그는 ${record.floor}층까지 내려갔다.`;
 }
 
+// lifesteal does not pass to the next generation: strip it (affix and the vampire lord's power)
+export function stripLifesteal(item, cfg) {
+  let changed = false;
+  if (item.base.stat === 'lifesteal') { item.base = { stat: 'maxHp', value: cfg.affixes.maxHp.value }; changed = true; }
+  const before = item.affixes.length;
+  item.affixes = item.affixes.filter((a) => a.stat !== 'lifesteal');
+  if (item.affixes.length !== before) changed = true;
+  if (item.effect === 'vampLord') { item.effect = null; changed = true; }
+  if (changed) item.lostPower = cfg.inheritNote;
+  return changed;
+}
+
 // worn gear may survive (grade + quality chance, once per item); pocket never does.
 // record: { given, family, generation, floor } of the one who died. Survivors stay worn,
 // get the scar and an heirloom entry.
@@ -175,5 +187,6 @@ export function resolveDeath(ctx, rng, record) {
       lost.push(it);
     }
   }
+  for (const it of [...survived, ...ctx.vault.stash]) stripLifesteal(it, cfg);
   return { survived, lost };
 }

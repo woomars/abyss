@@ -77,7 +77,11 @@ async function boot() {
     else if (e.kind === 'treasure') banner.show('보물방', '상자를 열어 보세요');
     else banner.show(e.title);
   });
-  events.on('roomCleared', (e) => banner.show('방 정리', `출구가 열렸습니다 · 골드 +${e.gold}`));
+  events.on('roomCleared', (e) => {
+    if (e.kind === 'boss') banner.show('보스 처치!', `보물 상자가 나타났습니다 · 골드 +${e.gold}`, { kind: 'reward', ms: 2400 });
+    else banner.show('방 정리', `출구가 열렸습니다 · 골드 +${e.gold}`);
+  });
+  events.on('bossEnrage', () => banner.show('분노!', '', { kind: 'boss', ms: 1200 }));
   events.on('chestOpen', (e) => banner.show(`골드 +${e.gold}`, e.heal >= 1 ? '체력을 모두 회복했습니다' : `체력 ${Math.round(e.heal * 100)}% 회복`, { kind: 'reward' }));
   menu = new PauseMenu(ui, {
     settings,

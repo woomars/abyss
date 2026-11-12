@@ -42,6 +42,8 @@ export class AudioSystem {
     events.on('floorExit', () => this.play('portal'));
     events.on('enemyShoot', () => this.play('bow'));
     events.on('wraithBlink', () => this.play('blink'));
+    events.on('bossPattern', (e) => this.play(e.kind === 'summon' ? 'summon' : 'warn'));
+    events.on('bossEnrage', () => this.play('roar'));
   }
 
   // fetch + decode every configured sample (after the AudioContext exists)
@@ -196,6 +198,18 @@ const VOICES = {
   blink: (a, p, g) => {
     a.tone('sine', 900 * p, 200 * p, 0.08 * g, 0.3, 0.02);
     a.noiseBurst('bandpass', 1800 * p, 400 * p, 3, 0.08 * g, 0.3, 0.03);
+  },
+  warn: (a, p, g) => {
+    a.tone('sawtooth', 110 * p, 90 * p, 0.12 * g, 0.4, 0.05);
+    a.tone('sine', 55 * p, 45 * p, 0.3 * g, 0.45, 0.05);
+  },
+  summon: (a, p, g) => {
+    a.tone('triangle', 200 * p, 600 * p, 0.1 * g, 0.5, 0.05);
+    a.noiseBurst('bandpass', 600 * p, 2000 * p, 2, 0.1 * g, 0.5, 0.1);
+  },
+  roar: (a, p, g) => {
+    a.tone('sawtooth', 150 * p, 60 * p, 0.25 * g, 1.0, 0.05);
+    a.noiseBurst('lowpass', 900, 120, 0.8, 0.35 * g, 1.0, 0.05);
   },
   chime: (a, p, g) => {
     a.tone('sine', 660 * p, 660 * p, 0.16 * g, 0.5, 0.01);

@@ -37,7 +37,12 @@ export class Dungeon {
     this.enterRoom(this.info.kind);
   }
 
-  get remaining() { return this.game.enemies.targetable().length; }
+  // enemies still to beat (a faded-out wraith counts even though it cannot be hit right now)
+  get remaining() {
+    let n = 0;
+    for (const e of this.game.enemies.all()) if (e.alive && !e.dying) n++;
+    return n;
+  }
 
   // build a room, move the player there (behind the fade) and populate it
   enterRoom(kind) {
@@ -186,7 +191,11 @@ export class Dungeon {
         else if (this.waveIndex >= this.waveCount && alive === 0) this.clear();
       } else if (this.roomKind === 'boss' && this.boss && !this.boss.targetable) {
         // the boss falls: its minions fall with it
-        for (const e of g.enemies.targetable()) e.takeHit({ damage: e.hp + 1, knockDir: { x: 0, y: 0 }, knockback: 0, stagger: 0 });
+        for (const e of g.enemies.all()) {
+          if (!e.alive || e.dying) continue;
+          e.hidden = false;
+          e.takeHit({ damage: e.hp + 1, knockDir: { x: 0, y: 0 }, knockback: 0, stagger: 0 });
+        }
         this.clear(this.boss.pos);
       }
       // stuck guard: no kill for a while -> bring far enemies back

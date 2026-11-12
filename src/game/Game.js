@@ -55,6 +55,7 @@ export class Game {
     this.hazards = new Hazards(this.arena);
     this.hazards.onHit = (dmg, h) => this.damagePlayer(dmg, { pos: { x: h.x, y: h.y } });
     this.enemies.game = this;
+    events.on('bossEnrage', () => this.camera.addShake(this.config.camera.shake.crit));
     // practice arena by default (endless enemies); startRun() switches to the dungeon
     this.mode = 'practice';
     this.dungeon = new Dungeon(config.dungeon, this);
@@ -113,6 +114,7 @@ export class Game {
   damagePlayer(amount, source) {
     const p = this.player;
     if (this.over || p.invuln > 0 || amount <= 0) return false;
+    if (this.mode === 'dungeon' && this.dungeon.state === 'fadeOut') return false; // already leaving
     p.hp = Math.max(0, p.hp - amount);
     p.invuln = this.config.combat.player.hurtInvuln;
     this.sinceHit = 0;

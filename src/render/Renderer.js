@@ -524,6 +524,7 @@ export class Renderer {
     this.drawTrail(game);
     this.drawCombo(game.effects.combo);
     if (game.mode === 'dungeon') {
+      this.drawBossBar(game.dungeon.boss);
       this.drawExitArrow(game.dungeon);
       const f = game.dungeon.fade;
       if (f > 0) {
@@ -592,6 +593,34 @@ export class Renderer {
       else ctx.fillRect(-w / 2, -h / 2 - 2, w, 10);
       ctx.strokeRect(-w / 2, ch.opened ? -h / 2 - 10 : -h / 2 - 2, w, ch.opened ? 8 : 10);
       ctx.restore();
+    }
+  }
+
+  // boss name and health across the top of the screen
+  drawBossBar(boss) {
+    if (!boss || !boss.alive) return;
+    const ctx = this.ctx;
+    const w = Math.min(420, this.cssW * 0.42), h = 10;
+    const x = (this.cssW - w) / 2, y = 58;
+    const k = Math.max(0, boss.hp / boss.maxHp);
+    const enraged = boss.ai && boss.ai.enraged;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    ctx.fillStyle = enraged ? '#ff7a60' : '#f0dfae';
+    ctx.fillText(boss.tcfg.name + (enraged ? ' (분노)' : ''), this.cssW / 2, y - 3);
+    ctx.fillStyle = '#1a0d10';
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = enraged ? '#ff3b2a' : '#c0392b';
+    ctx.fillRect(x, y, w * k, h);
+    ctx.strokeStyle = '#c9a86a';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x - 0.5, y - 0.5, w + 1, h + 1);
+    // enrage threshold tick
+    const at = boss.tcfg.enrageAt;
+    if (at) {
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillRect(x + w * at - 1, y, 2, h);
     }
   }
 

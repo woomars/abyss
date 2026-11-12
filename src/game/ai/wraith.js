@@ -16,7 +16,7 @@ export const wraithAI = {
       e.fade = 1;
       s.cd -= dt;
       const dx = p.pos.x - e.pos.x, dy = p.pos.y - e.pos.y, d = Math.hypot(dx, dy) || 1;
-      if (s.cd <= 0 && d < 900) {
+      if (s.cd <= 0 && d < t.blinkRange) {
         s.phase = 'out'; s.t = t.blinkTime; e.hidden = true;
         game.events.emit('wraithBlink', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } });
         return { x: 0, y: 0 };

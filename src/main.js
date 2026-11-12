@@ -66,8 +66,9 @@ async function boot() {
   const gameOver = new GameOver(ui, { onRetry: () => game.restart() });
   const records = new RecordStore(safeStorage());
   events.on('playerDown', (s) => {
-    const r = s.floor ? records.submitFloor(s.floor) : { bestFloor: 0, isNew: false };
-    gameOver.show({ ...s, ...r });
+    // only honest runs (started at floor 1, not via the debug floor jump) count for the record
+    const r = s.floor && s.startFloor === 1 ? records.submitFloor(s.floor) : { bestFloor: records.load().bestFloor, isNew: false };
+    gameOver.show({ ...s, ...r, unranked: !!s.floor && s.startFloor !== 1 });
   });
   // dungeon announcements and music follow the room
   const banner = new Banner(ui);

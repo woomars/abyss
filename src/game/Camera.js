@@ -74,7 +74,9 @@ export class Camera {
       const dx = player.pos.x - this.pos.x, dy = player.pos.y - this.pos.y;
       const d = Math.hypot(dx, dy);
       const R = c.freeRadiusFrac * this.viewW;
-      if (d <= R) {
+      const inside = this.clampPoint(this.pos);
+      const out = Math.abs(inside.x - this.pos.x) > 0.5 || Math.abs(inside.y - this.pos.y) > 0.5;
+      if (d <= R && !out) {
         // hold: glide to a stop by decaying the current velocity (symmetric in every direction;
         // smoothDamp toward its own position would zero negative velocities in one frame)
         const k = Math.exp(-dt / Math.max(c.combatFollowTime / 3, 1e-4));
@@ -84,8 +86,9 @@ export class Camera {
         this.applyShake(dt);
         return;
       }
-      tx = player.pos.x - (dx / d) * R;
-      ty = player.pos.y - (dy / d) * R;
+      // outside the room while holding: glide back in; otherwise follow at the free radius
+      tx = d <= R ? inside.x : player.pos.x - (dx / d) * R;
+      ty = d <= R ? inside.y : player.pos.y - (dy / d) * R;
       smooth = c.combatFollowTime;
     } else {
       tx = player.pos.x + Math.cos(this.lookAngle) * c.lookAhead;

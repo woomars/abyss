@@ -16,7 +16,7 @@ export const archerAI = {
     const ux = dx / d, uy = dy / d;
     if (s.aim > 0) {
       // track the target until the last 40% of the windup, then hold still and release
-      if (s.aim > t.windup * 0.4) s.aimDir = this.leadDir(e, game);
+      if (s.aim > t.windup * t.lockFraction) s.aimDir = this.leadDir(e, game);
       s.aim -= dt;
       if (s.aim <= 0) {
         s.aim = 0;
@@ -41,7 +41,7 @@ export const archerAI = {
     const sp = e.speed;
     if (d > t.keepMax) return { x: ux * sp, y: uy * sp };
     if (d < t.keepMin) return { x: -ux * sp, y: -uy * sp };
-    return { x: -uy * s.strafe * sp * 0.4, y: ux * s.strafe * sp * 0.4 }; // circle the player
+    return { x: -uy * s.strafe * sp * t.strafe, y: ux * s.strafe * sp * t.strafe }; // circle the player
   },
 
   // aim a little ahead of a moving player (lead = fraction of the arrow's travel time)
@@ -49,7 +49,7 @@ export const archerAI = {
     const p = game.player, t = e.tcfg;
     const vx = p.heading.x * (p.speed || 0), vy = p.heading.y * (p.speed || 0);
     const travel = Math.hypot(p.pos.x - e.pos.x, p.pos.y - e.pos.y) / t.arrowSpeed;
-    const lead = (t.lead == null ? 0.6 : t.lead) * travel;
+    const lead = t.lead * travel;
     const tx = p.pos.x + vx * lead - e.pos.x, ty = p.pos.y + vy * lead - e.pos.y;
     const l = Math.hypot(tx, ty) || 1;
     return { x: tx / l, y: ty / l };

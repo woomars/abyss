@@ -6,12 +6,12 @@ const CALM = { speed: 1, windup: 1, cooldown: 1 };
 
 export const bossAI = {
   init(e) {
-    e.ai = { state: 'chase', t: 1.2, pattern: null, last: null, enraged: false, dir: { x: -1, y: 0 } };
+    e.ai = { state: 'chase', t: e.tcfg.openingDelay, pattern: null, last: null, enraged: false, dir: { x: -1, y: 0 } };
   },
 
   mods(e) { return e.ai.enraged ? e.tcfg.enrage : CALM; },
 
-  minions(e, game) { return game.enemies.targetable().filter((m) => m !== e && !m.isBoss).length; },
+  minions(e, game) { return game.enemies.all().filter((m) => m !== e && m.alive && !m.dying && !m.isBoss).length; },
 
   pick(e, game) {
     const t = e.tcfg;
@@ -49,7 +49,7 @@ export const bossAI = {
     const mods = info ? { ...info.mods } : null;
     list.slice(0, room).forEach((type, i, arr) => {
       const a = (i / arr.length) * Math.PI * 2 + game.rng() * 0.5;
-      const r = e.radius + 50;
+      const r = e.radius + e.tcfg.summonRing;
       game.enemies.spawnAt(type, { x: e.pos.x + Math.cos(a) * r, y: e.pos.y + Math.sin(a) * r }, mods);
     });
   },
@@ -79,11 +79,11 @@ export const bossAI = {
     if (s.t <= 0) {
       const name = this.pick(e, game);
       if (name) { this.start(e, game, name); return { x: 0, y: 0 }; }
-      s.t = 0.5;
+      s.t = t.retryDelay;
     }
     const pp = game.player.pos;
     const dx = pp.x - e.pos.x, dy = pp.y - e.pos.y, d = Math.hypot(dx, dy) || 1;
-    if (d < e.radius + game.player.radius + 30) return { x: 0, y: 0 };
+    if (d < e.radius + game.player.radius + t.stopDistance) return { x: 0, y: 0 };
     const sp = e.speed * m.speed;
     return { x: (dx / d) * sp, y: (dy / d) * sp };
   },

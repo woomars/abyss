@@ -2,11 +2,11 @@
 // Every area shows its shape first (delay) and only then checks the player once. Pure game logic.
 const TAU = Math.PI * 2;
 const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
-const FLASH = 0.15; // how long a resolved area stays visible
 
 export class Hazards {
-  constructor(arena) {
+  constructor(arena, cfg = null) {
     this.arena = arena;
+    this.cfg = cfg; // config.enemies (live): hazardFlash = how long a resolved area stays visible
     this.list = [];
     this.onHit = null; // (damage, hazard) => void, set by Game
   }
@@ -52,7 +52,7 @@ export class Hazards {
           h.done = true;
           if (this.inside(h, player.pos, pr)) this.hit(h, player);
         }
-        if (h.done && h.t >= h.delay + FLASH) remove = true;
+        if (h.done && h.t >= h.delay + ((this.cfg && this.cfg.hazardFlash) || 0.15)) remove = true;
       } else if (h.kind === 'ring') {
         if (h.t >= h.delay) {
           h.r = (h.t - h.delay) * h.speed;

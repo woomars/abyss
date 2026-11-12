@@ -21,13 +21,15 @@ export class GameOver {
   }
 
   // floor 0 = practice arena (no floor stats)
-  show({ kills, bestCombo, floor = 0, bestFloor = 0, isNew = false }) {
+  show({ kills, bestCombo, floor = 0, bestFloor = 0, isNew = false, unranked = false }) {
     this.el.querySelector('.go-kills').textContent = String(kills);
     this.el.querySelector('.go-combo').textContent = String(bestCombo);
     this.el.querySelector('.go-floor').textContent = `${floor}층`;
     this.el.querySelector('.go-floor-box').classList.toggle('hidden', !floor);
     const best = this.el.querySelector('.go-best');
-    best.textContent = !floor ? '' : isNew ? `최고 기록 갱신! ${bestFloor}층` : `최고 기록 ${bestFloor}층`;
+    best.textContent = !floor ? ''
+      : unranked ? '층 이동으로 시작한 판은 기록하지 않습니다'
+        : isNew ? `최고 기록 갱신! ${bestFloor}층` : `최고 기록 ${bestFloor}층`;
     best.classList.toggle('new', isNew);
     this.el.classList.remove('hidden');
   }

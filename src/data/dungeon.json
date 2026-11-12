@@ -161,7 +161,8 @@
       4
     ],
     "edgePad": 60,
-    "maxDistance": 780
+    "maxDistance": 780,
+    "clearance": 40
   },
   "stuckTime": 15,
   "fadeTime": 0.35,
@@ -366,5 +367,7 @@
     ]
   },
   "startInset": 180,
-  "exitInset": 140
+  "exitInset": 140,
+  "exitArmDelay": 0.8,
+  "stragglerMargin": 100
 }

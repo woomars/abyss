@@ -33,6 +33,7 @@ export class Dungeon {
   start(floor) {
     this.reset();
     this.floor = floor;
+    this.startFloor = floor; // runs started deeper (debug) do not count for the record
     this.info = floorInfo(floor, this.cfg);
     this.enterRoom(this.info.kind);
   }
@@ -51,7 +52,7 @@ export class Dungeon {
     this.room = room;
     this.roomKind = kind;
     g.loadRoom(room);
-    this.exit = { x: room.exit.x, y: room.exit.y, r: c.exitRadius, open: false };
+    this.exit = { x: room.exit.x, y: room.exit.y, r: c.exitRadius, open: false, armIn: 0, armed: false };
     this.chest = null;
     this.boss = null;
     this.waveIndex = 0;
@@ -126,7 +127,7 @@ export class Dungeon {
       } else {
         q = { x: pad + rng() * (a.width - 2 * pad), y: pad + rng() * (a.height - 2 * pad) };
       }
-      if (a.resolveCircle(q, 40).hitWall) continue;
+      if (a.resolveCircle(q, c.spawn.clearance).hitWall) continue;
       const d = dist(q, p);
       if (d >= min && (tries >= 70 || !inView(q))) return q;
       if (d > bestD) { best = q; bestD = d; }
@@ -134,9 +135,16 @@ export class Dungeon {
     return best || { x: a.width - pad, y: a.height / 2 };
   }
 
+  openExit() {
+    this.exit.open = true;
+    this.exit.armIn = this.cfg.exitArmDelay;
+    this.exit.armed = false;
+    this.game.events.emit('exitOpen', { pos: { x: this.exit.x, y: this.exit.y } });
+  }
+
   clear(bossPos = null) {
     const c = this.cfg, g = this.game;
-    this.exit.open = true;
+    g.hazards.clear(); // nothing left in flight can hurt after the room is won
     const mult = 1 + c.rewards.goldPerFloor * (this.floor - 1);
     const gold = Math.round(randInt(c.rewards.clearGold, g.rng) * mult);
     this.gold += gold;
@@ -145,7 +153,7 @@ export class Dungeon {
       this.chest = { x: pos.x, y: pos.y, r: c.chestRadius * 1.3, opened: false, big: true };
     }
     g.events.emit('roomCleared', { floor: this.floor, kind: this.roomKind, gold });
-    g.events.emit('exitOpen', { pos: { x: this.exit.x, y: this.exit.y } });
+    this.openExit();
   }
 
   openChest() {
@@ -157,17 +165,24 @@ export class Dungeon {
     this.gold += gold;
     g.healPlayer(heal);
     g.events.emit('chestOpen', { pos: { x: ch.x, y: ch.y }, gold, heal, big: ch.big });
-    if (!this.exit.open) {
-      this.exit.open = true;
-      g.events.emit('exitOpen', { pos: { x: this.exit.x, y: this.exit.y } });
-    }
+    if (!this.exit.open) this.openExit();
   }
 
   // enemies left far away (stuck behind pillars, wandering) come back near the player
+  // is the straight line between two points cut by a pillar
+  blocked(a, b) {
+    const arena = this.game.arena, n = Math.ceil(dist(a, b) / 20);
+    for (let i = 1; i < n; i++) {
+      const q = { x: a.x + ((b.x - a.x) * i) / n, y: a.y + ((b.y - a.y) * i) / n };
+      if (arena.resolveCircle(q, 2).hitWall) return true;
+    }
+    return false;
+  }
+
   bringBackStragglers() {
     const g = this.game, p = g.player.pos;
     for (const e of g.enemies.targetable()) {
-      if (dist(e.pos, p) <= this.cfg.spawn.maxDistance + 100) continue;
+      if (dist(e.pos, p) <= this.cfg.spawn.maxDistance + this.cfg.stragglerMargin && !this.blocked(e.pos, p)) continue;
       const q = this.spawnPoint();
       e.pos = { x: q.x, y: q.y };
       e.prevPos = { x: q.x, y: q.y };
@@ -191,10 +206,14 @@ export class Dungeon {
         else if (this.waveIndex >= this.waveCount && alive === 0) this.clear();
       } else if (this.roomKind === 'boss' && this.boss && !this.boss.targetable) {
         // the boss falls: its minions fall with it
+        const bp = this.boss.pos;
         for (const e of g.enemies.all()) {
           if (!e.alive || e.dying) continue;
           e.hidden = false;
-          e.takeHit({ damage: e.hp + 1, knockDir: { x: 0, y: 0 }, knockback: 0, stagger: 0 });
+          const dx = e.pos.x - bp.x, dy = e.pos.y - bp.y, l = Math.hypot(dx, dy) || 1;
+          const dir = { x: dx / l, y: dy / l };
+          e.takeHit({ damage: e.hp + 1, knockDir: dir, knockback: 0, stagger: 0 });
+          g.events.emit('kill', { enemy: e, pos: { x: e.pos.x, y: e.pos.y }, dir, crit: false });
         }
         this.clear(this.boss.pos);
       }
@@ -206,8 +225,15 @@ export class Dungeon {
       if (now > 0 && this.sinceKill >= c.stuckTime) { this.bringBackStragglers(); this.sinceKill = 0; }
     }
     const p = g.player;
+    this.exit.r = c.exitRadius;
+    if (this.chest) this.chest.r = c.chestRadius * (this.chest.big ? 1.3 : 1);
+    if (this.exit.open && !this.exit.armed) {
+      this.exit.armIn -= dt;
+      const outside = dist(p.pos, this.exit) > this.exit.r + p.radius;
+      if (this.exit.armIn <= 0 && outside) this.exit.armed = true;
+    }
     if (this.chest && !this.chest.opened && dist(p.pos, this.chest) <= this.chest.r + p.radius) this.openChest();
-    if (this.exit.open && this.state === 'play' && dist(p.pos, this.exit) <= this.exit.r + p.radius) {
+    if (this.exit.armed && this.state === 'play' && dist(p.pos, this.exit) <= this.exit.r + p.radius) {
       this.state = 'fadeOut';
       g.events.emit('floorExit', { floor: this.floor });
     }

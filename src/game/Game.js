@@ -52,7 +52,7 @@ export class Game {
     this.enemies.onAttack = (e) => this.damagePlayer(e.attack, e);
     this.enemies.onStrike = (e, hit) => events.emit('enemyStrike', { enemy: e, pos: { x: e.pos.x, y: e.pos.y }, hit });
     // enemy attacks in the world (arrows, telegraphed areas)
-    this.hazards = new Hazards(this.arena);
+    this.hazards = new Hazards(this.arena, config.enemies);
     this.hazards.onHit = (dmg, h) => this.damagePlayer(dmg, { pos: { x: h.x, y: h.y } });
     this.enemies.game = this;
     events.on('bossEnrage', () => this.camera.addShake(this.config.camera.shake.crit));
@@ -126,7 +126,8 @@ export class Game {
     if (p.hp <= 0) {
       this.over = true;
       this.combat.cancel();
-      this.events.emit('playerDown', { kills: this.stats.kills, bestCombo: this.stats.bestCombo, floor: this.mode === 'dungeon' ? this.dungeon.floor : 0 });
+      const run = this.mode === 'dungeon';
+      this.events.emit('playerDown', { kills: this.stats.kills, bestCombo: this.stats.bestCombo, floor: run ? this.dungeon.floor : 0, startFloor: run ? this.dungeon.startFloor : 0 });
     }
     return true;
   }

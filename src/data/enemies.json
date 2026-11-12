@@ -52,7 +52,10 @@
       "cooldown": 2.4,
       "arrowSpeed": 430,
       "arrowRadius": 6,
-      "arrowRange": 700
+      "arrowRange": 700,
+      "lockFraction": 0.4,
+      "lead": 0.6,
+      "strafe": 0.4
     },
     "wraith": {
       "name": "망령",
@@ -74,7 +77,8 @@
         130
       ],
       "aoeRadius": 90,
-      "aoeDelay": 0.7
+      "aoeDelay": 0.7,
+      "blinkRange": 900
     },
     "warchief": {
       "rank": "boss",
@@ -123,7 +127,11 @@
           "damage": 18,
           "recover": 0.5
         }
-      }
+      },
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50
     },
     "gatekeeper": {
       "rank": "boss",
@@ -174,7 +182,11 @@
           "recover": 0.4,
           "maxMinions": 8
         }
-      }
+      },
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50
     }
   },
   "counterWindow": 1,
@@ -183,5 +195,6 @@
   "spawnAheadChance": 0.65,
   "spawnAheadDeg": 60,
   "despawnDistance": 1400,
-  "deathTime": 0.35
+  "deathTime": 0.35,
+  "hazardFlash": 0.15
 }

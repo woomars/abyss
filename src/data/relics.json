@@ -78,7 +78,7 @@
       "desc": "체력 {v} 회복",
       "fmt": "pct",
       "icon": "potion",
-      "rarity": "rare",
+      "rarity": "epic",
       "heal": 0.5,
       "cap": 1
     },
@@ -89,8 +89,7 @@
       "icon": "eye",
       "rarity": "common",
       "stat": "crit",
-      "add": 0.06,
-      "max": 8
+      "add": 0.06
     },
     "boots": {
       "name": "바람의 정수",
@@ -99,8 +98,7 @@
       "icon": "boots",
       "rarity": "common",
       "stat": "speed",
-      "add": 0.08,
-      "max": 5
+      "add": 0.08
     },
     "goldbag": {
       "name": "금화 주머니",
@@ -120,8 +118,7 @@
       "icon": "hourglass",
       "rarity": "rare",
       "stat": "cooldown",
-      "add": 0.12,
-      "max": 4
+      "add": 0.12
     },
     "fang": {
       "name": "피의 정수",
@@ -131,7 +128,6 @@
       "rarity": "rare",
       "stat": "lifesteal",
       "add": 15,
-      "max": 3,
       "life": true
     },
     "plate": {
@@ -141,8 +137,7 @@
       "icon": "shield",
       "rarity": "rare",
       "stat": "armor",
-      "add": 0.1,
-      "max": 5
+      "add": 0.1
     },
     "fervor": {
       "name": "열기의 정수",
@@ -151,8 +146,7 @@
       "icon": "flame",
       "rarity": "rare",
       "stat": "comboStep",
-      "add": 0.01,
-      "max": 5
+      "add": 0.01
     },
     "chain": {
       "name": "연쇄의 정수",
@@ -162,7 +156,6 @@
       "rarity": "epic",
       "stat": "chain",
       "add": 1,
-      "max": 2,
       "fixed": true
     }
   },

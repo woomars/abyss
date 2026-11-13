@@ -1,9 +1,11 @@
 // Three equipped special attacks with individual cooldowns.
 // Skills are data-defined (config.skills.defs) and equipped into slots (config.skills.slots).
 import { NO_BONUS } from './Relics.js';
+import { grownDef } from './SkillGrowth.js';
 
 export class SkillSystem {
-  constructor(cfg, { player, movement, enemies, combat, combatCfg, events, rng, arena, bonus = null }) {
+  constructor(cfg, { player, movement, enemies, combat, combatCfg, events, rng, arena, bonus = null, ups = null }) {
+    this.ups = ups || (() => ({})); // () => growth per skill (SkillGrowth.skillUps)
     this.cfg = cfg; // config.skills (live)
     this.bonus = bonus || (() => NO_BONUS); // () => relic stat bonuses (damage, crit, cooldown)
     this.player = player;
@@ -23,9 +25,24 @@ export class SkillSystem {
 
   get slots() {
     return this.cfg.slots.map((id, i) => {
-      const d = this.cfg.defs[id];
+      const d = this.def(id);
       return { id, name: d.name, cooldown: this.cooldownOf(d), remaining: this.remaining[i] };
     });
+  }
+
+  // the definition with this family's growth cards applied
+  def(id) { return grownDef(this.cfg.defs[id], this.ups()[id], this.cfg.growth); }
+
+  // nearest targetable enemy's direction from the player (null when none)
+  nearestDir() {
+    const p = this.player.pos;
+    let best = null, bd = Infinity;
+    for (const e of this.enemies.targetable()) {
+      const d = Math.hypot(e.pos.x - p.x, e.pos.y - p.y);
+      if (d < bd) { bd = d; best = e; }
+    }
+    if (!best || bd < 1e-6) return null;
+    return { x: (best.pos.x - p.x) / bd, y: (best.pos.y - p.y) / bd };
   }
 
   cooldownOf(def) { return def.cooldown * Math.max(0.2, 1 - this.bonus().cooldown); }
@@ -62,17 +79,19 @@ export class SkillSystem {
   setAim(slot, dir) { this.aim = { slot, dir: { x: dir.x, y: dir.y } }; }
   clearAim() { this.aim = null; }
 
-  // aimDir: optional direction for directional skills (button drag); defaults to the input direction
+  // aimDir: optional direction for directional skills (button drag); a plain tap aims at the nearest
+  // enemy, or the input direction when there is none
   use(slot, aimDir = null) {
     const id = this.cfg.slots[slot];
     if (!id || this.remaining[slot] > 0 || this.busy || this.spinning) return false;
-    const def = this.cfg.defs[id];
+    const def = this.def(id);
     this.combat.cancel();
     const p = this.player;
     const len = aimDir ? Math.hypot(aimDir.x, aimDir.y) : 0;
+    const auto = def.directional && !(len > 1e-6) ? this.nearestDir() : null;
     const dir = len > 1e-6 && def.directional
       ? { x: aimDir.x / len, y: aimDir.y / len }
-      : { x: this.combat.inputDir.x, y: this.combat.inputDir.y };
+      : auto || { x: this.combat.inputDir.x, y: this.combat.inputDir.y };
     this.events.emit('skill', { id, pos: { x: p.pos.x, y: p.pos.y }, dir });
     if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
     else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, hit: new Set() };

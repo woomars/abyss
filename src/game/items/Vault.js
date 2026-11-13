@@ -25,6 +25,7 @@ export class Vault {
     this.medalsFilled = true; // older saves get their fallen's medals filled in once
     this.essence = { stats: {}, owned: {} }; // treasure-room essences the whole line keeps
     this.trophies = {}; // trophyId -> { given, family, generation, floor, at } (family milestones)
+    this.skillUps = {}; // special-attack growth cards chosen: cardId -> count (earned every 10 levels)
   }
 
   allocId() { return this.nextId++; }
@@ -47,7 +48,7 @@ export class Vault {
     return {
       version: VAULT_VERSION, stash: this.stash, powder: this.powder, seen: this.seen, equipped: this.equipped,
       state: this.state, run: this.run, nextId: this.nextId, lineage: this.lineage, progress: this.progress, savedAt: this.savedAt, lastFloor: this.lastFloor, carry: this.carry, tokens: this.tokens,
-      medals: this.medals, bestiary: this.bestiary, runStats: this.runStats, medalsFilled: this.medalsFilled, essence: this.essence, trophies: this.trophies,
+      medals: this.medals, bestiary: this.bestiary, runStats: this.runStats, medalsFilled: this.medalsFilled, essence: this.essence, trophies: this.trophies, skillUps: this.skillUps,
     };
   }
 
@@ -86,6 +87,7 @@ export class Vault {
     const nums = (o) => Object.fromEntries(Object.entries(obj(o)).filter(([, n]) => Number.isFinite(n)));
     v.essence = { stats: nums(data.essence && data.essence.stats), owned: nums(data.essence && data.essence.owned) };
     v.trophies = obj(data.trophies);
+    v.skillUps = nums(data.skillUps);
     // never hand out an id that a saved item already has
     const ids = [...v.stash, ...v.carry, ...Object.values(v.equipped), ...((v.run && v.run.pocket) || [])].map((i) => (i && Number.isFinite(i.id) ? i.id : 0));
     v.nextId = Math.max(v.nextId, ...ids.map((n) => n + 1), 1);

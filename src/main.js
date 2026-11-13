@@ -118,6 +118,12 @@ async function boot() {
     pickDelay: () => config.relics.pickDelay,
     relics: () => config.relics,
     onPick: (i) => {
+      if (game.skillOffer) { // special-attack growth card
+        const c = game.chooseSkill(i);
+        if (c) banner.show(t('sk.banner', { name: tr(c.name) }), t(`sk.${c.kind}`, { v: `${Math.round(c.value * 100)}%` }), { kind: 'reward' });
+        setTimeout(() => game.offerSkillGrowth(), 900); // more owed (several levels at once)
+        return;
+      }
       const o = game.chooseRelic(i);
       if (!o) return;
       const sub = [relicDesc(o, config.relics), chest ? t('banner.gold', { gold: chest.gold }) : ''].filter(Boolean).join(' · ');
@@ -126,6 +132,7 @@ async function boot() {
     onReroll: () => game.rerollRelics(),
   });
   events.on('relicOffer', (e) => picker.show(e.offers, { ...e, title: game.dungeon.state === 'treasure' ? 'room.treasure' : '', gold: game.dungeon.gold, found: chest ? chest.gold : 0 }));
+  events.on('skillOffer', (e) => picker.show(e.offers, { mode: 'skill', level: e.level }));
   const toast = new LootToast(ui, config.items);
   events.on('lootPickup', (e) => toast.show(e.item));
   events.on('pocketFull', () => toast.text(t('notice.pocketFull')));
@@ -287,7 +294,7 @@ async function boot() {
       music.setDuck((menu && menu.isOpen) || game.over);
       music.update(Math.min(0.1, (now - lastRender) / 1000));
       lastRender = now;
-      if (picker.isOpen && !game.offer && !picker.chosen) picker.hide(); // run restarted under the cards
+      if (picker.isOpen && !game.offer && !game.skillOffer && !picker.chosen) picker.hide(); // run restarted under the cards
       renderer.render(game, alpha);
       skillButtons.render();
       hud.update(game);

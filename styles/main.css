@@ -592,3 +592,7 @@ html:lang(ja), html:lang(ja) body { font-family: system-ui, -apple-system, "Hira
 .hl-title { display: flex; flex-direction: column; line-height: 1.1; font-size: 17px; }
 .hl-title small { margin-left: 0; font-size: 11px; }
 .hl-tab { font-size: 12px; padding: 0 9px; }
+
+/* special-attack growth cards */
+.relic-picker.skill-mode .rp-reroll, .relic-picker.skill-mode .rp-gold { display: none; }
+.sk-card .rp-icon { color: #ffd166; }

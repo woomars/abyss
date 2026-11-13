@@ -39,19 +39,30 @@ export class RelicPicker {
   }
 
   // cost / gold: price of a redraw and the gold the player has
-  show(offers, { cost = 0, gold = 0, title = '', found = 0 } = {}) {
+  // mode 'skill': special-attack growth cards (no redraw, no gold)
+  show(offers, { cost = 0, gold = 0, title = '', found = 0, mode = '', level = 0 } = {}) {
     const room = this.el.querySelector('.rp-room');
-    this.lastShow = [offers, { cost, gold, title, found }];
-    room.innerHTML = title ? `<b>${t(title)}</b>${found ? ` · ${t('banner.gold', { gold: found })}` : ''}` : '';
-    room.classList.toggle('hidden', !title);
-    this.el.classList.toggle('static', !!title);
+    this.lastShow = [offers, { cost, gold, title, found, mode, level }];
+    const skill = mode === 'skill';
+    room.innerHTML = skill ? `<b>${t('sk.sub', { level })}</b>` : title ? `<b>${t(title)}</b>${found ? ` · ${t('banner.gold', { gold: found })}` : ''}` : '';
+    room.classList.toggle('hidden', !title && !skill);
+    this.el.classList.toggle('static', !!title || skill);
+    this.el.classList.toggle('skill-mode', skill);
+    this.el.querySelector('.rp-title').textContent = t(skill ? 'sk.title' : 'rp.title');
     this.isOpen = true;
     this.ready = false;
     this.chosen = false;
     this.rerollBtn.disabled = gold < cost;
     this.el.querySelector('.rp-cost').textContent = String(cost);
     this.el.querySelector('.rp-gold b').textContent = String(gold);
-    this.cards.innerHTML = offers.map((o, i) => `
+    this.cards.innerHTML = offers.map((o, i) => (o.skillCard ? `
+      <button class="rp-card r-epic sk-card" data-i="${i}" style="--rc:${o.color};--tc:${o.color};--d:${i * 0.12}s">
+        <span class="rp-rarity">${t('sk.card')}</span>
+        <span class="rp-icon">${relicIcon(o.icon, 34)}</span>
+        <b class="rp-name">${tr(o.name)}</b>
+        <span class="rp-desc">${t(`sk.${o.kind}`, { v: `${Math.round(o.value * 100)}%` })}</span>
+        ${o.owned ? `<span class="rp-owned">${t('sk.owned', { n: o.owned })}</span>` : ''}
+      </button>` : `
       <button class="rp-card r-${o.rarity}${o.tier ? ` t-${o.tier}` : ''}" data-i="${i}" style="--rc:${o.color};--tc:${o.tierColor || o.color};--d:${i * 0.12}s">
         <span class="rp-rarity">${tr(o.rarityLabel)}${o.tierLabel ? ` · <em>${tr(o.tierLabel)}</em>` : ''}</span>
         <span class="rp-icon">${relicIcon(o.icon, 34)}</span>
@@ -59,7 +70,7 @@ export class RelicPicker {
         <span class="rp-desc">${relicDesc(o, this.relics())}</span>
         ${o.essence ? `<span class="rp-pass${o.inherit ? '' : ' life'}">${t(o.inherit ? 'rp.inherit' : 'rp.lifeOnly')}</span>` : ''}
         ${o.owned ? `<span class="rp-owned">${t(o.inherit ? 'rp.familyOwned' : 'rp.owned', { n: o.owned })}</span>` : ''}
-      </button>`).join('');
+      </button>`)).join('');
     this.el.classList.remove('hidden', 'ready');
     clearTimeout(this.timer);
     this.timer = setTimeout(() => { this.ready = true; this.el.classList.add('ready'); }, this.pickDelay() * 1000);

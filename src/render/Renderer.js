@@ -211,7 +211,7 @@ export class Renderer {
   drawAim(skills, player, alpha) {
     const a = skills.aim;
     if (!a) return;
-    const def = skills.cfg.defs[skills.cfg.slots[a.slot]];
+    const def = skills.def(skills.cfg.slots[a.slot]);
     const len = Math.hypot(a.dir.x, a.dir.y) || 1;
     const ux = a.dir.x / len, uy = a.dir.y / len;
     const reach = def.distance || def.range || 300;

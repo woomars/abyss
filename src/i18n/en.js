@@ -221,4 +221,16 @@ export default {
   'layout.hint': 'Drag the buttons where you want them',
   'layout.reset': 'Default',
   'layout.done': 'Done',
+  // special-attack growth cards
+  'sk.card': 'Skill growth',
+  'sk.title': 'Strengthen one skill',
+  'sk.sub': 'Reached Lv {level}',
+  'sk.damage': 'Damage +{v}',
+  'sk.radius': 'Radius +{v}',
+  'sk.distance': 'Dash distance +{v}',
+  'sk.range': 'Range +{v}',
+  'sk.width': 'Width +{v}',
+  'sk.cooldown': 'Cooldown -{v}',
+  'sk.banner': '{name} strengthened',
+  'sk.owned': 'Upgraded ×{n}',
 };

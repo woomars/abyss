@@ -16,6 +16,7 @@ import { Loot } from './Loot.js';
 import { Loadout } from './items/Loadout.js';
 import { Vault } from './items/Vault.js';
 import { resolveDeath, applyToken } from './items/Forge.js';
+import { skillUps, owedPicks, rollSkillCards } from './SkillGrowth.js';
 import { installMedals, emptyRunStats, backfillMedals, noteEssence, checkTrophies, bossRoster } from './Medals.js';
 import { addXp, xpForKill, levelStats } from './Progress.js';
 import { succeed } from './Family.js';
@@ -50,6 +51,7 @@ export class Game {
     this.skills = new SkillSystem(config.skills, {
       player: this.player, movement: this.movement, enemies: this.enemies, combat: this.combat,
       combatCfg: config.combat, events, rng, arena: this.arena, bonus,
+      ups: () => this.skillGrowth || {},
     });
     this.hitStop = new HitStop(config.feedback);
     this.effects = new EffectManager(config, events, rng);
@@ -70,7 +72,7 @@ export class Game {
     this.tokenFloors = new Set(); // floors that already gave a token this run
     this.loot = new Loot(config.items, this);
     events.on('kill', (e) => { this.loot.onKill(e.enemy); this.gainXp(e.enemy); });
-    events.on('roomCleared', () => this.loot.magnet());
+    events.on('roomCleared', () => { this.loot.magnet(); this.offerSkillGrowth(); });
     events.on('kill', (e) => {
       // hp is precious: lifesteal only works on mid-boss-class kills and up
       if (this.bonusStats.lifesteal && !this.over && e.enemy && e.enemy.isBoss) this.healFlat(this.bonusStats.lifesteal);
@@ -156,6 +158,7 @@ export class Game {
   refreshBonus() {
     const s = addStats(zeroStats(), this.relics.stats);
     addStats(s, this.vault.essence.stats); // essences handed down the line
+    this.skillGrowth = skillUps(this.config.skills.growth, this.vault.skillUps);
     const sum = this.loadout.summary();
     addStats(s, sum.stats);
     addStats(s, levelStats(this.config.progress, this.vault.progress.level));
@@ -389,6 +392,38 @@ export class Game {
     return true;
   }
 
+  // every 10 family levels: a special-attack growth card (shown once the room is clear; the world waits)
+  owedSkillPicks() { return owedPicks(this.config.skills.growth, this.vault.progress.level, this.vault.skillUps); }
+
+  offerSkillGrowth() {
+    const g = this.config.skills.growth;
+    if (!g || this.mode !== 'dungeon' || this.over || this.offer || this.skillOffer || this.forge || this.tokenScene) return false;
+    if (this.owedSkillPicks() <= 0) return false;
+    const defs = this.config.skills.defs;
+    const offers = rollSkillCards(g, this.rng).map((c) => ({
+      id: c.id, skill: c.skill, kind: c.kind, value: c.add, icon: c.icon, name: defs[c.skill].name,
+      rarity: 'epic', color: '#ffd166', tier: 0, owned: this.vault.skillUps[c.id] || 0, skillCard: true,
+    }));
+    this.skillOffer = { offers };
+    this.combat.cancel();
+    this.events.emit('skillOffer', { offers, level: this.vault.progress.level });
+    return true;
+  }
+
+  chooseSkill(i) {
+    const o = this.skillOffer && this.skillOffer.offers[i];
+    if (!o) return null;
+    this.vault.skillUps[o.id] = (this.vault.skillUps[o.id] || 0) + 1;
+    this.skillOffer = null;
+    this.refreshBonus();
+    this.saveVault();
+    this.pendingStroke = null;
+    this.pendingFlick = null;
+    this.combat.reset();
+    this.events.emit('skillUp', { card: o });
+    return o;
+  }
+
   // price of drawing three new cards: grows with depth (gold multiplier) and with each redraw
   rerollCost() {
     const r = this.config.relics.reroll, o = this.offer;
@@ -510,6 +545,7 @@ export class Game {
     this.forge = null;
     this.tokenScene = false;
     this.tokenFloors = new Set();
+    this.skillOffer = null;
     this.loot.reset();
     this.relics.reset();
     this.refreshBonus();
@@ -550,7 +586,7 @@ export class Game {
 
   update(realDt) {
     if (this.paused) return;
-    if (this.offer || this.forge || this.tokenScene) return; // cards / forge / legacy token
+    if (this.offer || this.skillOffer || this.forge || this.tokenScene) return; // cards / forge / legacy token
     if (this.over) { this.effects.update(realDt, this.player, false); return; }
     const dt = this.hitStop.update(realDt);
     this.time += dt;

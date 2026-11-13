@@ -1,9 +1,120 @@
 {
-  "slots": ["spin", "rushStrike", "bladeWave"],
-  "stun": { "chance": 0.8, "duration": 1.2, "bossChance": 0.35, "bossDuration": 0.5 },
+  "slots": [
+    "spin",
+    "rushStrike",
+    "bladeWave"
+  ],
+  "stun": {
+    "chance": 0.8,
+    "duration": 1.2,
+    "bossChance": 0.35,
+    "bossDuration": 0.5
+  },
   "defs": {
-    "spin": { "name": "회전 베기", "cooldown": 8, "damage": 25, "radius": 150, "duration": 0.35, "hitPause": 0.06, "chainDamageStep": 0.15, "chainCritStep": 0.05 },
-    "rushStrike": { "name": "돌진 일격", "directional": true, "cooldown": 10, "damage": 40, "distance": 320, "speed": 1200, "width": 60 },
-    "bladeWave": { "name": "원거리 공격", "directional": true, "cooldown": 15, "damage": 30, "range": 620, "speed": 900, "width": 70 }
+    "spin": {
+      "name": "회전 베기",
+      "cooldown": 8,
+      "damage": 25,
+      "radius": 150,
+      "duration": 0.35,
+      "hitPause": 0.06,
+      "chainDamageStep": 0.15,
+      "chainCritStep": 0.05
+    },
+    "rushStrike": {
+      "name": "돌진 일격",
+      "directional": true,
+      "cooldown": 10,
+      "damage": 40,
+      "distance": 320,
+      "speed": 1200,
+      "width": 60
+    },
+    "bladeWave": {
+      "name": "원거리 공격",
+      "directional": true,
+      "cooldown": 15,
+      "damage": 30,
+      "range": 620,
+      "speed": 900,
+      "width": 70
+    }
+  },
+  "growth": {
+    "every": 10,
+    "choices": 3,
+    "cooldownMin": 0.4,
+    "cards": [
+      {
+        "id": "spinDamage",
+        "skill": "spin",
+        "kind": "damage",
+        "add": 0.2,
+        "icon": "sword"
+      },
+      {
+        "id": "spinRadius",
+        "skill": "spin",
+        "kind": "radius",
+        "add": 0.15,
+        "icon": "eye"
+      },
+      {
+        "id": "spinCooldown",
+        "skill": "spin",
+        "kind": "cooldown",
+        "add": 0.1,
+        "icon": "hourglass"
+      },
+      {
+        "id": "rushDamage",
+        "skill": "rushStrike",
+        "kind": "damage",
+        "add": 0.2,
+        "icon": "sword"
+      },
+      {
+        "id": "rushDistance",
+        "skill": "rushStrike",
+        "kind": "distance",
+        "add": 0.15,
+        "icon": "boots"
+      },
+      {
+        "id": "rushCooldown",
+        "skill": "rushStrike",
+        "kind": "cooldown",
+        "add": 0.1,
+        "icon": "hourglass"
+      },
+      {
+        "id": "waveDamage",
+        "skill": "bladeWave",
+        "kind": "damage",
+        "add": 0.2,
+        "icon": "sword"
+      },
+      {
+        "id": "waveRange",
+        "skill": "bladeWave",
+        "kind": "range",
+        "add": 0.15,
+        "icon": "eye"
+      },
+      {
+        "id": "waveWidth",
+        "skill": "bladeWave",
+        "kind": "width",
+        "add": 0.2,
+        "icon": "shield"
+      },
+      {
+        "id": "waveCooldown",
+        "skill": "bladeWave",
+        "kind": "cooldown",
+        "add": 0.1,
+        "icon": "hourglass"
+      }
+    ]
   }
 }

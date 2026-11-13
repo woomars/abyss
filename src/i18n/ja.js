@@ -219,4 +219,16 @@ export default {
   'layout.hint': 'ボタンをドラッグして好きな位置へ',
   'layout.reset': '初期位置',
   'layout.done': '完了',
+  // special-attack growth cards
+  'sk.card': 'スキル成長',
+  'sk.title': 'スキルをひとつ強化',
+  'sk.sub': 'Lv {level} 到達',
+  'sk.damage': 'ダメージ +{v}',
+  'sk.radius': '範囲 +{v}',
+  'sk.distance': '突進距離 +{v}',
+  'sk.range': '射程 +{v}',
+  'sk.width': '幅 +{v}',
+  'sk.cooldown': 'リキャスト -{v}',
+  'sk.banner': '{name} 強化',
+  'sk.owned': '強化 {n}回',
 };

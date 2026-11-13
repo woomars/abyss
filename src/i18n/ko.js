@@ -234,4 +234,16 @@ export default {
   'layout.hint': '버튼을 끌어 원하는 곳에 놓으세요',
   'layout.reset': '기본 위치',
   'layout.done': '완료',
+  // special-attack growth cards
+  'sk.card': '특수기 성장',
+  'sk.title': '특수기를 하나 강화하세요',
+  'sk.sub': 'Lv {level} 달성',
+  'sk.damage': '피해 +{v}',
+  'sk.radius': '범위 +{v}',
+  'sk.distance': '돌진 거리 +{v}',
+  'sk.range': '사거리 +{v}',
+  'sk.width': '폭 +{v}',
+  'sk.cooldown': '재사용 대기 -{v}',
+  'sk.banner': '{name} 강화',
+  'sk.owned': '강화 {n}회',
 };

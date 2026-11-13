@@ -157,6 +157,15 @@
       "stat": "chain",
       "add": 1,
       "fixed": true
+    },
+    "leap": {
+      "name": "점프의 정수",
+      "desc": "점프 착지 피해 +{v}",
+      "fmt": "pct",
+      "icon": "boots",
+      "rarity": "common",
+      "stat": "jumpDamage",
+      "add": 0.25
     }
   },
   "healGuarantee": {

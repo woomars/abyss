@@ -125,6 +125,8 @@ export default {
     // essences and trophies
     "칼날의 정수": "Essence of the Blade",
     "점프": "Jump",
+    "점프의 정수": "Essence of the Leap",
+    "점프 착지 피해 +{v}": "Jump landing damage +{v}",
     "점프 착지 범위 +40%, 피해 +50%": "Jump landing area +40%, damage +50%",
     "세트 장비 하나마다 점프 착지 범위 +8%, 피해 +10%": "Each set piece: jump landing area +8%, damage +10%",
     "생명의 정수": "Essence of Life",

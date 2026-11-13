@@ -1,6 +1,7 @@
-// ?debug=1 — FPS and three helpers only: go to a room, set the level, get an item (worn at once).
+// ?debug=1 — FPS and a few helpers: go to a room (floor 100 too), set the level, get an item (worn at once), play the ending.
 export class DebugPanel {
-  constructor(root, { config, game, onLayout, onFloor = null, onOpenChange = () => {}, onGear = () => {} }) {
+  constructor(root, { config, game, onLayout, onFloor = null, onOpenChange = () => {}, onGear = () => {}, onEnding = () => {} }) {
+    this.onEnding = onEnding; // debug: play the ending
     this.onGear = onGear; // an item was put on (the HUD / forge refresh)
     this.onOpenChange = onOpenChange; // open panel = the game waits
     this.config = config;
@@ -16,9 +17,10 @@ export class DebugPanel {
       <div class="dhead"><button data-act="toggle">DEBUG</button><span class="fps">-- fps</span></div>
       <div class="dbody">
         <div class="dbtns">방 이동 <select data-act="floor"><option value="">고르기</option><option value="0">연습장</option><option value="-1">보물방</option><option value="-2">대장간</option><option value="-3">증표 받기</option><option value="-4">보스 연전 (끝없는 보스방)</option>${
-          Array.from({ length: 21 }, (_, i) => `<option value="${i + 1}">지하 ${i + 1}층</option>`).join('')}<option value="99">지하 99층 (100층 직전)</option></select></div>
+          Array.from({ length: 21 }, (_, i) => `<option value="${i + 1}">지하 ${i + 1}층</option>`).join('')}<option value="100">지하 100층 (시조)</option></select></div>
         <div class="dbtns">장비 지급 <select data-act="grant"><option value="">고르기</option><option value="common">일반</option><option value="uncommon">고급</option><option value="rare">희귀</option><option value="epic">영웅</option><option value="legendary">전설</option><option value="set">세트</option></select></div>
         <div class="dbtns">내 레벨 <input type="number" class="dlevel" min="1" max="99" step="1" value="1" inputmode="numeric" style="width:56px;user-select:text;-webkit-user-select:text"><button data-act="setLevel">적용</button><span class="dlevel-now"></span></div>
+        <div class="dbtns"><button data-act="ending">엔딩 보기</button></div>
       </div>`;
     root.appendChild(this.el);
     this.fpsEl = this.el.querySelector('.fps');
@@ -38,6 +40,7 @@ export class DebugPanel {
       const b = e.target.closest('button');
       if (!b) return;
       if (b.dataset.act === 'toggle') this.setOpen(this.el.classList.contains('collapsed'));
+      if (b.dataset.act === 'ending') { this.setOpen(false); this.onEnding(); }
       if (b.dataset.act === 'setLevel') this.setLevel(Number(this.el.querySelector('.dlevel').value));
     });
   }

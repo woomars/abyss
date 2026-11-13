@@ -19,7 +19,8 @@ import { resolveDeath, applyToken } from './items/Forge.js';
 import { skillUps, owedPicks, rollSkillCards } from './SkillGrowth.js';
 import { installMedals, emptyRunStats, backfillMedals, noteEssence, checkTrophies, bossRoster } from './Medals.js';
 import { addXp, xpForKill, levelStats } from './Progress.js';
-import { succeed } from './Family.js';
+import { succeed, randomGiven } from './Family.js';
+import { newCycle } from './Cycle.js';
 import { floorInfo } from './floorPlan.js';
 import { installGearEffects, evades, abyssRingBonus } from './items/effects.js';
 
@@ -70,6 +71,9 @@ export class Game {
     this.gearSets = {};
     this.forge = null; // { start: bool } while the forge screen is open — the world waits
     this.tokenScene = false; // the legacy-token scene is open — the world waits
+    this.finalAsk = null; // floor 100 lost: the founder's question is up (the world waits)
+    this.finale = null;   // floor 100 won: { family, father, child, sex, item } for the ending
+    this.ending = false;  // the ending is playing
     this.tokenFloors = new Set(); // floors that already gave a token this run
     this.loot = new Loot(config.items, this);
     events.on('kill', (e) => { this.loot.onKill(e.enemy); this.gainXp(e.enemy); });
@@ -95,16 +99,14 @@ export class Game {
     events.on('bossEnrage', () => this.camera.addShake(this.config.camera.shake.crit));
     events.on('jumpLand', () => this.camera.addShake(this.config.camera.shake.strong)); // the landing thuds
     events.on('floorStart', (e) => {
-      // every 100th floor: a legacy token, and the scene to put it on an item (once per floor per run)
-      const tk = this.config.items.legacyToken;
-      if (this.mode === 'dungeon' && tk && e.floor % tk.every === 0 && !this.tokenFloors.has(e.floor)) {
-        this.tokenFloors.add(e.floor);
-        this.vault.tokens += 1;
-        this.tokenScene = true;
-        this.events.emit('legacyToken', { floor: e.floor, tokens: this.vault.tokens });
+      // floor 100: whole again on arrival, and the moment is kept — closing the game here is no death
+      if (e.final && this.mode === 'dungeon') {
+        this.player.hp = this.player.maxHp;
+        this.player.invuln = 0;
       }
       if (this.vault.state !== 'run') return;
       this.vault.lastFloor = e.floor;
+      if (e.final) this.vault.run = { ...this.snapshotRun(), final: true };
       this.saveVault();
     });
     // practice arena by default (endless enemies); startRun() switches to the dungeon
@@ -201,10 +203,118 @@ export class Game {
     if (!r.ok) return null;
     this.saveVault();
     this.events.emit('tokenApplied', { item: r.item });
+    if (this.finale) this.finale.item = r.item.name; // told in the ending's last line
     return r.item;
   }
 
-  closeTokenScene() { this.tokenScene = false; this.saveVault(); }
+  closeTokenScene() {
+    this.tokenScene = false;
+    this.saveVault();
+    if (this.finale && !this.finale.shown) this.startEnding();
+  }
+
+  // ---- floor 100: the founder, the ending and the next cycle ----
+  // who waits on floor 100: the family's first knight in the records, or the hero's own shadow
+  founderOf() {
+    const l = this.vault.lineage, h = l.history && l.history[0];
+    return h ? { family: h.family || l.family, given: h.given, generation: h.generation || 1, shadow: false }
+      : { family: l.family, given: l.given, generation: l.generation, shadow: true };
+  }
+
+  // the hero fell to the founder: no death yet — the founder asks whether to give up or try again
+  askFinal() {
+    const d = this.dungeon;
+    this.finalAsk = { founder: d.boss && d.boss.founder ? d.boss.founder : this.founderOf() };
+    this.combat.cancel();
+    this.skills.cancelActive();
+    this.hazards.clear();
+    this.events.emit('finalDefeat', this.finalAsk);
+  }
+
+  retryFinal() {
+    if (!this.finalAsk) return;
+    this.finalAsk = null;
+    this.combat.reset();
+    this.player.hp = this.player.maxHp;
+    this.player.invuln = 0;
+    this.dungeon.retryFinal();
+  }
+
+  // giving up on floor 100 is a death like any other
+  giveUpFinal() {
+    if (!this.finalAsk) return;
+    this.finalAsk = null;
+    this.player.hp = 0;
+    this.die();
+  }
+
+  // the founder falls: the child is named now (the ending tells it), then the legacy token scene
+  finalVictory() {
+    const l = this.vault.lineage, sex = this.rng() < 0.5 ? 'son' : 'daughter';
+    this.finale = {
+      family: l.family, father: l.given, generation: l.generation, sex, heroSex: l.sex || null,
+      child: randomGiven(this.config.names, this.rng, l.given, sex), item: null, floor: this.dungeon.floor, at: Date.now(),
+    };
+    if (this.vault.state === 'run' && this.vault.run) this.vault.run.won = this.finale; // closing now goes straight to the ending
+    this.vault.tokens += 1;
+    this.tokenScene = true;
+    this.combat.cancel();
+    this.saveVault();
+    this.events.emit('finalVictory', { finale: this.finale });
+    this.events.emit('legacyToken', { floor: this.dungeon.floor, tokens: this.vault.tokens, final: true });
+  }
+
+  startEnding() {
+    const f = this.finale;
+    f.shown = true;
+    if (!f.item) { const w = this.loadout.slots.weapon; f.item = w ? w.name : null; } // no token put on: the sword he carried
+    this.ending = true;
+    this.saveVault();
+    this.events.emit('endingStart', { ...f });
+  }
+
+  // a run saved after the founder fell (the game was closed during the token scene or the ending)
+  resumeFinale(run) {
+    this.enterLimbo();
+    this.finale = { ...run.won, shown: false };
+    this.dungeon.floor = run.floor;
+    this.startEnding();
+  }
+
+  // the ending is over: the child starts the next cycle as the first of a new line
+  startNewCycle() {
+    const f = this.finale, l = this.vault.lineage;
+    const record = { given: l.given, family: l.family, generation: l.generation, floor: f.floor || 100 };
+    const { survived } = resolveDeath(this.forgeCtx(), this.rng, record);
+    const chronicle = newCycle(this.vault, f, { survived: survived.map((i) => i.name) });
+    this.finale = null;
+    this.ending = false;
+    this.over = false;
+    this.refreshBonus();
+    this.resetHealth();
+    this.saveVault();
+    this.events.emit('newCycle', { chronicle, lineage: { ...this.vault.lineage } });
+    return chronicle;
+  }
+
+  // a floor-100 run saved on arrival: back into the founder's room, whole
+  resumeFinal(run) {
+    this.mode = 'dungeon';
+    this.enemies.autoSpawn = false;
+    this.resetRun();
+    const d = this.dungeon;
+    d.reset();
+    d.floor = run.floor; d.startFloor = run.startFloor; d.gold = run.gold;
+    d.info = floorInfo(run.floor, d.cfg);
+    this.loot.pocket.push(...(run.pocket || []));
+    Object.assign(this.relics.owned, run.relics.owned);
+    Object.assign(this.relics.stats, run.relics.stats);
+    Object.assign(this.stats, run.stats);
+    this.refreshBonus();
+    this.resetHealth();
+    this.vault.state = 'run';
+    d.enterRoom('boss');
+  }
 
   // ---- save slot, forge and the family line ----
   attachVault(vault) {
@@ -511,7 +621,8 @@ export class Game {
       // who struck the last blow (area attacks in a boss room belong to the boss)
       const d = this.dungeon, boss = d && d.roomKind === 'boss' && d.boss ? d.boss : null;
       this.stats.killer = source && source.tcfg ? source.tcfg.name : boss ? boss.tcfg.name : null;
-      this.die();
+      if (this.mode === 'dungeon' && d.isFinal && d.roomKind === 'boss') this.askFinal(); // floor 100: asked, not killed
+      else this.die();
     }
     return true;
   }
@@ -566,6 +677,9 @@ export class Game {
     this.forge = null;
     this.tokenScene = false;
     this.tokenFloors = new Set();
+    this.finalAsk = null;
+    this.finale = null;
+    this.ending = false;
     this.skillOffer = null;
     this.loot.reset();
     this.relics.reset();
@@ -607,7 +721,7 @@ export class Game {
 
   update(realDt) {
     if (this.paused) return;
-    if (this.offer || this.skillOffer || this.forge || this.tokenScene) return; // cards / forge / legacy token
+    if (this.offer || this.skillOffer || this.forge || this.tokenScene || this.finalAsk || this.ending) return; // cards / forge / legacy token / floor-100 question / ending
     if (this.over) { this.effects.update(realDt, this.player, false); return; }
     const dt = this.hitStop.update(realDt);
     this.time += dt;

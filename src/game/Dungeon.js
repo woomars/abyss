@@ -90,15 +90,18 @@ export class Dungeon {
     } else if (kind === 'boss') {
       // one of this tier's bosses unlocked by the loop, at random (not the one met last time)
       const b = info.boss, types = g.config.enemies.types;
-      const type = this.forceBoss || b.type || pickBoss(types, b.tier, info.cycle, g.rng, this.lastBoss[b.tier] || null);
-      this.lastBoss[b.tier] = type;
+      const fin = this.isFinal ? c.final : null; // floor 100: the founder, every time
+      const type = fin ? fin.boss : this.forceBoss || b.type || pickBoss(types, b.tier, info.cycle, g.rng, this.lastBoss[b.tier] || null);
+      if (!fin) this.lastBoss[b.tier] = type;
       const tcfg = types[type];
       const level = bossLevel(b.tier || tcfg.tier, info.cycle, g.config.enemies);
       const pos = { x: room.center.x + room.arena.width * 0.18, y: room.center.y };
-      this.boss = g.enemies.spawnAt(type, pos, { hp: info.mods.hp * b.hp, attack: info.mods.attack * b.attack, speed: info.mods.speed, level });
-      if (b.patterns) this.boss.patterns = b.patterns.slice();
+      const k = fin ? { hp: fin.hp || 1, attack: fin.attack || 1 } : { hp: 1, attack: 1 };
+      this.boss = g.enemies.spawnAt(type, pos, { hp: info.mods.hp * b.hp * k.hp, attack: info.mods.attack * b.attack * k.attack, speed: info.mods.speed, level });
+      if (b.patterns && !fin) this.boss.patterns = b.patterns.slice();
       bossName = tcfg.name;
-      this.boss.bossInfo = { key: bossKey(type), name: tcfg.name, title: info.band.title }; // for the family's bestiary
+      if (fin) this.boss.founder = g.founderOf(); // who he is: the family's first knight (or the hero's own shadow)
+      else this.boss.bossInfo = { key: bossKey(type), name: tcfg.name, title: info.band.title }; // for the family's bestiary
       title = `${floorLabel(this.floor)} ${info.band.title} — ${bossName}`;
     } else if (kind === 'treasure') {
       this.chest = { x: room.center.x, y: room.center.y, r: c.chestRadius, opened: false, big: false };
@@ -106,7 +109,18 @@ export class Dungeon {
       music = 'rest';
     }
     this.lastAlive = this.remaining;
-    g.events.emit('floorStart', { floor: this.floor, kind, music, title, boss: bossName, variant: this.variant, rush: this.rush ? { n: this.rush.i + 1, total: this.rush.list.length, loop: this.rush.loop } : null });
+    g.events.emit('floorStart', { floor: this.floor, kind, music, title, boss: bossName, final: kind === 'boss' && this.isFinal, founder: this.boss && this.boss.founder ? this.boss.founder : null, variant: this.variant, rush: this.rush ? { n: this.rush.i + 1, total: this.rush.list.length, loop: this.rush.loop } : null });
+  }
+
+  // floor 100 (dungeon.final): the founder's room
+  get isFinal() { const f = this.cfg.final; return !!(f && this.floor === f.floor && !this.rush); }
+
+  // floor 100 lost and the hero tries again: the founder's room from the start
+  retryFinal() {
+    const g = this.game;
+    g.enemies.clear();
+    g.hazards.clear();
+    this.enterRoom('boss');
   }
 
   // ---- debug: endless boss room ----
@@ -371,6 +385,12 @@ export class Dungeon {
           g.events.emit('kill', { enemy: e, pos: { x: e.pos.x, y: e.pos.y }, dir, crit: false });
         }
         if (this.rush) { this.rushNext(); return; }
+        if (this.isFinal) { // floor 100 won: no chest, no exit — the legacy token, then the ending
+          g.hazards.clear();
+          this.cleared = true;
+          g.finalVictory();
+          return;
+        }
         this.clear(this.boss.pos);
       }
       // stuck guard: no kill for a while -> bring far enemies back

@@ -75,6 +75,7 @@ export class AudioSystem {
     events.on('bossExposed', () => { this.play('chime', { pitch: 1.4, gain: 1.2 }); this.play('crush', { pitch: 0.8, gain: 0.6 }); });
     events.on('jumpLand', () => this.play('crush', { pitch: 0.75, gain: 0.8 }));
     events.on('bomberBlast', () => this.play('crush', { pitch: 1.3, gain: 0.7 }));
+    events.on('founderPhase', (e) => { if (e.phase > 0) this.play('roar', { pitch: e.ai === 'mirror' ? 0.7 : 1, gain: 0.8 }); });
     events.on('evade', () => this.play('blink', { pitch: 1.2, gain: 0.6 }));
     events.on('relicReroll', () => this.play('coins', { gain: 0.8 }));
     events.on('relicPick', () => this.play('chime', { pitch: 1.25, gain: 1.2 }));

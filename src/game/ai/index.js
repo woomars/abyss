@@ -10,6 +10,7 @@ import { rangedAI } from './ranged.js';
 import { summonerAI } from './summoner.js';
 import { bomberAI } from './bomber.js';
 import { sigilAI } from './sigil.js';
+import { founderAI } from './founder.js';
 
-export const AI = { archer: archerAI, wraith: wraithAI, boss: bossAI, spearman: spearmanAI, warrior: warriorAI, mage: mageAI, ranged: rangedAI, summoner: summonerAI, bomber: bomberAI, sigil: sigilAI };
+export const AI = { archer: archerAI, wraith: wraithAI, boss: bossAI, spearman: spearmanAI, warrior: warriorAI, mage: mageAI, ranged: rangedAI, summoner: summonerAI, bomber: bomberAI, sigil: sigilAI, founder: founderAI };
 export const BOSS_TYPES = ['warrior', 'mage', 'ranged', 'summoner'];

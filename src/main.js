@@ -24,6 +24,8 @@ import { LegacyScene } from './ui/LegacyScene.js';
 import { HallScreen } from './ui/HallScreen.js';
 import { StoryScreen, autoStory } from './ui/StoryScreen.js';
 import { ControlsGuide } from './ui/ControlsGuide.js';
+import { EndingScreen } from './ui/EndingScreen.js';
+import { FinalAsk, founderTitle } from './ui/FinalAsk.js';
 import { VaultStore } from './systems/VaultStore.js';
 import { Vault } from './game/items/Vault.js';
 import { chooseRotation, stageSize, stageTransform, toStage } from './systems/orientation.js';
@@ -113,7 +115,8 @@ async function boot() {
   const banner = new Banner(ui);
   events.on('floorStart', (e) => {
     music.play(e.music);
-    if (e.kind === 'boss') banner.show(tr(e.boss), e.rush ? `보스 연전 ${e.rush.n}/${e.rush.total}${e.rush.loop ? ` · ${e.rush.loop + 1}바퀴` : ''} · ${floorLabel(e.floor)}` : `${floorLabel(e.floor)} ${tr(game.dungeon.info.band.title)}`, { kind: 'boss', ms: 2400 }); // the rush line is a debug screen (Korean only)
+    if (e.final) banner.show(founderTitle(e.founder), t('final.arrive'), { kind: 'boss', ms: 2800 });
+    else if (e.kind === 'boss') banner.show(tr(e.boss), e.rush ? `보스 연전 ${e.rush.n}/${e.rush.total}${e.rush.loop ? ` · ${e.rush.loop + 1}바퀴` : ''} · ${floorLabel(e.floor)}` : `${floorLabel(e.floor)} ${tr(game.dungeon.info.band.title)}`, { kind: 'boss', ms: 2400 }); // the rush line is a debug screen (Korean only)
     else if (e.kind === 'treasure') { /* the card screen says it all */ }
     else if (e.variant) banner.show(`${floorLabel(e.floor)} · ${t(`room.${e.variant}`)}`, t(`room.${e.variant}Sub`), { kind: e.variant === 'elite' ? 'boss' : 'reward', ms: 2200 });
     else banner.show(e.kind === 'combat' ? floorLabel(e.floor) : tr(e.title));
@@ -161,6 +164,28 @@ async function boot() {
   events.on('bossExposed', () => banner.show(t('boss.exposed'), '', { kind: 'reward', ms: 1400 }));
   events.on('levelUp', (e) => banner.show(t('banner.levelUp'), t('banner.levelUpSub', { level: e.level }), { kind: 'reward', ms: 1600 }));
 
+  // --- floor 100: the founder's question, his phases, the ending and the next cycle ---
+  const ENDING_KEY = 'abyss.ending'; // the last ending seen on this device (for the title's 엔딩 icon)
+  const lastEnding = () => { try { return JSON.parse(safeStorage().getItem(ENDING_KEY) || 'null'); } catch (_) { return null; } };
+  const keepEnding = (f) => { try { safeStorage().setItem(ENDING_KEY, JSON.stringify({ father: f.father, child: f.child, sex: f.sex, heroSex: f.heroSex || null, item: f.item || null, family: f.family })); } catch (_) { /* storage off */ } };
+  const finalAsk = new FinalAsk(ui, { onRetry: () => game.retryFinal(), onGiveUp: () => game.giveUpFinal() });
+  events.on('finalDefeat', (e) => { banner.hide(); finalAsk.show(e); });
+  events.on('founderPhase', (e) => { if (e.phase > 0) banner.show(t(`final.phase.${e.ai}`), e.ai === 'mirror' ? t('final.phase.mirrorSub') : '', { kind: 'boss', ms: 2000 }); });
+  const ending = new EndingScreen(ui, {
+    music,
+    onDone: (replay) => {
+      if (replay) { if (!started) music.play('base'); return; }
+      game.startNewCycle(); // the child is now the first of a new line: off to the start forge
+      game.beginRun();
+    },
+  });
+  events.on('endingStart', (f) => {
+    banner.hide();
+    if (game.dungeon.startFloor === 1) records.submitFloor(f.floor || 100);
+    keepEnding(f);
+    ending.show(f);
+  });
+
   // --- family, forge and title (all inside the landscape stage) ---
   const heir = new HeirScreen(ui, { onContinue: () => game.beginRun(), medals: config.medals, relics: config.relics });
   // 유산의 증표: opened on reaching every 100th floor, or from the forge while tokens are in hand
@@ -198,12 +223,16 @@ async function boot() {
     // drag the special-attack buttons where the player likes them (title screen only); saved with the settings
     onLayout: () => skillButtons.startEdit((pos) => { settings.skillPos = pos; save.save(settings); layout(); }),
     onStory: () => story.show(),
+    hasEnding: () => !!lastEnding(),
+    onEnding: () => { const f = lastEnding(); if (f) ending.show(f, { replay: true }); },
     onHall: (n) => { const v = store.load(n); if (v) hall.show(v); },
     onContinue: (n) => {
       const v = store.load(n);
       if (!v) { title.open(); return; }
       enterSlot(n, v);
       if (v.state === 'rest' && v.run) game.restoreRun(v.run);
+      else if (v.state === 'run' && v.run && v.run.won) game.resumeFinale(v.run); // closed after the founder fell
+      else if (v.state === 'run' && v.run && v.run.final) game.resumeFinal(v.run); // back to the founder, whole
       else if (v.state === 'run') {
         // the game was closed in the middle of a fight: that run counts as a death
         game.enterLimbo();
@@ -254,6 +283,11 @@ async function boot() {
       config, game, onLayout: () => layout(),
       onGear: () => { if (forge.isOpen) forge.render(); },
       onOpenChange: (open) => { debugOpen = open; updatePaused(); },
+      // debug: the ending with this hero's names (the line goes on as if he had won)
+      onEnding: () => {
+        const l = game.vault.lineage, w = game.loadout.slots.weapon;
+        ending.show({ father: l.given || '기사', child: '브란', sex: 'son', heroSex: l.sex || null, item: w ? w.name : null, family: l.family }, { replay: true });
+      },
       // jump straight to a floor (or the practice arena) to test bosses
       onFloor: (floor) => {
         gameOver.hide();
@@ -275,7 +309,7 @@ async function boot() {
   onLangChange(() => {
     applyI18n(ui);
     hud.relabel(); skillButtons.relabel(); menu.renderToggles(); gameOver.relabel(); picker.relabel();
-    title.relabel(); forge.relabel(); hall.relabel(); heir.relabel(); legacy.relabel(); story.relabel(); guide.relabel();
+    title.relabel(); forge.relabel(); hall.relabel(); heir.relabel(); legacy.relabel(); story.relabel(); guide.relabel(); ending.relabel(); finalAsk.relabel();
     layout(); // button sizes may change: refresh the stroke exclusion zones
   });
   // back to the game: a touch outside the open debug panel closes it

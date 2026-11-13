@@ -354,13 +354,16 @@ export const bossCore = {
   // guard (warrior): a guard soaks blows until enough of them land. Then an opening of `exposed` s.
   sigils(e, game) { return game.enemies.all().filter((m) => m.alive && !m.dying && m.type === 'sigil'); },
 
+  // the quest in force: a founder (floor 100) changes it with each phase (e.ai.quest); others keep their type's
+  questOf(e) { return e.ai && e.ai.quest !== undefined ? e.ai.quest : e.tcfg.quest; },
+
   raiseGuard(e, game) {
-    const t = e.tcfg, s = e.ai;
+    const t = e.tcfg, s = e.ai, q = this.questOf(e);
     s.qphase = 'guarded';
-    if (t.quest === 'minions') {
+    if (q === 'minions') {
       const p = Object.values(t.patterns).find((x) => x.kind === 'summon');
       if (p) this.summon(e, game, p);
-    } else if (t.quest === 'sigils') {
+    } else if (q === 'sigils') {
       const ar = game.arena, n = t.sigils.count + s.extra;
       const info = game.dungeon && game.dungeon.info;
       for (let i = 0; i < n; i++) {
@@ -369,22 +372,22 @@ export const bossCore = {
         game.enemies.spawnAt('sigil', q, { ...(info ? info.mods : {}), minion: true });
         game.events.emit('minionSpawn', { pos: q, zone: 'map' });
       }
-    } else if (t.quest === 'guard') {
+    } else if (q === 'guard') {
       e.guardMax = e.maxHp * (t.guardFrac || 0.12);
       e.guard = e.guardMax;
     }
-    if (t.quest) game.events.emit('bossGuard', { enemy: e, quest: t.quest, pos: { x: e.pos.x, y: e.pos.y } });
+    if (q) game.events.emit('bossGuard', { enemy: e, quest: q, pos: { x: e.pos.x, y: e.pos.y } });
   },
 
   quest(e, dt, game) {
-    const t = e.tcfg, s = e.ai;
-    if (!t.quest) { e.immune = false; return; }
+    const t = e.tcfg, s = e.ai, q = this.questOf(e);
+    if (!q) { e.immune = false; return; }
     if (s.qphase === 'guarded') {
-      const done = t.quest === 'minions' ? this.minions(e, game) === 0 : t.quest === 'sigils' ? this.sigils(e, game).length === 0 : !(e.guard > 0);
-      e.immune = !done && t.quest !== 'guard';
+      const done = q === 'minions' ? this.minions(e, game) === 0 : q === 'sigils' ? this.sigils(e, game).length === 0 : !(e.guard > 0);
+      e.immune = !done && q !== 'guard';
       if (done) {
         s.qphase = 'exposed';
-        s.qt = t.exposed || 5;
+        s.qt = s.exposedFor || t.exposed || 5;
         e.immune = false;
         e.guard = 0;
         game.events.emit('bossExposed', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } });

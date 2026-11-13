@@ -1,6 +1,6 @@
 import { nearestOffscreen } from '../game/pointer.js';
 import { BUILD } from '../version.js';
-import { t, tr } from '../i18n/index.js';
+import { t, tr, fullName } from '../i18n/index.js';
 
 export const COLORS = {
   bg: '#07070b', floor: '#0e0e15', grid: '#1a1a26', wall: '#2a2236', pillar: '#241d30', pillarEdge: '#3b2f4f',
@@ -647,6 +647,7 @@ export class Renderer {
       ctx.stroke();
     }
     const shape = e.tcfg.shape || 'horned';
+    if (shape === 'knight') { this.drawFounder(e, x, y); return; }
     ctx.beginPath();
     if (shape === 'robed') { // mage: tall robe with a hood point
       ctx.moveTo(x, y - r * 1.25); ctx.lineTo(x + r * 0.95, y + r); ctx.lineTo(x - r * 0.95, y + r); ctx.closePath();
@@ -694,6 +695,29 @@ export class Renderer {
     ctx.fillStyle = e.ai && e.ai.enraged ? '#ff4030' : '#ffd060';
     ctx.fillRect(x - r * 0.42, y - r * 0.2, r * 0.25, r * 0.12);
     ctx.fillRect(x + r * 0.17, y - r * 0.2, r * 0.25, r * 0.12);
+  }
+
+  // the founder (floor 100): the hero's own arrow-knight shape, giant — a pale gold ghost on page 1,
+  // the hero's own colours as the mirror on page 2 (lifted and larger while he leaps)
+  drawFounder(e, x, y) {
+    const ctx = this.ctx, mirror = !!(e.ai && e.ai.mirror), r = e.radius * (e.airborne ? 1.25 : 1);
+    const d = (e.ai && e.ai.dir) || { x: -1, y: 0 }, lift = e.airborne ? 22 : 0;
+    if (e.airborne) { ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(x, y + 6, e.radius * 0.9, e.radius * 0.45, 0, 0, Math.PI * 2); ctx.fill(); }
+    ctx.save();
+    ctx.translate(x, y - lift);
+    ctx.rotate(Math.atan2(d.y, d.x));
+    ctx.shadowColor = mirror ? '#b48cff' : '#ffe39a';
+    ctx.shadowBlur = 22;
+    ctx.beginPath();
+    ctx.moveTo(r * 1.3, 0); ctx.lineTo(-r * 0.9, r * 0.85); ctx.lineTo(-r * 0.5, 0); ctx.lineTo(-r * 0.9, -r * 0.85);
+    ctx.closePath();
+    ctx.fillStyle = mirror ? COLORS.player : `rgba(255,236,190,${0.55 + Math.sin(performance.now() / 300) * 0.1})`;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = mirror ? '#7d5cc8' : '#ffcf5a';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.restore();
   }
 
   // the floor a pillar hides from (h.x, h.y) is cut out of the clip, pillar by pillar (each clip intersects)
@@ -986,7 +1010,8 @@ export class Renderer {
     ctx.textBaseline = 'bottom';
     ctx.font = 'bold 13px system-ui, sans-serif';
     ctx.fillStyle = enraged ? '#ff7a60' : '#f0dfae';
-    ctx.fillText(tr(boss.tcfg.name) + (enraged ? t('boss.enraged') : ''), this.cssW / 2, y - 3);
+    const f = boss.founder, name = f ? t(f.shadow ? 'final.shadowName' : 'final.bossName', { name: fullName(f.family, f.given) }) : tr(boss.tcfg.name);
+    ctx.fillText(name + (enraged ? t('boss.enraged') : ''), this.cssW / 2, y - 3);
     ctx.fillStyle = '#1a0d10';
     ctx.fillRect(x, y, w, h);
     ctx.fillStyle = enraged ? '#ff3b2a' : '#c0392b';

@@ -28,6 +28,9 @@
     ],
     "story": [
       "assets/audio/bgm/story.mp3"
+    ],
+    "ending": [
+      "assets/audio/bgm/ending.mp3"
     ]
   },
   "scenes": {

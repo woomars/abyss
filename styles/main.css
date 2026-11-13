@@ -644,3 +644,39 @@ html:lang(ja), html:lang(ja) body { font-family: system-ui, -apple-system, "Hira
 .hs-house { font-size: 22px; color: #ffd166; text-shadow: 0 0 12px rgba(255, 200, 90, 0.55); letter-spacing: 1px; }
 .hs-q { color: #c9a86a; }
 .hs-heir small .hs-fam { text-shadow: none; }
+
+/* floor-100 ending: bright paintings, text rising on the right, credits, then the last line over the gate */
+.ending-screen { z-index: 37; background: #000; overflow: hidden; }
+.en-bg { position: absolute; inset: -4%; background-size: cover; background-position: center; opacity: 0; transition: opacity 2.4s ease; }
+.en-bg.on { opacity: 1; animation: en-drift 26s linear forwards; }
+.en-bg[data-k="couple"] { background-position: center 84%; }
+@keyframes en-drift { to { transform: scale(1.09) translate(-1.5%, -1%); } }
+.en-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 40%, rgba(10,14,20,0.55) 70%, rgba(10,14,20,0.62) 100%); }
+.en-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.en-flash.go { animation: en-flash 2.6s ease-out forwards; }
+@keyframes en-flash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+.en-motes i { position: absolute; bottom: -4%; left: var(--x); width: 4px; height: 4px; border-radius: 50%; background: #ffd58a; box-shadow: 0 0 8px #ffd58a; opacity: 0; animation: en-rise var(--d) linear infinite; animation-delay: var(--w); }
+@keyframes en-rise { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 0.8; } 100% { transform: translateY(-110vh) translateX(20px); opacity: 0; } }
+.en-view { position: absolute; top: 0; bottom: 0; right: 4%; width: 46%; overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); mask-image: linear-gradient(transparent, #000 16%, #000 84%, transparent); transition: opacity 0.8s ease; }
+.en-view.gone { opacity: 0; }
+.en-roll { position: absolute; left: 0; right: 0; top: 0; text-align: center; will-change: transform; transform: translateY(100vh); }
+.en-p { margin: 0 0 30vh; font-size: 18px; line-height: 1.95; color: #fffaf0; text-shadow: 0 2px 8px rgba(0,0,0,0.8); font-family: "Noto Serif KR", "Nanum Myeongjo", "Hiragino Mincho ProN", "Yu Mincho", serif; }
+.en-credits { padding: 6vh 0 60vh; color: #fffaf0; text-shadow: 0 2px 6px rgba(0,0,0,0.85); }
+.en-c-t { font-family: "Noto Serif KR", "Nanum Myeongjo", "Hiragino Mincho ProN", "Yu Mincho", serif; font-weight: 700; font-size: 26px; color: #ffd58a; margin: 6vh 0 3vh; }
+.en-c-k { font-size: 11px; letter-spacing: 0.25em; color: #8fd3ff; margin-top: 5vh; }
+.en-c-v { font-family: "Noto Serif KR", "Nanum Myeongjo", "Hiragino Mincho ProN", "Yu Mincho", serif; font-size: 18px; margin-top: 4px; }
+.en-c-s { font-size: 12px; color: rgba(255,250,240,0.75); margin-top: 3px; line-height: 1.6; }
+.en-final { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; opacity: 0; pointer-events: none; transition: opacity 1.6s ease; background: radial-gradient(ellipse at center, rgba(0,0,0,0.55), rgba(0,0,0,0.15) 70%); }
+.en-final.on { opacity: 1; pointer-events: auto; }
+.en-last { margin: 0; font-size: 21px; line-height: 1.9; text-align: center; color: #fffaf0; text-shadow: 0 2px 10px #000; font-family: "Noto Serif KR", "Nanum Myeongjo", "Hiragino Mincho ProN", "Yu Mincho", serif; padding: 0 24px; }
+.en-last b { color: #ffd58a; }
+.en-skip.hidden, .en-go.hidden { display: none; }
+
+/* floor 100 lost: the founder's question */
+.final-ask { z-index: 16; background: radial-gradient(ellipse at center, rgba(30, 24, 10, 0.82), rgba(4, 3, 2, 0.92)); }
+.fa-panel { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 26px; max-width: 520px; text-align: center; }
+.fa-who { font-size: 13px; letter-spacing: 0.2em; color: #e8c879; }
+.fa-line { margin: 0; font-size: 20px; line-height: 1.8; color: #f6ecd2; font-family: "Noto Serif KR", "Nanum Myeongjo", "Hiragino Mincho ProN", "Yu Mincho", serif; text-shadow: 0 2px 8px #000; }
+.fa-buttons { display: flex; gap: 14px; }
+.fa-note { margin: 0; font-size: 12px; color: #b9ad94; }
+.hl-chrons { grid-template-columns: 1fr; }

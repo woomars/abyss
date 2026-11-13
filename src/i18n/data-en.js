@@ -124,6 +124,7 @@ export default {
     // essences and trophies
     "칼날의 정수": "Essence of the Blade",
     "점프": "Jump",
+    "시조": "The Founder",
     "질풍 베기": "Gale Slash",
     "질풍 베기 각도 +20°": "Gale Slash angle +20°",
     "질풍 세트 장비 개수에 따라 질풍 베기 각도 80° · 90° · 100° · 110° · 120° (기본 60°)": "Each Gale Hunter piece widens Gale Slash: 80° · 90° · 100° · 110° · 120° (base 60°)",

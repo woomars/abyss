@@ -36,3 +36,4 @@
 | bgm/boss_5.mp3 | 대형 보스전 (1→6 순서대로) | "Final Scene" by The_Mountain — https://pixabay.com/music/main-title-final-scene-186304/ | 80kbps 스테레오 MP3로 다시 압축 |
 | bgm/boss_6.mp3 | 대형 보스전 (1→6 순서대로) | "Epic" by The_Mountain — https://pixabay.com/music/epic-classical-epic-508009/ | 80kbps 스테레오 MP3로 다시 압축 |
 | bgm/rest_1.mp3 | 보물방·대장간 | "Medieval Fantasy Music" by RoyaltyFreeMusicStudio — https://pixabay.com/music/fantasy-dreamy-childrens-medieval-fantasy-music-462199/ | 80kbps 스테레오 MP3로 다시 압축 |
+| bgm/ending.mp3 | 100층 엔딩 | "Romantic orchestral - inspirational hope" by Sonican — https://pixabay.com/music/modern-classical-romantic-orchestral-inspirational-hope-337253/ | 80kbps 스테레오 MP3로 다시 압축 |

@@ -85,12 +85,14 @@ export class HallScreen {
     const reached = trophies.filter((x) => v.trophies[x.id]).length;
     const kinds = Object.keys(v.essence.owned).filter((id) => v.essence.owned[id] > 0).length;
     const body = this.tab === 'medals' ? this.renderMedals() : this.tab === 'bosses' ? this.renderBosses(roster)
-      : this.tab === 'essence' ? this.renderEssence(people) : this.tab === 'trophies' ? this.renderTrophies(roster) : this.renderAncestors(people);
+      : this.tab === 'essence' ? this.renderEssence(people) : this.tab === 'trophies' ? this.renderTrophies(roster)
+      : this.tab === 'chronicle' ? this.renderChronicles() : this.renderAncestors(people);
+    const chron = v.chronicles || [];
     this.el.innerHTML = `
       <div class="hl-wrap">
         <div class="hl-head">
           <div class="hl-title">${t('hall.title')} <small>${t('title.house', { family: esc(trPerson(v.lineage.family, 'family')) })}</small></div>
-          <div class="hl-tabs">${tab('ancestors', t('hall.tabAncestors', { n: people.length }))}${tab('essence', t('hall.tabEssence', { n: kinds }))}${tab('medals', t('hall.tabMedals', { a: got, b: list.length }))}${tab('trophies', t('hall.tabTrophies', { a: reached, b: trophies.length }))}${tab('bosses', t('hall.tabBosses', { a: slain, b: roster.length }))}</div>
+          <div class="hl-tabs">${tab('ancestors', t('hall.tabAncestors', { n: people.length }))}${tab('essence', t('hall.tabEssence', { n: kinds }))}${tab('medals', t('hall.tabMedals', { a: got, b: list.length }))}${tab('trophies', t('hall.tabTrophies', { a: reached, b: trophies.length }))}${tab('bosses', t('hall.tabBosses', { a: slain, b: roster.length }))}${chron.length ? tab('chronicle', t('hall.tabChronicle', { n: chron.length })) : ''}</div>
           <button class="tm-btn small" data-act="back">${t('back')}</button>
         </div>
         <div class="hl-body">${body}</div>
@@ -156,6 +158,26 @@ export class HallScreen {
       </div>`;
     }).join('');
     return `<p class="hl-note">${t('hall.essenceNote')}</p><div class="hl-grid">${rows}</div>`;
+  }
+
+  // 지난 연대기: the lines that reached floor 100 — the latest first, each with its generations
+  renderChronicles() {
+    const list = (this.vault.chronicles || []).slice().reverse();
+    if (!list.length) return `<p class="hl-note">${t('hall.chronicleNote')}</p><div class="dim hl-empty">${t('hall.chronicleNone')}</div>`;
+    const rows = list.map((c) => {
+      const e = c.ending || {};
+      const people = (c.people || []).map((p) => `${t('gen', { n: p.generation })} ${esc(trPerson(p.given, 'given'))}${p.reached ? '' : ` <small>${floorLabel(p.floor || 1)}</small>`}`).join(' · ');
+      return `<div class="hl-ess hl-chron">
+        <div class="hl-btext">
+          <div class="hl-bname">${t('hall.chronicleHead', { n: c.cycle, family: esc(trPerson(c.family, 'family')) })} <small>${day(c.at)}</small></div>
+          <div class="hl-estat">${t('hall.chronicleLine', { first: esc(trPerson(c.founder, 'given')), gen: c.generations, last: esc(trPerson(c.last, 'given')) })}</div>
+          <div class="hl-slayers">${t('hall.chronicleStats', { level: c.level, medals: c.medals, trophies: c.trophies, bosses: c.bosses })}</div>
+          <div class="hl-slayers">${people}</div>
+          ${e.child ? `<div class="hl-slayers">${t('hall.chronicleChild', { name: esc(trPerson(e.child, 'given')), item: e.item ? esc(trItemName(e.item)) : t('ending.legacy') })}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    return `<p class="hl-note">${t('hall.chronicleNote')}</p><div class="hl-grid hl-chrons">${rows}</div>`;
   }
 
   // family milestones: reached ones show who reached them, the rest how far the house has come

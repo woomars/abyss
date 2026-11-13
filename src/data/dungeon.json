@@ -414,5 +414,11 @@
     "up": 0.5,
     "damage": 14,
     "enemyDamage": 30
+  },
+  "final": {
+    "floor": 100,
+    "boss": "founder",
+    "hp": 1.5,
+    "attack": 1
   }
 }

@@ -33,6 +33,18 @@ export class LootToast {
     setTimeout(() => t.remove(), 3000);
   }
 
+  // a family trophy reached
+  trophy(tr0, cfg) {
+    const t = document.createElement('div'), c = cfg.tiers[tr0.tier].color;
+    t.className = 'loot-toast medal trophy';
+    t.style.setProperty('--mc', c);
+    t.innerHTML = `<span class="hl-cup" style="--mc:${c}">${relicIcon('trophy', 14)}</span><span style="color:${c}">${tx('toast.trophy', { name: tr(tr0.name) })}</span>`;
+    this.el.prepend(t);
+    while (this.el.children.length > 3) this.el.lastChild.remove();
+    setTimeout(() => t.classList.add('out'), 3000);
+    setTimeout(() => t.remove(), 3400);
+  }
+
   text(msg) {
     const t = document.createElement('div');
     t.className = 'loot-toast warn';

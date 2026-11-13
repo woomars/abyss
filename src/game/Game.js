@@ -16,7 +16,7 @@ import { Loot } from './Loot.js';
 import { Loadout } from './items/Loadout.js';
 import { Vault } from './items/Vault.js';
 import { resolveDeath, applyToken } from './items/Forge.js';
-import { installMedals, emptyRunStats, backfillMedals } from './Medals.js';
+import { installMedals, emptyRunStats, backfillMedals, noteEssence, checkTrophies, bossRoster } from './Medals.js';
 import { addXp, xpForKill, levelStats } from './Progress.js';
 import { succeed } from './Family.js';
 import { floorInfo } from './floorPlan.js';
@@ -38,7 +38,7 @@ export class Game {
     this.camera = new Camera(config.camera, rng);
     this.camera.snapTo(this.player.pos);
     // treasures picked this run (treasure-room cards); their bonuses feed combat, skills, movement
-    this.relics = new Relics(config.relics);
+    this.relics = new Relics(config.relics, () => this.vault.essence);
     this.bonusStats = zeroStats(); // cards + equipment, rebuilt by refreshBonus()
     const bonus = () => this.currentBonus();
     this.movement.speedMul = () => 1 + this.bonusStats.speed;
@@ -155,6 +155,7 @@ export class Game {
   // sum of every bonus source; call whenever cards or equipment change
   refreshBonus() {
     const s = addStats(zeroStats(), this.relics.stats);
+    addStats(s, this.vault.essence.stats); // essences handed down the line
     const sum = this.loadout.summary();
     addStats(s, sum.stats);
     addStats(s, levelStats(this.config.progress, this.vault.progress.level));
@@ -199,7 +200,10 @@ export class Game {
   // ---- save slot, forge and the family line ----
   attachVault(vault) {
     this.vault = vault;
-    if (this.config.medals) backfillMedals(vault, this.config.medals);
+    if (this.config.medals) {
+      backfillMedals(vault, this.config.medals);
+      checkTrophies(vault, this.config.medals, { roster: bossRoster(this.config.dungeon, this.config.enemies) }); // older families: what they already reached
+    }
     this.loadout = Loadout.fromJSON(vault.equipped, this.config.items);
     this.refreshBonus();
     this.resetHealth();
@@ -326,7 +330,7 @@ export class Game {
       given: l.given, family: l.family, generation: l.generation, level: this.vault.progress.level,
       floor: floor || this.vault.lastFloor || 1, kills: this.stats.kills, bestCombo: this.stats.bestCombo,
       medals: (this.stats.medals || []).slice(), bosses: JSON.parse(JSON.stringify(this.stats.bosses || {})),
-      killer: this.stats.killer || null, at: Date.now(),
+      killer: this.stats.killer || null, at: Date.now(), essences: JSON.parse(JSON.stringify(this.stats.essences || {})),
     };
     const { survived, lost } = resolveDeath(this.forgeCtx(), this.rng, record);
     record.survived = survived.map((i) => i.name);
@@ -337,9 +341,17 @@ export class Game {
     this.vault.lastFloor = 0;
     this.vault.carry = [];
     this.vault.runStats = null;
+    // the new generation may reach a family milestone (counted from the records only)
+    if (this.config.medals) {
+      const got = checkTrophies(this.vault, this.config.medals, { roster: bossRoster(this.config.dungeon, this.config.enemies) }, record.floor);
+      for (const tr of got) this.events.emit('trophy', { trophy: tr, heir: true });
+      this.lastTrophies = got;
+    }
     this.refreshBonus();
     this.saveVault();
-    return { record, heir, survived, lost };
+    const trophies = this.lastTrophies || [];
+    this.lastTrophies = null;
+    return { record, heir, survived, lost, trophies };
   }
 
   // the bonus read by combat and skills at this moment (effects that depend on state adjust it)
@@ -399,7 +411,9 @@ export class Game {
     const o = this.offer.offers[i];
     if (!o) return null;
     this.relics.take(o, this);
+    if (o.essence) noteEssence(this.stats, o);
     this.refreshBonus();
+    this.saveVault(); // an essence belongs to the family at once
     this.offer = null;
     this.pendingStroke = null;
     this.pendingFlick = null;

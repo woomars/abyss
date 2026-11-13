@@ -3,7 +3,8 @@ import { t, setLang, getLang } from '../i18n/index.js';
 import { langSwitch } from './TitleMenu.js';
 
 export class PauseMenu {
-  constructor(root, { settings, onChange, onRestart, onOpenChange }) {
+  constructor(root, { settings, onChange, onRestart, onOpenChange, onSkillLayout = () => {} }) {
+    this.onSkillLayout = onSkillLayout;
     this.settings = settings;
     this.onChange = onChange;
     this.onRestart = onRestart;
@@ -20,6 +21,7 @@ export class PauseMenu {
         <button data-act="shake" class="toggle"></button>
         <button data-act="sound" class="toggle"></button>
         <button data-act="music" class="toggle"></button>
+        <button data-act="layout" data-i18n="pause.skillLayout">${t('pause.skillLayout')}</button>
         <div class="pm-lang"></div>
       </div>
       <div class="panel confirm-view hidden">
@@ -57,6 +59,7 @@ export class PauseMenu {
     else if (a === 'restart') { this.mainView.classList.add('hidden'); this.confirmView.classList.remove('hidden'); }
     else if (a === 'confirm-no') { this.confirmView.classList.add('hidden'); this.mainView.classList.remove('hidden'); }
     else if (a === 'confirm-yes') { this.onRestart(); this.close(); }
+    else if (a === 'layout') { this.close(); this.onSkillLayout(); }
     else if (a === 'shake' || a === 'sound' || a === 'music') {
       this.settings[a] = !this.settings[a];
       this.renderToggles();

@@ -57,7 +57,8 @@ export class RelicPicker {
         <span class="rp-icon">${relicIcon(o.icon, 34)}</span>
         <b class="rp-name">${tr(o.name)}</b>
         <span class="rp-desc">${relicDesc(o, this.relics())}</span>
-        ${o.owned ? `<span class="rp-owned">${t('rp.owned', { n: o.owned })}</span>` : ''}
+        ${o.essence ? `<span class="rp-pass${o.inherit ? '' : ' life'}">${t(o.inherit ? 'rp.inherit' : 'rp.lifeOnly')}</span>` : ''}
+        ${o.owned ? `<span class="rp-owned">${t(o.inherit ? 'rp.familyOwned' : 'rp.owned', { n: o.owned })}</span>` : ''}
       </button>`).join('');
     this.el.classList.remove('hidden', 'ready');
     clearTimeout(this.timer);

@@ -4,7 +4,7 @@
 
 export const who = (l) => ({ given: l.given, family: l.family, generation: l.generation });
 
-export const emptyRunStats = () => ({ kills: 0, bestCombo: 0, medals: [], bosses: {}, killer: null });
+export const emptyRunStats = () => ({ kills: 0, bestCombo: 0, medals: [], bosses: {}, killer: null, essences: {} });
 
 // a boss is known by its type and the band it guards (중간보스 오크 대장 ≠ 지역 보스 오크 대장)
 export const bossKey = (type, band) => `${type}@${band.from}`;
@@ -59,6 +59,38 @@ export function backfillMedals(vault, medalsCfg) {
   return true;
 }
 
+// ---- trophies: milestones of the whole family (summed over every generation) ----
+// live: the hero in play still fights (his kills are not in the history yet)
+export function trophyValue(kind, vault, { stats = null, roster = [] } = {}) {
+  const hist = vault.lineage.history;
+  if (kind === 'generation') return vault.lineage.generation;
+  if (kind === 'familyKills') return hist.reduce((n, h) => n + (h.kills || 0), 0) + (stats ? stats.kills : 0);
+  if (kind === 'familyBosses') return Object.values(vault.bestiary).reduce((n, b) => n + (b.kills || 0), 0);
+  if (kind === 'bestiary') return roster.length && roster.every((b) => vault.bestiary[b.key]) ? 1 : 0;
+  if (kind === 'medalCount') return Object.values(vault.medals).filter((m) => m && m.first).length;
+  if (kind === 'essenceCount') return Object.values(vault.essence.owned).reduce((n, c) => n + c, 0);
+  return 0;
+}
+
+// newly reached trophies go to the vault (credited to the hero in play); returns them
+export function checkTrophies(vault, cfg, ctx = {}, floor = 0, now = Date.now()) {
+  const out = [];
+  for (const tr of (cfg && cfg.trophies) || []) {
+    if (vault.trophies[tr.id]) continue;
+    if (trophyValue(tr.kind, vault, ctx) < tr.value) continue;
+    vault.trophies[tr.id] = { ...who(vault.lineage), floor, at: now };
+    out.push(tr);
+  }
+  return out;
+}
+
+// this life's essences (for the record the hall shows): id -> { count, total, life }
+export function noteEssence(stats, o) {
+  const e = stats.essences[o.id] || (stats.essences[o.id] = { count: 0, total: 0, life: !o.inherit });
+  e.count += 1;
+  e.total += o.value;
+}
+
 function maxEnhance(game) {
   let best = 0;
   const all = [...Object.values(game.loadout.slots), ...game.vault.stash, ...game.loot.pocket];
@@ -68,6 +100,17 @@ function maxEnhance(game) {
 
 export function installMedals(game) {
   const ev = game.events;
+  const trophies = (live = true) => {
+    const cfg = game.config.medals;
+    if (!cfg || game.mode !== 'dungeon') return;
+    const roster = bossRoster(game.config.dungeon, game.config.enemies);
+    const got = checkTrophies(game.vault, cfg, { stats: live ? game.stats : null, roster }, game.dungeon.floor || 0);
+    for (const tr of got) ev.emit('trophy', { trophy: tr });
+    if (got.length) game.saveVault();
+  };
+  game.checkTrophies = trophies;
+  ev.on('medal', () => trophies());
+  ev.on('relicPick', () => trophies());
   let clean = true; // no blow taken on this floor yet
   const earn = (kind, value) => {
     if (game.mode !== 'dungeon') return;
@@ -92,6 +135,7 @@ export function installMedals(game) {
       if (clean) earn('flawless', 1);
     }
     earn('kills', game.stats.kills);
+    if (game.stats.kills % 50 === 0 || (en && en.isBoss)) trophies(); // family kill totals: checked now and then
   });
   ev.on('hit', () => earn('combo', game.effects.combo.count));
   ev.on('levelUp', (e) => earn('level', e.level));

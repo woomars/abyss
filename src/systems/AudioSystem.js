@@ -62,6 +62,7 @@ export class AudioSystem {
       else if (e.kind === 'enhanceUp') { this.play('hammer'); setTimeout(() => this.play('chime', { pitch: 1.3 }), 90); }
       else this.play('coins', { gain: 0.5, pitch: 0.7 });
     });
+    events.on('trophy', () => { this.play('chime', { pitch: 0.8, gain: 1.3 }); setTimeout(() => this.play('chime', { pitch: 1.2, gain: 1.2 }), 160); });
     events.on('medal', (e) => { this.play('chime', { pitch: e.medal.tier === 'gold' ? 1.25 : e.medal.tier === 'silver' ? 1.1 : 0.95, gain: 1.1 }); });
     events.on('legacyToken', () => { this.play('roar', { pitch: 0.8, gain: 0.5 }); this.play('chime', { pitch: 0.7, gain: 1.3 }); });
     events.on('tokenApplied', () => { this.play('hammer', { pitch: 0.8 }); setTimeout(() => this.play('chime', { pitch: 1.1, gain: 1.4 }), 150); });

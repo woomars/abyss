@@ -71,8 +71,9 @@ async function boot() {
   const stage = document.getElementById('stage');
   let started = false;
   let menu = null;
+  let editingLayout = false; // dragging the special-attack buttons
   const updatePaused = () => {
-    game.paused = !started || (menu && menu.isOpen);
+    game.paused = !started || (menu && menu.isOpen) || editingLayout;
   };
   // save slots: the vault in play is saved whenever it changes
   const store = new VaultStore(safeStorage());
@@ -80,6 +81,7 @@ async function boot() {
   events.on('vaultChanged', (e) => { if (slot) store.save(slot, e.vault); });
 
   const skillButtons = new SkillButtons(ui, game.skills, { toLocal: (x, y) => toLocal(x, y) });
+  skillButtons.setLayout(settings.skillPos);
   const hud = new HUD(ui, { onPause: () => menu.open() });
   let lastFate = null;
   const heirLabel = () => (game.hasGear() ? 'toForge' : () => t('toFloor', { floor: floorLabel(1) }));
@@ -133,13 +135,20 @@ async function boot() {
     onChange: (s) => { applySettings(s); save.save(s); },
     onRestart: () => { gameOver.hide(); game.giveUp(); },
     onOpenChange: updatePaused,
+    // drag the special-attack buttons where the player likes them; saved with the settings
+    onSkillLayout: () => {
+      editingLayout = true;
+      skillButtons.startEdit((pos) => { editingLayout = false; settings.skillPos = pos; save.save(settings); layout(); updatePaused(); });
+      updatePaused();
+    },
   });
   events.on('setComplete', (e) => { if (forge.isOpen) forge.flash(t('notice.setComplete', { name: tr(e.name) }), true); });
   events.on('medal', (e) => toast.medal(e.medal, config.medals, e.first));
+  events.on('trophy', (e) => { if (!e.heir) toast.trophy(e.trophy, config.medals); });
   events.on('levelUp', (e) => banner.show(t('banner.levelUp'), t('banner.levelUpSub', { level: e.level }), { kind: 'reward', ms: 1600 }));
 
   // --- family, forge and title (all inside the landscape stage) ---
-  const heir = new HeirScreen(ui, { onContinue: () => game.beginRun(), medals: config.medals });
+  const heir = new HeirScreen(ui, { onContinue: () => game.beginRun(), medals: config.medals, relics: config.relics });
   // 유산의 증표: opened on reaching every 100th floor, or from the forge while tokens are in hand
   const legacy = new LegacyScene(ui, {
     game, toLocal: (x, y) => toLocal(x, y),

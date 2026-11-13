@@ -1,7 +1,9 @@
-// Run-long treasures picked from cards (treasure rooms and boss chests). Holds what the player owns
-// and the summed stat bonuses that combat, skills, movement and health read. Each card also rolls a
-// quality tier (normal / 상급 / 최상급) that multiplies its value; deeper floors and boss chests roll
-// better tiers more often. Pure game logic, reset every run.
+// Treasure cards (treasure rooms and boss chests). Stat cards are essences (정수): they go into the
+// family's essence (vault.essence) and pass down to every heir; a 'life' essence (lifesteal) and the
+// one-off cards (healing, gold) last this life only. `max` is a cap for the whole family. Each card also
+// rolls a quality tier (normal / 상급 / 최상급) that multiplies its value; deeper floors and boss chests
+// roll better tiers more often. Until `healGuarantee.untilFloor`, every draw holds one healing card.
+// Pure game logic; this-life picks reset every run.
 import { zeroStats } from './Stats.js';
 
 export function formatValue(v, fmt) {
@@ -9,17 +11,30 @@ export function formatValue(v, fmt) {
 }
 
 export class Relics {
-  constructor(cfg) {
+  constructor(cfg, family = () => null) {
     this.cfg = cfg; // config.relics (live); may be missing in hand-made test configs
+    this.family = family; // () => vault.essence { stats, owned } (null: nothing passes down)
     this.reset();
   }
 
   reset() {
-    this.owned = {}; // id -> count
-    this.stats = zeroStats();
+    this.owned = {}; // id -> count picked this life (HUD)
+    this.stats = zeroStats(); // bonuses that last this life only (the family's essence is in the vault)
   }
 
   count(id) { return this.owned[id] || 0; }
+
+  // does this card's stat pass down the family line?
+  inherits(id) {
+    const d = this.cfg.list[id];
+    return !!(d && d.stat && !d.life && this.family());
+  }
+
+  // how many the cap counts: the family's essences, or this life's picks
+  held(id) {
+    if (!this.inherits(id)) return this.count(id);
+    return this.family().owned[id] || 0;
+  }
 
   // owned relics in pick order, for the HUD: [{ id, icon, name, count }]
   list() {
@@ -29,7 +44,7 @@ export class Relics {
 
   available() {
     const all = (this.cfg && this.cfg.list) || {};
-    return Object.keys(all).filter((id) => !(all[id].max && this.count(id) >= all[id].max));
+    return Object.keys(all).filter((id) => !(all[id].max && this.held(id) >= all[id].max));
   }
 
   // chance of each quality tier at this depth: [normal, 상급, 최상급]
@@ -67,6 +82,11 @@ export class Relics {
       const tier = c.list[chosen].fixed ? 0 : this.rollTier(rng, floor, boss);
       picks.push(this.offer(chosen, rng, goldMult, tier));
     }
+    // shallow floors: one card of three always heals (at least its base 50%)
+    const hg = c.healGuarantee;
+    if (hg && floor <= hg.untilFloor && c.list[hg.id] && picks.length && !picks.some((o) => o.id === hg.id)) {
+      picks[Math.floor(rng() * picks.length) % picks.length] = this.offer(hg.id, rng, goldMult, this.rollTier(rng, floor, boss));
+    }
     return picks;
   }
 
@@ -83,7 +103,8 @@ export class Relics {
     return {
       id, name: d.name, icon: d.icon, rarity: d.rarity, rarityLabel: rar.label, color: rar.color,
       tier, tierLabel: t.label, tierColor: t.color || null, value,
-      desc: d.desc.replace('{v}', formatValue(value, d.fmt)), owned: this.count(id),
+      desc: d.desc.replace('{v}', formatValue(value, d.fmt)), owned: this.held(id),
+      essence: !!d.stat, inherit: !!d.stat && !d.life,
     };
   }
 
@@ -91,7 +112,11 @@ export class Relics {
   take(o, game) {
     const d = this.cfg.list[o.id];
     this.owned[o.id] = this.count(o.id) + 1;
-    if (d.stat) this.stats[d.stat] += o.value;
+    if (d.stat && this.inherits(o.id)) {
+      const f = this.family();
+      f.stats[d.stat] = (f.stats[d.stat] || 0) + o.value;
+      f.owned[o.id] = (f.owned[o.id] || 0) + 1;
+    } else if (d.stat) this.stats[d.stat] += o.value;
     const p = game.player;
     if (d.stat === 'maxHp') { p.maxHp += o.value; p.hp += o.value; }
     if (d.heal) game.healPlayer(o.value);

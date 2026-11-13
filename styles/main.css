@@ -121,10 +121,10 @@ html, body {
 .drow output { color: #e8d9a8; }
 .dexport { width: 100%; height: 120px; font-size: 9px; }
 
-/* special attack buttons (bottom-right arc) */
+/* special attack buttons (bottom-left corner by default; free positions after the layout mode) */
 .skills {
   position: absolute;
-  right: calc(14px + env(safe-area-inset-right));
+  left: calc(14px + env(safe-area-inset-left));
   bottom: calc(14px + env(safe-area-inset-bottom));
   width: 170px;
   height: 160px;
@@ -158,9 +158,16 @@ html, body {
   position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
   font-size: 10px; white-space: nowrap; color: #9a8fae; margin-top: 2px;
 }
-.skill-0 { right: 0; bottom: 14px; }
-.skill-1 { right: 84px; bottom: 0; }
-.skill-2 { right: 14px; bottom: 96px; }
+.skill-0 { left: 0; bottom: 14px; }
+.skill-1 { left: 84px; bottom: 0; }
+.skill-2 { left: 14px; bottom: 96px; }
+.skills.custom { left: 0; top: 0; right: 0; bottom: 0; width: auto; height: auto; }
+.skills.editing { z-index: 46; }
+.skills.editing .skill { outline: 2px dashed #ffe08a; outline-offset: 4px; animation: le-wiggle 1.2s ease-in-out infinite; }
+.skills.editing .skill.dragging { animation: none; transform: scale(1.12); }
+@keyframes le-wiggle { 50% { transform: rotate(-4deg); } }
+.layout-edit { position: absolute; inset: 0; z-index: 45; background: rgba(4, 3, 8, 0.55); display: flex; justify-content: center; align-items: flex-start; }
+.le-bar { margin-top: calc(14px + env(safe-area-inset-top)); display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; background: rgba(21, 17, 28, 0.95); border: 1px solid #c9a86a; color: #f0e6cf; font-size: 14px; max-width: 92%; flex-wrap: wrap; justify-content: center; }
 
 /* low HP warning */
 .hud.low-hp .hp { animation: hp-pulse 0.8s ease-in-out infinite; }
@@ -563,3 +570,25 @@ html:lang(ja), html:lang(ja) body { font-family: system-ui, -apple-system, "Hira
 .lang-flags .lang-flag[aria-pressed="true"] { opacity: 1; border-color: #c9a86a; background: rgba(58, 47, 69, 0.6); }
 .tm-lang { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)); }
 .pm-lang { display: flex; justify-content: center; margin-top: 2px; }
+
+/* essences, trophies */
+.rp-pass { font-size: 10px; padding: 1px 7px; border-radius: 8px; background: rgba(155, 227, 176, 0.14); color: #9be3b0; }
+.rp-pass.life { background: rgba(255, 138, 112, 0.14); color: #ff9e88; }
+.hl-tabs { overflow-x: auto; scrollbar-width: none; }
+.hl-tab { flex: none; padding: 0 10px; }
+.hl-cup { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; color: var(--mc); background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--mc) 28%, transparent), #120e17 70%); border: 1px solid color-mix(in srgb, var(--mc) 60%, transparent); }
+.hl-cup.locked { color: #4a4058; background: #17121e; border-color: #2c2438; }
+.loot-toast .hl-cup { width: 20px; height: 20px; border-radius: 5px; }
+.hl-bar { height: 4px; margin: 3px 0 2px; border-radius: 2px; background: #2a2433; overflow: hidden; }
+.hl-bar i { display: block; height: 100%; background: #c9a86a; }
+.hl-note { margin: 0 0 8px; font-size: 12px; color: #b3a8c4; }
+.hl-empty { padding: 16px; text-align: center; }
+.hl-ess { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 10px; border: 1px solid #2f4a3a; background: rgba(14, 26, 20, 0.7); }
+.hl-eicon { color: #9be3b0; flex: none; }
+.hl-estat { font-size: 13px; color: #9be3b0; }
+.hs-ess b { color: #9be3b0; }
+.hs-trophy { display: flex; align-items: center; gap: 6px; color: #ffd166; font-size: 14px; }
+.hl-head { gap: 8px; }
+.hl-title { display: flex; flex-direction: column; line-height: 1.1; font-size: 17px; }
+.hl-title small { margin-left: 0; font-size: 11px; }
+.hl-tab { font-size: 12px; padding: 0 9px; }

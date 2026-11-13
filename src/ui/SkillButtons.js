@@ -1,7 +1,9 @@
-// Bottom-right special attack buttons with cooldown sweep. Kept out of the stroke input area.
+// Special attack buttons with cooldown sweep (bottom-left corner by default, or where the player put
+// them: positions are fractions of the stage, edited by dragging in the layout mode). Kept out of the
+// stroke input area.
 // Non-directional skills fire on press. Directional skills (rush, blade wave): press, drag to aim,
 // release to fire; a plain tap fires in the current movement direction.
-import { tr } from '../i18n/index.js';
+import { tr, t } from '../i18n/index.js';
 
 const ICONS = { spin: '⟳', rushStrike: '➤', bladeWave: '≋' };
 const AIM_DEADZONE = 12; // px of drag before the aim counts
@@ -10,6 +12,9 @@ export class SkillButtons {
   constructor(root, skills, { toLocal = (x, y) => ({ x, y }) } = {}) {
     this.skills = skills;
     this.toLocal = toLocal;
+    this.root = root;
+    this.pos = null; // [{ x, y }] stage fractions of each button's centre; null = default corner
+    this.editing = false;
     this.el = document.createElement('div');
     this.el.className = 'skills';
     this.buttons = skills.slots.map((s, i) => {
@@ -35,6 +40,13 @@ export class SkillButtons {
     b.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (this.editing) { // layout mode: drag the button instead of firing it
+        this.ensureCustom();
+        try { b.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+        ui.drag = e.pointerId;
+        b.classList.add('dragging');
+        return;
+      }
       const s = this.skills.slots[i];
       if (!this.skills.isDirectional(i)) { fired(this.skills.use(i)); return; }
       if (s.remaining > 0) return;
@@ -44,6 +56,7 @@ export class SkillButtons {
       b.classList.add('aiming');
     });
     b.addEventListener('pointermove', (e) => {
+      if (ui.drag === e.pointerId) { this.dragTo(i, e); return; }
       const a = ui.aiming;
       if (!a || a.id !== e.pointerId) return;
       const p = this.toLocal(e.clientX, e.clientY);
@@ -60,8 +73,77 @@ export class SkillButtons {
       this.skills.clearAim();
       if (fire) fired(this.skills.use(i, a.dir));
     };
-    b.addEventListener('pointerup', (e) => finish(e, true));
-    b.addEventListener('pointercancel', (e) => finish(e, false));
+    const drop = (e) => { if (ui.drag !== e.pointerId) return false; ui.drag = null; b.classList.remove('dragging'); return true; };
+    b.addEventListener('pointerup', (e) => { if (!drop(e)) finish(e, true); });
+    b.addEventListener('pointercancel', (e) => { if (!drop(e)) finish(e, false); });
+  }
+
+  // ---- layout ----
+  stageSize() { return { w: this.root.offsetWidth || 1, h: this.root.offsetHeight || 1 }; }
+
+  // positions (or null for the default corner); bad data falls back to the default
+  setLayout(pos) {
+    const ok = Array.isArray(pos) && pos.length === this.buttons.length
+      && pos.every((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y));
+    this.pos = ok ? pos.map((p) => ({ x: Math.min(1, Math.max(0, p.x)), y: Math.min(1, Math.max(0, p.y)) })) : null;
+    this.el.classList.toggle('custom', !!this.pos);
+    this.buttons.forEach(({ b }, i) => {
+      b.style.left = this.pos ? `calc(${(this.pos[i].x * 100).toFixed(2)}% - 32px)` : '';
+      b.style.top = this.pos ? `calc(${(this.pos[i].y * 100).toFixed(2)}% - 32px)` : '';
+      b.style.right = this.pos ? 'auto' : '';
+      b.style.bottom = this.pos ? 'auto' : '';
+    });
+  }
+
+  // switch to free positions where the buttons are now
+  ensureCustom() {
+    if (this.pos) return;
+    const { w, h } = this.stageSize();
+    this.setLayout(this.buttons.map(({ b }) => {
+      const r = b.getBoundingClientRect();
+      const c = this.toLocal(r.left + r.width / 2, r.top + r.height / 2);
+      return { x: c.x / w, y: c.y / h };
+    }));
+  }
+
+  dragTo(i, e) {
+    const { w, h } = this.stageSize(), p = this.toLocal(e.clientX, e.clientY);
+    const pos = this.pos.slice();
+    pos[i] = {
+      x: Math.min(1 - 36 / w, Math.max(36 / w, p.x / w)),
+      y: Math.min(1 - 50 / h, Math.max(36 / h, p.y / h)),
+    };
+    this.setLayout(pos);
+  }
+
+  // layout mode: the game waits, the buttons can be dragged; onDone(positions | null) when finished
+  startEdit(onDone) {
+    if (this.editing) return;
+    this.editing = true;
+    this.onDone = onDone;
+    this.el.classList.add('editing');
+    this.bar = document.createElement('div');
+    this.bar.className = 'layout-edit interactive';
+    this.bar.innerHTML = `<div class="le-bar"><span>${t('layout.hint')}</span>
+      <button class="tm-btn small" data-act="reset">${t('layout.reset')}</button>
+      <button class="tm-btn small primary" data-act="done">${t('layout.done')}</button></div>`;
+    this.bar.addEventListener('pointerdown', (e) => e.stopPropagation());
+    this.bar.addEventListener('click', (e) => {
+      const a = e.target.closest('[data-act]');
+      if (!a) return;
+      if (a.dataset.act === 'reset') this.setLayout(null);
+      else this.endEdit();
+    });
+    this.root.appendChild(this.bar);
+  }
+
+  endEdit() {
+    if (!this.editing) return;
+    this.editing = false;
+    this.el.classList.remove('editing');
+    if (this.bar) this.bar.remove();
+    this.bar = null;
+    if (this.onDone) this.onDone(this.pos ? this.pos.map((p) => ({ ...p })) : null);
   }
 
   // the language changed: skill names again

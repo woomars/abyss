@@ -2,12 +2,14 @@
 import { floorLabel } from '../core/floorLabel.js';
 import { relicIcon } from './relicIcons.js';
 import { t, tr, trItemName, trPerson, fullName } from '../i18n/index.js';
+import { essenceLine } from './HallScreen.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export class HeirScreen {
-  constructor(root, { onContinue, medals = null }) {
+  constructor(root, { onContinue, medals = null, relics = null }) {
     this.onContinue = onContinue;
+    this.relics = relics; // config.relics
     this.medals = medals; // config.medals
     this.el = document.createElement('div');
     this.el.className = 'overlay heir-screen interactive hidden';
@@ -27,7 +29,9 @@ export class HeirScreen {
     const bosses = Object.values(r.bosses || {});
     const chips = ms.map((m) => `<span class="hl-chip"><span class="hl-badge" style="--mc:${cfg.tiers[m.tier].color};width:18px;height:18px">${relicIcon(m.icon, 10)}</span>${esc(tr(m.name))}</span>`).join('');
     const slain = bosses.length ? `<div class="hs-kept">${t('heir.slain', { list: bosses.map((b) => `<b>${esc(tr(b.name))}</b> ×${b.count}`).join(', ') })}</div>` : '';
-    return (chips ? `<div class="hl-medals hs-medals">${chips}</div>` : '') + slain;
+    const ess = this.relics ? Object.entries(r.essences || {}).filter(([, e]) => !e.life).map(([id, e]) => essenceLine(this.relics, id, e, false)).filter(Boolean) : [];
+    const essLine = ess.length ? `<div class="hs-kept hs-ess">${t('heir.essences', { list: ess.join(', ') })}</div>` : '';
+    return (chips ? `<div class="hl-medals hs-medals">${chips}</div>` : '') + slain + essLine;
   }
 
   // the language changed while it is up: write it again (note and label are keys, see main.js)
@@ -53,6 +57,7 @@ export class HeirScreen {
           ${kept}
           ${this.medalLine(r)}
         </div>
+        ${(fate.trophies || []).length ? `<div class="hs-trophy">${relicIcon('trophy', 16)} ${t('heir.trophies', { list: fate.trophies.map((x) => esc(tr(x.name))).join(', ') })}</div>` : ''}
         <div class="hs-arrow">▼</div>
         <div class="hs-heir">${t('heir.son', { name: esc(trPerson(h.given, 'given')) })} <small>${t('gen', { n: h.generation })} ${esc(fullName(h.family, h.given))}</small></div>
         <button class="tm-btn primary" data-act="go">${typeof label === 'function' ? label() : t(label)}</button>

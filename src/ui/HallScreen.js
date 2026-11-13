@@ -2,13 +2,22 @@
 // the medal codex (who earned each first) and the boss codex. Read-only view of one save slot.
 import { relicIcon } from './relicIcons.js';
 import { floorLabel } from '../core/floorLabel.js';
-import { bossRoster, backfillMedals } from '../game/Medals.js';
-import { t, tr, trItemName, trPerson, fullName, formatDate } from '../i18n/index.js';
+import { bossRoster, backfillMedals, trophyValue } from '../game/Medals.js';
+import { formatValue } from '../game/Relics.js';
+import { t, tr, trItemName, trPerson, fullName, formatDate, locale } from '../i18n/index.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const nameOf = (p) => `${t('gen', { n: p.generation })} ${esc(fullName(p.family, p.given))}`;
 const genName = (p) => t('hall.genName', { gen: t('gen', { n: p.generation }), given: esc(trPerson(p.given, 'given')) });
 const day = (ms) => formatDate(ms, false);
+
+// "칼날의 정수 ×2 (공격력 +30%)" for an essence record { count, total }
+export function essenceLine(relicsCfg, id, e, withStat = true) {
+  const d = relicsCfg.list[id];
+  if (!d) return '';
+  const stat = tr(d.desc).replace('{v}', formatValue(e.total, d.fmt));
+  return `<b>${esc(tr(d.name))}</b> ×${e.count}${withStat ? ` <small>(${esc(stat)})</small>` : ''}`;
+}
 
 export class HallScreen {
   constructor(root, { config, onBack }) {
@@ -49,6 +58,7 @@ export class HallScreen {
       floor: v.state === 'rest' && v.run ? v.run.floor : null, state: v.state,
       kills: live ? live.kills : 0, bestCombo: live ? live.bestCombo : 0,
       medals: live && live.medals ? live.medals : [], bosses: live && live.bosses ? live.bosses : {},
+      essences: live && live.essences ? live.essences : {},
     };
     return [cur, ...l.history.slice().reverse()];
   }
@@ -70,12 +80,16 @@ export class HallScreen {
     const roster = bossRoster(this.config.dungeon, this.config.enemies);
     const slain = roster.filter((b) => v.bestiary[b.key]).length;
     const tab = (id, label) => `<button class="hl-tab${this.tab === id ? ' on' : ''}" data-act="tab" data-tab="${id}">${label}</button>`;
-    const body = this.tab === 'medals' ? this.renderMedals() : this.tab === 'bosses' ? this.renderBosses(roster) : this.renderAncestors(people);
+    const trophies = this.config.medals.trophies || [];
+    const reached = trophies.filter((x) => v.trophies[x.id]).length;
+    const kinds = Object.keys(v.essence.owned).filter((id) => v.essence.owned[id] > 0).length;
+    const body = this.tab === 'medals' ? this.renderMedals() : this.tab === 'bosses' ? this.renderBosses(roster)
+      : this.tab === 'essence' ? this.renderEssence(people) : this.tab === 'trophies' ? this.renderTrophies(roster) : this.renderAncestors(people);
     this.el.innerHTML = `
       <div class="hl-wrap">
         <div class="hl-head">
           <div class="hl-title">${t('hall.title')} <small>${t('title.house', { family: esc(trPerson(v.lineage.family, 'family')) })}</small></div>
-          <div class="hl-tabs">${tab('ancestors', t('hall.tabAncestors', { n: people.length }))}${tab('medals', t('hall.tabMedals', { a: got, b: list.length }))}${tab('bosses', t('hall.tabBosses', { a: slain, b: roster.length }))}</div>
+          <div class="hl-tabs">${tab('ancestors', t('hall.tabAncestors', { n: people.length }))}${tab('essence', t('hall.tabEssence', { n: kinds }))}${tab('medals', t('hall.tabMedals', { a: got, b: list.length }))}${tab('trophies', t('hall.tabTrophies', { a: reached, b: trophies.length }))}${tab('bosses', t('hall.tabBosses', { a: slain, b: roster.length }))}</div>
           <button class="tm-btn small" data-act="back">${t('back')}</button>
         </div>
         <div class="hl-body">${body}</div>
@@ -113,8 +127,54 @@ export class HallScreen {
       <div class="hl-bosses">${bosses.length
         ? bosses.map((b) => `<div><b>${esc(tr(b.name))}</b> <small>${esc(tr(b.title))}</small> ×${b.count} <small>· ${t('hall.deepest', { floor: floorLabel(b.deepest) })}</small></div>`).join('')
         : `<span class="dim">${old ? t('hall.noRecord') : t('none')}</span>`}</div>
+      <div class="hl-sec">${t('hall.essenceLeft')}</div>
+      <div class="hl-bosses">${Object.keys(p.essences || {}).length
+        ? Object.entries(p.essences).map(([id, e]) => `<div>${essenceLine(this.config.relics, id, e)}${e.life ? ` <small class="dim">${t('hall.lifeOnly')}</small>` : ''}</div>`).join('')
+        : `<span class="dim">${!p.living && !p.essences ? t('hall.noRecord') : t('none')}</span>`}</div>
       ${p.living ? '' : `<div class="hl-sec">${t('hall.passed')}</div>
       <div class="hl-kept">${(p.survived || []).length ? p.survived.map((n) => `<b>${esc(trItemName(n))}</b>`).join(', ') : `<span class="dim">${t('none')}</span>`}${p.lost ? ` <small class="dim">${t('hall.lostN', { n: p.lost })}</small>` : ''}</div>`}`;
+  }
+
+  // what the house carries now, essence by essence, and which ancestors left it
+  renderEssence(people) {
+    const v = this.vault, rc = this.config.relics;
+    const ids = Object.keys(rc.list).filter((id) => (v.essence.owned[id] || 0) > 0);
+    if (!ids.length) return `<p class="hl-note">${t('hall.essenceNote')}</p><div class="dim hl-empty">${t('hall.essenceNone')}</div>`;
+    const rows = ids.map((id) => {
+      const d = rc.list[id], n = v.essence.owned[id];
+      const total = v.essence.stats[d.stat] || 0;
+      const by = people.filter((p) => p.essences && p.essences[id] && !p.essences[id].life)
+        .map((p) => `${genName(p)} ×${p.essences[id].count}`);
+      return `<div class="hl-ess">
+        <span class="hl-eicon">${relicIcon(d.icon, 24)}</span>
+        <div class="hl-btext">
+          <div class="hl-bname">${esc(tr(d.name))} <small>×${n}${d.max ? ` · ${t('hall.cap', { n: d.max })}` : ''}</small></div>
+          <div class="hl-estat">${esc(tr(d.desc).replace('{v}', formatValue(total, d.fmt)))}</div>
+          ${by.length ? `<div class="hl-slayers">${t('hall.essenceBy', { list: by.join(' · ') })}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    return `<p class="hl-note">${t('hall.essenceNote')}</p><div class="hl-grid">${rows}</div>`;
+  }
+
+  // family milestones: reached ones show who reached them, the rest how far the house has come
+  renderTrophies(roster) {
+    const v = this.vault, tiers = this.config.medals.tiers;
+    const live = this.people()[0];
+    const num = (n) => Number(n).toLocaleString(locale());
+    return `<div class="hl-grid">${(this.config.medals.trophies || []).map((x) => {
+      const r = v.trophies[x.id], c = tiers[x.tier].color;
+      const cur = Math.min(x.value, trophyValue(x.kind, v, { stats: live, roster }));
+      return `<div class="hl-medal hl-trophy${r ? '' : ' locked'}">
+        <span class="hl-cup${r ? '' : ' locked'}" style="--mc:${c}">${relicIcon('trophy', 22)}</span>
+        <div class="hl-mtext">
+          <div class="hl-mname" style="${r ? `color:${c}` : ''}">${esc(tr(x.name))} <small>${tr(tiers[x.tier].label)}</small></div>
+          <div class="hl-mdesc">${esc(tr(x.desc))}</div>
+          ${r ? `<div class="hl-mfirst">${t('hall.reached', { who: nameOf(r) })}${r.at ? ` <small>· ${day(r.at)}</small>` : ''}</div>`
+            : `<div class="hl-bar"><i style="width:${Math.round((cur / x.value) * 100)}%"></i></div><div class="hl-mfirst dim">${num(cur)} / ${num(x.value)}</div>`}
+        </div>
+      </div>`;
+    }).join('')}</div>`;
   }
 
   renderMedals() {

@@ -16,7 +16,7 @@ export class DebugPanel {
       <div class="dhead"><button data-act="toggle">DEBUG</button><span class="fps">-- fps</span></div>
       <div class="dbody">
         <div class="dbtns">방 이동 <select data-act="floor"><option value="">고르기</option><option value="0">연습장</option><option value="-1">보물방</option><option value="-2">대장간</option><option value="-3">증표 받기</option><option value="-4">보스 연전 (끝없는 보스방)</option>${
-          Array.from({ length: 21 }, (_, i) => `<option value="${i + 1}">지하 ${i + 1}층</option>`).join('')}</select></div>
+          Array.from({ length: 21 }, (_, i) => `<option value="${i + 1}">지하 ${i + 1}층</option>`).join('')}<option value="99">지하 99층 (100층 직전)</option></select></div>
         <div class="dbtns">장비 지급 <select data-act="grant"><option value="">고르기</option><option value="common">일반</option><option value="uncommon">고급</option><option value="rare">희귀</option><option value="epic">영웅</option><option value="legendary">전설</option><option value="set">세트</option></select></div>
         <div class="dbtns">내 레벨 <input type="number" class="dlevel" min="1" max="99" step="1" value="1" inputmode="numeric" style="width:56px;user-select:text;-webkit-user-select:text"><button data-act="setLevel">적용</button><span class="dlevel-now"></span></div>
       </div>`;

@@ -85,7 +85,7 @@ export class Game {
     this.resetHealth();
     this.enemies.onAttack = (e, riposte = false) => {
       const r = this.config.enemies.riposte;
-      this.damagePlayer(e.attack * (riposte && r ? r.damageMul : 1), e);
+      this.damagePlayer(e.attack * (riposte && r ? r.damageMul : 1), e, { riposte });
     };
     this.enemies.onStrike = (e, hit, riposte = false) => events.emit('enemyStrike', { enemy: e, pos: { x: e.pos.x, y: e.pos.y }, hit, riposte });
     // enemy attacks in the world (arrows, telegraphed areas)
@@ -472,10 +472,15 @@ export class Game {
   }
 
   // returns true if the damage landed
-  damagePlayer(amount, source) {
+  // dashing (chain dash) or rushing (Rush Strike) the hero cannot be touched — except by a riposte,
+  // the counter of an angry enemy the hero dashed into (that is what the red ring warns about)
+  dashInvuln() { return this.combat.state === 'dash' || !!this.skills.rush; }
+
+  damagePlayer(amount, source, { riposte = false } = {}) {
     const p = this.player;
     if (this.over || p.invuln > 0 || amount <= 0) return false;
     if (this.mode === 'dungeon' && this.dungeon.state === 'fadeOut') return false; // already leaving
+    if (!riposte && this.dashInvuln()) return false;
     if (evades(this)) { // 망령의 갑옷
       p.invuln = this.config.items.effects.wraithArmor.invuln;
       this.events.emit('evade', { pos: { x: p.pos.x, y: p.pos.y } });

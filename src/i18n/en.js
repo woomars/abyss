@@ -250,7 +250,7 @@ export default {
   'guide.1.title': "Move",
   'guide.1.body': "Draw anywhere on the screen and the knight runs along the line. He keeps running after you let go.",
   'guide.2.title': "Quick swipe · Rush",
-  'guide.2.body': "A short, fast swipe is a rush attack. Enemies within reach are hit by an automatic chain.",
+  'guide.2.body': "A short, fast swipe is a rush attack. Enemies within reach are hit by an automatic chain. While dashing (Rush Strike too) nothing can hit you, except a red-ringed enemy's counter.",
   'guide.3.title': "Combo",
   'guide.3.body': "Link quick swipes and keep hitting within 0.8 s to build a combo. Every 5 combo raises your attack multiplier.",
   'guide.4.title': "Beware counters",

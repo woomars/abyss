@@ -10,16 +10,19 @@ export function skillUps(growth, picks = {}) {
     if (!n) continue;
     const u = out[c.skill] || (out[c.skill] = {});
     u[c.kind] = (u[c.kind] || 0) + c.add * n;
+    if (c.stun) u.stun = (u.stun || 0) + c.stun * n; // 질풍 베기's reach card also raises its stun chance
   }
   return out;
 }
 
-export const picksTaken = (picks = {}) => Object.values(picks).reduce((n, c) => n + (c || 0), 0);
+// picks of retired cards are not counted, so the family gets those picks back to spend on current cards
+export const picksTaken = (picks = {}, growth = null) => Object.entries(picks)
+  .filter(([id]) => !growth || growth.cards.some((c) => c.id === id)).reduce((n, [, c]) => n + (c || 0), 0);
 
 // growth cards the family has earned by its level but not yet chosen
 export function owedPicks(growth, level, picks = {}) {
   if (!growth) return 0;
-  return Math.max(0, Math.floor(level / growth.every) - picksTaken(picks));
+  return Math.max(0, Math.floor(level / growth.every) - picksTaken(picks, growth));
 }
 
 // n distinct cards
@@ -34,6 +37,7 @@ export function grownDef(def, up, growth) {
   if (!up) return def;
   const g = { ...def };
   for (const k of ['damage', 'radius', 'distance', 'range', 'width']) if (up[k] && g[k] != null) g[k] = def[k] * (1 + up[k]);
+  if (up.stun && def.stunNear != null) g.stunNear = def.stunNear + up.stun;
   if (up.cooldown) g.cooldown = def.cooldown * Math.max((growth && growth.cooldownMin) || 0.4, 1 - up.cooldown);
   return g;
 }

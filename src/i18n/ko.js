@@ -245,6 +245,7 @@ export default {
   'sk.range': '사거리 +{v}',
   'sk.width': '폭 +{v}',
   'sk.cooldown': '재사용 대기 -{v}',
+  'sk.rangeStun': '사거리 +{v}, 기절 확률 +{s}',
   'sk.banner': '{name} 강화',
   'sk.owned': '강화 {n}회',
   // story and controls guide

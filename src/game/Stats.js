@@ -3,6 +3,7 @@
 export const STAT_KEYS = [
   'damage', 'attackFlat', 'maxHp', 'crit', 'critDamage', 'speed', 'cooldown', 'lifesteal', 'armor',
   'chain', 'chainRange', 'chainDamage', 'range', 'dashRange', 'knockback', 'attackSpeed', 'skillDamage', 'comboStep', 'jumpRadius', 'jumpDamage',
+  'waveDamage', 'waveStun', 'waveFalloff', 'waveAngle',
 ];
 
 export function zeroStats() {

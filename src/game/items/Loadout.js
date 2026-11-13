@@ -60,6 +60,8 @@ export class Loadout {
         if (b.effect) effects.add(b.effect);
         addStats(stats, b);
       }
+      const ang = cfg.sets[id].angles; // 질풍: each piece worn widens 질풍 베기
+      if (ang) stats.waveAngle += ang[Math.min(n, ang.length - 1)] - ang[0];
     }
     if (effects.has('storm')) stats.chainRange += cfg.effects.storm.chainRange;
     return { stats, effects, sets };

@@ -407,7 +407,7 @@ export class Game {
     if (this.owedSkillPicks() <= 0) return false;
     const defs = this.config.skills.defs;
     const offers = rollSkillCards(g, this.rng).map((c) => ({
-      id: c.id, skill: c.skill, kind: c.kind, value: c.add, icon: c.icon, name: defs[c.skill].name,
+      id: c.id, skill: c.skill, kind: c.kind, value: c.add, stun: c.stun || 0, icon: c.icon, name: defs[c.skill].name,
       rarity: 'epic', color: '#ffd166', tier: 0, owned: this.vault.skillUps[c.id] || 0, skillCard: true,
     }));
     this.skillOffer = { offers };

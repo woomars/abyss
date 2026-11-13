@@ -231,6 +231,7 @@ export default {
   'sk.distance': 'Jump distance +{v}',
   'sk.range': 'Range +{v}',
   'sk.width': 'Width +{v}',
+  'sk.rangeStun': 'Reach +{v}, stun chance +{s}',
   'sk.cooldown': 'Cooldown -{v}',
   'sk.banner': '{name} strengthened',
   'sk.owned': 'Upgraded ×{n}',

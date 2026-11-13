@@ -102,17 +102,14 @@ export class SkillSystem {
     if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
     else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, dist: def.distance }; // 점프 (the distance grows with the skill's growth cards)
     else if (id === 'bladeWave') {
-      this.projectiles.push({ def, x: p.pos.x, y: p.pos.y, dir, traveled: 0, hit: new Set() });
-      if (this.gear().has('waveFan')) { // 세 갈래 팔찌: two more waves at an angle
-        const a = ((this.gearCfg().waveFan || {}).angle || 15) * Math.PI / 180;
-        for (const s of [-a, a]) this.projectiles.push({ def, x: p.pos.x, y: p.pos.y, dir: { x: dir.x * Math.cos(s) - dir.y * Math.sin(s), y: dir.x * Math.sin(s) + dir.y * Math.cos(s) }, traveled: 0, hit: new Set() });
-      }
+      this.projectiles.push({ def, x: p.pos.x, y: p.pos.y, dir, traveled: 0, hit: new Set() }); // 질풍 베기
     }
     this.remaining[slot] = this.cooldownOf(def);
     return true;
   }
 
-  hitEnemy(e, damage, dir, { critChance = this.combatCfg.critChance + this.bonus().crit, chainIndex = 0, skill = null, knockback = null } = {}) {
+  // stunChance: this hit's own stun chance against ordinary enemies (bosses get it scaled by bossChance / chance)
+  hitEnemy(e, damage, dir, { critChance = this.combatCfg.critChance + this.bonus().crit, chainIndex = 0, skill = null, knockback = null, stunChance = null } = {}) {
     const c = this.combatCfg;
     const crit = this.rng() < critChance;
     const b = this.bonus();
@@ -124,7 +121,8 @@ export class SkillSystem {
     if (killed) { this.events.emit('kill', { enemy: e, pos, dir, crit }); return; }
     // special attacks usually stun, and a stunned enemy forgets the attack it was building up
     const st = this.cfg.stun;
-    if (st && this.rng() < (e.isBoss ? st.bossChance : st.chance)) {
+    const chance = stunChance == null ? (e.isBoss ? st && st.bossChance : st && st.chance) : (e.isBoss ? stunChance * (st.bossChance / st.chance) : stunChance);
+    if (st && this.rng() < chance) {
       const k = this.gear().has('stunUp') ? ((this.gearCfg().stunUp || {}).mult || 1) : 1; // 천둥 망치
       e.stun((e.isBoss ? st.bossDuration : st.duration) * k);
       this.events.emit('stun', { enemy: e, pos });
@@ -191,6 +189,40 @@ export class SkillSystem {
     return hit.size;
   }
 
+  // 질풍 베기 is a cone of `angle` degrees (wider with 질풍 set pieces: waveAngle, and with 세 갈래 팔찌:
+  // waveFan), never narrower than the blade's own `width` up close. Inside sword reach (`near`) it hits at full damage and full stun chance; beyond, both
+  // fall off toward the far end (damage by fallDamage, stun by fallStun). The 질풍 set adds damage and
+  // close-range stun and softens the fall-off (waveDamage, waveStun, waveFalloff).
+  waveAngle(def) {
+    const fan = this.gear().has('waveFan') ? ((this.gearCfg().waveFan || {}).angle || 0) : 0;
+    return Math.min(170, (def.angle || 60) + (this.bonus().waveAngle || 0) + fan);
+  }
+
+  waveWidth(def, traveled) {
+    const half = (this.waveAngle(def) * Math.PI / 180) / 2;
+    return Math.max(def.width, 2 * Math.min(traveled, def.range) * Math.tan(half));
+  }
+
+  waveAt(def, dist) {
+    const b = this.bonus();
+    const f = Math.max(0, Math.min(1, (dist - (def.near || 0)) / Math.max(1, def.range - (def.near || 0))));
+    const soft = 1 - Math.min(1, b.waveFalloff || 0);
+    return {
+      damage: def.damage * (1 + (b.waveDamage || 0)) * (1 - (def.fallDamage || 0) * f * soft),
+      stun: Math.min(1, (def.stunNear != null ? def.stunNear : 0.5) + (b.waveStun || 0)) * (1 - (def.fallStun || 0) * f * soft),
+    };
+  }
+
+  waveSweep(pr) {
+    const half = this.waveWidth(pr.def, pr.traveled) / 2, { damage, stun } = this.waveAt(pr.def, pr.traveled);
+    for (const e of this.enemies.targetable()) {
+      if (pr.hit.has(e.id)) continue;
+      if (Math.hypot(e.pos.x - pr.x, e.pos.y - pr.y) > half + e.radius) continue;
+      pr.hit.add(e.id);
+      this.hitEnemy(e, damage, pr.dir, { skill: 'bladeWave', stunChance: stun });
+    }
+  }
+
   // hits targetable enemies whose center is within halfWidth (+radius) of point (x, y)
   sweep(x, y, halfWidth, hitSet, dir, damage, skill = null) {
     for (const e of this.enemies.targetable()) {
@@ -234,7 +266,7 @@ export class SkillSystem {
         pr.y += pr.dir.y * stepLen / n;
         pr.traveled += stepLen / n;
         if (this.arena.resolveCircle({ x: pr.x, y: pr.y }, 4).hitWall) { pr.blocked = true; break; } // pillars and walls stop it
-        this.sweep(pr.x, pr.y, pr.def.width / 2, pr.hit, pr.dir, pr.def.damage, 'bladeWave');
+        this.waveSweep(pr);
         if (pr.traveled >= pr.def.range) break;
       }
       const out = pr.x < 0 || pr.y < 0 || pr.x > this.arena.width || pr.y > this.arena.height;

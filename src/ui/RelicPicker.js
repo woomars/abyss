@@ -60,7 +60,7 @@ export class RelicPicker {
         <span class="rp-rarity">${t('sk.card')}</span>
         <span class="rp-icon">${relicIcon(o.icon, 34)}</span>
         <b class="rp-name">${tr(o.name)}</b>
-        <span class="rp-desc">${t(`sk.${o.kind}`, { v: `${Math.round(o.value * 100)}%` })}</span>
+        <span class="rp-desc">${o.stun ? t('sk.rangeStun', { v: `${Math.round(o.value * 100)}%`, s: `${Math.round(o.stun * 100)}%` }) : t(`sk.${o.kind}`, { v: `${Math.round(o.value * 100)}%` })}</span>
         ${o.owned ? `<span class="rp-owned">${t('sk.owned', { n: o.owned })}</span>` : ''}
       </button>` : `
       <button class="rp-card r-${o.rarity}${o.tier ? ` t-${o.tier}` : ''}" data-i="${i}" style="--rc:${o.color};--tc:${o.tierColor || o.color};--d:${i * 0.12}s">

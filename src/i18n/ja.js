@@ -229,6 +229,7 @@ export default {
   'sk.distance': 'ジャンプ距離 +{v}',
   'sk.range': '射程 +{v}',
   'sk.width': '幅 +{v}',
+  'sk.rangeStun': '射程 +{v}、気絶確率 +{s}',
   'sk.cooldown': 'リキャスト -{v}',
   'sk.banner': '{name} 強化',
   'sk.owned': '強化 {n}回',

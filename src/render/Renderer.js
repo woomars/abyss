@@ -314,6 +314,7 @@ export class Renderer {
     const reach = def.distance || def.range || 300;
     const { x, y } = lerpPos(player.prevPos, player.pos, alpha);
     if (skills.cfg.slots[a.slot] === 'rushStrike') { this.drawJumpAim(skills, def, player, x, y, ux, uy); return; }
+    if (skills.cfg.slots[a.slot] === 'bladeWave' && skills.waveWidth) { this.drawWaveAim(skills, def, x, y, ux, uy); return; }
     const ex = x + ux * reach, ey = y + uy * reach;
     const ctx = this.ctx;
     ctx.save();
@@ -333,6 +334,18 @@ export class Renderer {
     ctx.closePath();
     ctx.fillStyle = 'rgba(159,216,255,0.9)';
     ctx.fill();
+    ctx.restore();
+  }
+
+  // 질풍 베기 aim: the cone it will sweep, brighter inside sword reach (full damage and stun there)
+  drawWaveAim(skills, def, x, y, ux, uy) {
+    const ctx = this.ctx, px = -uy, py = ux;
+    const at = (d) => { const h = skills.waveWidth(def, d) / 2; return [[x + ux * d + px * h, y + uy * d + py * h], [x + ux * d - px * h, y + uy * d - py * h]]; };
+    const quad = (d0, d1) => { const [a, b] = at(d0), [c, e] = at(d1); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(e[0], e[1]); ctx.lineTo(b[0], b[1]); ctx.closePath(); };
+    ctx.save();
+    quad(0, def.range); ctx.fillStyle = 'rgba(159,216,255,0.10)'; ctx.fill();
+    ctx.setLineDash([10, 8]); ctx.strokeStyle = 'rgba(159,216,255,0.8)'; ctx.lineWidth = 2; ctx.stroke(); ctx.setLineDash([]);
+    quad(0, Math.min(def.near || 0, def.range)); ctx.fillStyle = 'rgba(255,224,138,0.22)'; ctx.fill();
     ctx.restore();
   }
 
@@ -367,7 +380,7 @@ export class Renderer {
   drawProjectiles(skills) {
     const ctx = this.ctx;
     for (const p of skills.projectiles) {
-      const w = p.def.width;
+      const w = skills.waveWidth ? skills.waveWidth(p.def, p.traveled) : p.def.width; // the crescent widens as it flies
       const k = 1 - p.traveled / p.def.range;
       ctx.save();
       ctx.translate(p.x, p.y);

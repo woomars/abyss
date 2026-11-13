@@ -4,7 +4,8 @@ const MUSIC_LABEL = { base: '거점', explore: '일반 전투', hard: '고난도
 
 // ?debug=1 — FPS, live sliders over the config object, JSON export, spawn helper, music preview.
 export class DebugPanel {
-  constructor(root, { config, game, onLayout, music = null, onFloor = null }) {
+  constructor(root, { config, game, onLayout, music = null, onFloor = null, onOpenChange = () => {} }) {
+    this.onOpenChange = onOpenChange; // open panel = the game waits
     this.config = config;
     this.game = game;
     this.music = music;
@@ -45,6 +46,7 @@ export class DebugPanel {
       if (e.target.dataset.act === 'floor' && e.target.value !== '' && this.onFloor) {
         this.onFloor(Number(e.target.value));
         e.target.value = '';
+        this.setOpen(false); // straight into the chosen floor
       }
     });
     this.el.addEventListener('input', (e) => {
@@ -58,7 +60,7 @@ export class DebugPanel {
     this.el.addEventListener('click', (e) => {
       const b = e.target.closest('button');
       if (!b) return;
-      if (b.dataset.act === 'toggle') { this.el.classList.toggle('collapsed'); this.onLayout(); }
+      if (b.dataset.act === 'toggle') this.setOpen(this.el.classList.contains('collapsed'));
       if (b.dataset.act === 'setLevel') this.setLevel(Number(this.el.querySelector('.dlevel').value));
       if (b.dataset.act === 'copy') this.copy();
       if (b.dataset.act === 'spawn') this.spawn();
@@ -81,6 +83,15 @@ export class DebugPanel {
   }
 
   // drop an item of the chosen grade in front of the player (dungeon only)
+  get isOpen() { return !this.el.classList.contains('collapsed'); }
+
+  // opening the panel pauses the game; closing it (or going back to the game) carries on
+  setOpen(open) {
+    this.el.classList.toggle('collapsed', !open);
+    this.onLayout();
+    this.onOpenChange(open);
+  }
+
   // debug: set the family level (stats and max hp follow; growth cards owed by the level show at the next cleared room)
   setLevel(n) {
     const g = this.game, max = (g.config.progress && g.config.progress.maxLevel) || 99;

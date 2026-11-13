@@ -73,8 +73,9 @@ async function boot() {
   const stage = document.getElementById('stage');
   let started = false;
   let menu = null;
+  let debugOpen = false; // the tuning panel is open: the game waits
   const updatePaused = () => {
-    game.paused = !started || (menu && menu.isOpen);
+    game.paused = !started || (menu && menu.isOpen) || debugOpen;
   };
   // save slots: the vault in play is saved whenever it changes
   const store = new VaultStore(safeStorage());
@@ -250,6 +251,7 @@ async function boot() {
   if (new URLSearchParams(location.search).get('debug') !== '0') {
     debug = new DebugPanel(ui, {
       config, game, music, onLayout: () => layout(),
+      onOpenChange: (open) => { debugOpen = open; updatePaused(); },
       // jump straight to a floor (or the practice arena) to test bosses
       onFloor: (floor) => {
         gameOver.hide();
@@ -274,6 +276,8 @@ async function boot() {
     title.relabel(); forge.relabel(); hall.relabel(); heir.relabel(); legacy.relabel(); story.relabel(); guide.relabel();
     layout(); // button sizes may change: refresh the stroke exclusion zones
   });
+  // back to the game: a touch outside the open debug panel closes it
+  stage.addEventListener('pointerdown', (e) => { if (debug && debug.isOpen && !e.target.closest('.debug')) debug.setOpen(false); }, true);
   window.addEventListener('resize', layout);
   // turning the phone 180° while auto-rotate is off: follow gravity
   window.addEventListener('devicemotion', (e) => {

@@ -235,14 +235,27 @@ export class SkillSystem {
     };
   }
 
+  // the gale strikes what it passes; like the spin's blade it may hold still a moment on a hit — the holds
+  // add up to maxPause seconds at most (hit stop included), and it flies on at least pauseMinTravel of its
+  // reach between two holds. Returns true when it holds.
   waveSweep(pr) {
-    const half = this.waveWidth(pr.def, pr.traveled) / 2, { damage, stun } = this.waveAt(pr.def, pr.traveled);
+    const def = pr.def, half = this.waveWidth(def, pr.traveled) / 2, { damage, stun } = this.waveAt(def, pr.traveled);
+    let held = false;
     for (const e of this.enemies.targetable()) {
       if (pr.hit.has(e.id)) continue;
       if (Math.hypot(e.pos.x - pr.x, e.pos.y - pr.y) > half + e.radius) continue;
       pr.hit.add(e.id);
-      this.hitEnemy(e, damage, pr.dir, { skill: 'bladeWave', stunChance: stun });
+      const left = (def.maxPause || 0) - (pr.paused || 0), stop = this.stopCost();
+      const hold = !held && def.hitPause > 0 && left > 1e-9 && (pr.pausedAt == null || pr.traveled - pr.pausedAt >= (def.pauseMinTravel || 0) * def.range - 1e-9);
+      this.hitEnemy(e, damage, pr.dir, { skill: 'bladeWave', stunChance: stun, noStop: !hold });
+      if (hold) {
+        held = true;
+        pr.pause = Math.max(0, Math.min(def.hitPause, left - stop));
+        pr.paused = (pr.paused || 0) + pr.pause + stop;
+        pr.pausedAt = pr.traveled;
+      }
     }
+    return held;
   }
 
   // hits targetable enemies whose center is within halfWidth (+radius) of point (x, y)
@@ -281,14 +294,20 @@ export class SkillSystem {
 
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const pr = this.projectiles[i];
-      const stepLen = pr.def.speed * dt;
+      let pdt = dt;
+      if (pr.pause > 0) { // held on a hit; the rest of the step after the hold flies on
+        pr.pause -= pdt;
+        if (pr.pause >= 0) continue;
+        pdt = -pr.pause; pr.pause = 0;
+      }
+      const stepLen = pr.def.speed * pdt;
       const n = Math.max(1, Math.ceil(stepLen / 20));
       for (let k = 0; k < n; k++) {
         pr.x += pr.dir.x * stepLen / n;
         pr.y += pr.dir.y * stepLen / n;
         pr.traveled += stepLen / n;
         if (this.arena.resolveCircle({ x: pr.x, y: pr.y }, 4).hitWall) { pr.blocked = true; break; } // pillars and walls stop it
-        this.waveSweep(pr);
+        if (this.waveSweep(pr)) break; // holds here (what is left of this step is lost to the hold)
         if (pr.traveled >= pr.def.range) break;
       }
       const out = pr.x < 0 || pr.y < 0 || pr.x > this.arena.width || pr.y > this.arena.height;

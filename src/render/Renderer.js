@@ -1,3 +1,4 @@
+import { nearestOffscreen } from '../game/pointer.js';
 import { BUILD } from '../version.js';
 import { t, tr } from '../i18n/index.js';
 
@@ -74,6 +75,7 @@ export class Renderer {
     this.drawPlayer(game.player, alpha);
     this.drawSpin(game.skills, game.player, alpha);
     this.drawAim(game.skills, game.player, alpha);
+    this.drawPointer(game, alpha);
     this.drawSlashes(fx);
     this.drawProjectiles(game.skills);
     this.drawRings(fx);
@@ -205,6 +207,32 @@ export class Renderer {
     ctx.lineWidth = s.pause > 0 ? 7 : 5;
     ctx.lineCap = 'round';
     ctx.stroke();
+  }
+
+  // no enemy on screen: a small arrow around the player toward the nearest one
+  drawPointer(game, alpha) {
+    if (game.mode !== 'dungeon' || game.over || game.dungeon.state !== 'play' || game.dungeon.remaining === 0) return;
+    const cam = game.camera;
+    const view = { x: cam.pos.x - cam.viewW / 2, y: cam.pos.y - cam.viewH / 2, w: cam.viewW, h: cam.viewH };
+    const hit = nearestOffscreen(game.enemies.all(), view, game.player.pos);
+    if (!hit) return;
+    const { x, y } = lerpPos(game.player.prevPos, game.player.pos, alpha);
+    const ang = Math.atan2(hit.dir.y, hit.dir.x), R = 72;
+    const ctx = this.ctx, px = x + hit.dir.x * R, py = y + hit.dir.y * R;
+    const pulse = 0.65 + 0.35 * Math.sin(performance.now() / 180);
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(ang);
+    ctx.globalAlpha = pulse;
+    // double chevron in the enemy red, so it never reads as the hero's own arrow
+    ctx.strokeStyle = '#ff6b55';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(255,80,60,0.7)';
+    ctx.shadowBlur = 8;
+    for (const o of [-6, 6]) { ctx.beginPath(); ctx.moveTo(o - 7, -10); ctx.lineTo(o + 4, 0); ctx.lineTo(o - 7, 10); ctx.stroke(); }
+    ctx.restore();
   }
 
   // directional skill aim preview: dashed line + arrowhead from the player

@@ -184,6 +184,7 @@ export class Game {
     if (n > 0) {
       this.refreshBonus();
       this.applyMaxHp();
+      if (cfg.levelUpHeal) this.healPlayer(cfg.levelUpHeal * n); // part of the hp comes back, never all of it
       this.events.emit('levelUp', { level: this.vault.progress.level, pos: { x: this.player.pos.x, y: this.player.pos.y } });
       if (this.vault.state === 'run') this.saveVault(); // levels survive even a closed game
     }

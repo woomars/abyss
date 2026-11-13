@@ -15,5 +15,6 @@
     "maxHp": 4
   },
   "maxLevel": 99,
-  "historyMax": 100
+  "historyMax": 100,
+  "levelUpHeal": 0.25
 }

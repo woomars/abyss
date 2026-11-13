@@ -55,6 +55,8 @@ export class Dungeon {
     this.roomKind = kind;
     g.loadRoom(room);
     this.exit = { x: room.exit.x, y: room.exit.y, r: c.exitRadius, open: false, armIn: 0, armed: false };
+    this.cleared = false;
+    this.exitIn = Infinity; // seconds until the exit appears after the room is won
     this.chest = null;
     this.boss = null;
     this.waveIndex = 0;
@@ -192,7 +194,13 @@ export class Dungeon {
       this.chest = { x: pos.x, y: pos.y, r: c.chestRadius * 1.3, opened: false, big: true };
     }
     g.events.emit('roomCleared', { floor: this.floor, kind: this.roomKind, gold });
-    this.openExit();
+    // the way down appears in the middle of the room a moment later (moved off a pillar if needed)
+    this.cleared = true;
+    const ctr = this.room ? this.room.center : { x: this.exit.x, y: this.exit.y };
+    const at = g.arena.resolveCircle({ x: ctr.x, y: ctr.y }, c.exitRadius + 10).pos;
+    this.exit.x = at.x; this.exit.y = at.y;
+    this.exitIn = c.exitDelay != null ? c.exitDelay : 0;
+    if (this.exitIn <= 0) this.openExit();
   }
 
   // boss chest: gold and a full heal; treasure-room chest: gold. Both then offer three treasure cards.
@@ -243,7 +251,11 @@ export class Dungeon {
       return;
     }
     const alive = this.remaining;
-    if (!this.exit.open) {
+    if (this.cleared && !this.exit.open) {
+      this.exitIn -= dt;
+      if (this.exitIn <= 0) { this.exitIn = Infinity; this.openExit(); }
+    }
+    if (!this.exit.open && !this.cleared) {
       if (this.roomKind === 'combat') {
         if (this.waveIndex < this.waveCount && alive <= this.info.band.waves.nextAt) this.spawnWave();
         else if (this.waveIndex >= this.waveCount && alive === 0) this.clear();

@@ -54,6 +54,7 @@ export class Game {
       combatCfg: config.combat, events, rng, arena: this.arena, bonus,
       ups: () => this.skillGrowth || {},
       gear: () => this.gearEffects, gearCfg: () => this.config.items.effects,
+      stopCost: () => Math.max(this.config.feedback.hitStopMs.strong || 0, this.config.feedback.hitStopMs.crit || 0) / 1000,
     });
     this.hitStop = new HitStop(config.feedback);
     this.effects = new EffectManager(config, events, rng);
@@ -689,7 +690,7 @@ export class Game {
 
   onHit(h) {
     const kind = h.crit ? 'crit' : h.strong ? 'strong' : 'normal';
-    this.hitStop.trigger(kind);
+    if (!h.noStop) this.hitStop.trigger(kind); // a spin blade passing through a crowd does not stop on each one
     const shake = this.config.camera.shake[kind];
     if (shake) this.camera.addShake(shake);
   }

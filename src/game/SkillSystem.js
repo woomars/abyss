@@ -4,7 +4,8 @@ import { NO_BONUS } from './Relics.js';
 import { grownDef } from './SkillGrowth.js';
 
 export class SkillSystem {
-  constructor(cfg, { player, movement, enemies, combat, combatCfg, events, rng, arena, bonus = null, ups = null, gear = null, gearCfg = null }) {
+  constructor(cfg, { player, movement, enemies, combat, combatCfg, events, rng, arena, bonus = null, ups = null, gear = null, gearCfg = null, stopCost = null }) {
+    this.stopCost = stopCost || (() => 0); // () => seconds the game slows on a strong hit (hit stop), counted in the spin's pause budget
     this.gear = gear || (() => new Set()); // () => worn legendary/set effects
     this.gearCfg = gearCfg || (() => ({})); // () => config.items.effects
     this.ups = ups || (() => ({})); // () => growth per skill (SkillGrowth.skillUps)
@@ -114,7 +115,7 @@ export class SkillSystem {
   }
 
   // stunChance: this hit's own stun chance against ordinary enemies (bosses get it scaled by bossChance / chance)
-  hitEnemy(e, damage, dir, { critChance = this.combatCfg.critChance + this.bonus().crit, chainIndex = 0, skill = null, knockback = null, stunChance = null } = {}) {
+  hitEnemy(e, damage, dir, { critChance = this.combatCfg.critChance + this.bonus().crit, chainIndex = 0, skill = null, knockback = null, stunChance = null, noStop = false } = {}) {
     const c = this.combatCfg;
     const crit = this.rng() < critChance;
     const b = this.bonus();
@@ -122,7 +123,7 @@ export class SkillSystem {
     const kind = crit ? 'crit' : 'strong';
     const { killed } = e.takeHit({ damage: dmg, knockDir: dir, knockback: (knockback != null ? knockback : c.knockback[kind]) * (1 + b.knockback), stagger: c.stagger[kind] });
     const pos = { x: e.pos.x, y: e.pos.y };
-    this.events.emit('hit', { enemy: e, damage: dmg, crit, strong: true, chainIndex, pos, dir, skill });
+    this.events.emit('hit', { enemy: e, damage: dmg, crit, strong: true, chainIndex, pos, dir, skill, noStop });
     if (killed) { this.events.emit('kill', { enemy: e, pos, dir, crit }); return; }
     // special attacks usually stun, and a stunned enemy forgets the attack it was building up
     const st = this.cfg.stun;
@@ -135,33 +136,49 @@ export class SkillSystem {
   }
 
   // Clockwise blade sweep around the player. Enemies are hit in the order the blade passes them;
-  // each hit pauses the sweep briefly and counts as the next chain hit (more damage, more crit).
+  // each hit counts as the next chain hit (more damage, more crit) and may pause the sweep briefly — but
+  // the pauses add up to at most maxPause seconds, and the blade turns at least pauseMinTurn degrees
+  // between two pauses, so a crowd never holds the blade still (the rest are struck as it goes by).
   updateSpin(dt) {
     const s = this.spin;
     const def = s.def;
-    if (s.pause > 0) { s.pause -= dt; return; }
+    if (s.pause > 0) { // the rest of the step after a pause ends goes on sweeping
+      s.pause -= dt;
+      if (s.pause >= 0) return;
+      dt = -s.pause; s.pause = 0;
+    }
     const TAU = Math.PI * 2;
     const next = Math.min(TAU, s.swept + (TAU / def.duration) * dt);
     const p = this.player.pos;
-    let first = null, firstRel = Infinity, firstDir = null;
-    for (const e of this.enemies.targetable()) {
-      if (s.hit.has(e.id)) continue;
-      const dx = e.pos.x - p.x, dy = e.pos.y - p.y;
-      const d = Math.hypot(dx, dy);
-      if (d - e.radius > def.radius) continue;
-      let rel = (Math.atan2(dy, dx) - s.start) % TAU;
-      if (rel < 0) rel += TAU;
-      if (rel > next) continue;
-      if (rel < firstRel) { first = e; firstRel = rel; firstDir = d > 1e-6 ? { x: dx / d, y: dy / d } : this.player.heading; }
-    }
-    if (first) {
+    const maxPause = def.maxPause != null ? def.maxPause : Infinity, minTurn = ((def.pauseMinTurn || 0) * Math.PI) / 180;
+    for (;;) {
+      let first = null, firstRel = Infinity, firstDir = null;
+      for (const e of this.enemies.targetable()) {
+        if (s.hit.has(e.id)) continue;
+        const dx = e.pos.x - p.x, dy = e.pos.y - p.y;
+        const d = Math.hypot(dx, dy);
+        if (d - e.radius > def.radius) continue;
+        let rel = (Math.atan2(dy, dx) - s.start) % TAU;
+        if (rel < 0) rel += TAU;
+        if (rel > next) continue;
+        if (rel < firstRel) { first = e; firstRel = rel; firstDir = d > 1e-6 ? { x: dx / d, y: dy / d } : this.player.heading; }
+      }
+      if (!first) break;
       s.hit.add(first.id);
       s.swept = Math.max(s.swept, firstRel);
-      s.pause = def.hitPause;
+      // a pause (with its hit stop) only while the budget lasts and the blade has turned far enough
+      const left = maxPause - (s.paused || 0), stop = this.stopCost();
+      const pause = left > 1e-9 && (s.pausedAt == null || firstRel - s.pausedAt >= minTurn - 1e-9);
       const damage = def.damage * (1 + def.chainDamageStep * s.hits);
-      this.hitEnemy(first, damage, firstDir, { critChance: this.spinCritChance(s.hits), chainIndex: s.hits, skill: 'spin' });
+      this.hitEnemy(first, damage, firstDir, { critChance: this.spinCritChance(s.hits), chainIndex: s.hits, skill: 'spin', noStop: !pause });
       s.hits += 1;
-      return;
+      if (!this.spin) return; // the room ended under the blade
+      if (pause) {
+        s.pause = Math.max(0, Math.min(def.hitPause, left - stop));
+        s.paused = (s.paused || 0) + s.pause + stop;
+        s.pausedAt = firstRel;
+        return;
+      }
     }
     s.swept = next;
     if (s.swept >= TAU - 1e-9) this.spin = null;

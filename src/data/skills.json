@@ -18,6 +18,8 @@
       "radius": 150,
       "duration": 0.35,
       "hitPause": 0.06,
+      "maxPause": 0.5,
+      "pauseMinTurn": 20,
       "chainDamageStep": 0.15,
       "chainCritStep": 0.05
     },

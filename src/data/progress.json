@@ -12,7 +12,7 @@
   },
   "perLevel": {
     "damage": 0.02,
-    "maxHp": 4
+    "maxHp": 5
   },
   "maxLevel": 99,
   "historyMax": 100,

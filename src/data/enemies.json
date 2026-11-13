@@ -26,7 +26,7 @@
     },
     "elite": {
       "hp": 90,
-      "attack": 25,
+      "attack": 20,
       "speed": 70,
       "radius": 26,
       "knockbackResist": 0.75,

@@ -102,7 +102,7 @@ html, body {
 
 /* debug panel (?debug=1) */
 .debug {
-  position: absolute; left: calc(8px + env(safe-area-inset-left)); top: 64px; bottom: 8px; width: 270px;
+  position: absolute; z-index: 50; left: calc(8px + env(safe-area-inset-left)); top: 64px; bottom: 8px; width: 270px;
   display: flex; flex-direction: column; background: rgba(10, 8, 14, 0.88); border: 1px solid #3b2f4f;
   border-radius: 8px; font-size: 10px; color: #cfc6dc; overflow: hidden;
 }
@@ -451,6 +451,9 @@ html, body {
 .fg-setview .fg-btn { align-self: flex-start; }
 .fg-flash { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 8px 16px; border-radius: 8px; background: rgba(60, 20, 20, 0.92); border: 1px solid #a8443c; color: #ffd0c8; z-index: 5; }
 
+.fg-actions.split { justify-content: space-between; }
+.fg-act-l, .fg-act-r { display: flex; gap: 6px; flex-wrap: wrap; }
+.fg-act-r { margin-left: auto; justify-content: flex-end; }
 .fg-actions.sticky { position: sticky; bottom: -6px; margin: 2px 0 -6px; padding: 5px 0 6px; background: rgba(12, 9, 16, 0.97); }
 .fg-flash.good { background: rgba(40, 20, 60, 0.95); border-color: #c27cff; color: #f0dcff; font-size: 15px; font-weight: 700; box-shadow: 0 0 24px rgba(194, 124, 255, 0.6); }
 .pause-menu { z-index: 40; }

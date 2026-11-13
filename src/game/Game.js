@@ -218,6 +218,17 @@ export class Game {
     this.resetHealth();
   }
 
+  // put a new item on at once; whatever it replaces goes into the pocket (debug item grant)
+  wearNew(item) {
+    const old = this.loadout.equip(item);
+    if (old) this.loot.pocket.push(old);
+    this.vault.markSeen(item);
+    this.refreshBonus();
+    this.applyMaxHp(true);
+    if (this.vault.state !== 'idle' || this.forge) this.saveVault();
+    return old;
+  }
+
   forgeCtx() { return { cfg: this.config.items, loadout: this.loadout, pocket: this.loot.pocket, vault: this.vault }; }
 
   saveVault() {

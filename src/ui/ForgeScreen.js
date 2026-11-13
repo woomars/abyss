@@ -145,10 +145,12 @@ export class ForgeScreen {
     const equipBtns = it.slot === 'ring' && lo.slots.ring1 && lo.slots.ring2
       ? `<button class="fg-btn pri" data-act="equip" data-v="ring1">${t('fg.toRing1')}</button><button class="fg-btn pri" data-act="equip" data-v="ring2">${t('fg.toRing2')}</button>`
       : `<button class="fg-btn pri" data-act="equip">${t('fg.equip')}</button>`;
-    let btns = '';
-    if (f.where === 'equipped') btns = `<button class="fg-btn" data-act="unequip">${t('fg.unequip')}</button><button class="fg-btn" data-act="store">${t('fg.toStash')}</button>`;
-    else if (f.where === 'pocket') btns = `<button class="fg-btn" data-act="store">${t('fg.toStash')}</button>${equipBtns}`;
-    else btns = `<button class="fg-btn" data-act="take">${t('fg.toPocket')}</button>${equipBtns}`;
+    // left: where it is kept (stash / pocket); right: wearing it — far apart so one is not hit for the other
+    let left = '', right = '';
+    if (f.where === 'equipped') { left = `<button class="fg-btn" data-act="store">${t('fg.toStash')}</button>`; right = `<button class="fg-btn" data-act="unequip">${t('fg.unequip')}</button>`; }
+    else if (f.where === 'pocket') { left = `<button class="fg-btn" data-act="store">${t('fg.toStash')}</button>`; right = equipBtns; }
+    else { left = `<button class="fg-btn" data-act="take">${t('fg.toPocket')}</button>`; right = equipBtns; }
+    const btns = `<span class="fg-act-l">${left}</span><span class="fg-act-r">${right}</span>`;
     let cmp = '';
     if (f.where !== 'equipped') {
       const target = lo.slotFor(it);
@@ -156,7 +158,7 @@ export class ForgeScreen {
       cmp = `<div class="fg-cmp">${worn ? `<div class="fg-cmp-h">${t('fg.wornIn', { slot: slotLabel(target) })}</div>${itemDetail(worn, this.cfg)}` : `<div class="fg-cmp-h">${t('fg.slotEmpty', { slot: slotLabel(target) })}</div>`}
         <div class="fg-delta">${this.deltaLines(it, worn)}</div></div>`;
     }
-    return `<div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>${cmp}<div class="fg-actions sticky">${btns}</div></div>`;
+    return `<div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>${cmp}<div class="fg-actions sticky split">${btns}</div></div>`;
   }
 
   deltaLines(a, b) {
@@ -261,8 +263,8 @@ export class ForgeScreen {
     else if (a === 'title') this.onTitle();
     else if (a === 'token') this.onToken();
     else if (a === 'sets') { this.tab = 'sets'; this.sel = null; this.render(); }
-    else if (a === 'equip') { if (equipItem(c, this.sel, v || null).ok) this.changed('equip'); }
-    else if (a === 'unequip') { const s = c.loadout.find(this.sel); if (s && unequipItem(c, s).ok) this.changed('unequip'); }
+    else if (a === 'equip') { if (equipItem(c, this.sel, v || null).ok) { this.sel = null; this.changed('equip'); } } // back to the neutral hint
+    else if (a === 'unequip') { const s = c.loadout.find(this.sel); if (s && unequipItem(c, s).ok) { this.sel = null; this.changed('unequip'); } }
     else if (a === 'store') {
       const r = storeItem(c, this.sel);
       if (r.ok) { this.sel = null; this.changed('store'); } else if (r.reason === 'stashFull') this.flash(t('fg.stashFull'));

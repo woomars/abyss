@@ -251,7 +251,8 @@ async function boot() {
   // in development the tuning panel is on by default; ?debug=0 hides it
   if (new URLSearchParams(location.search).get('debug') !== '0') {
     debug = new DebugPanel(ui, {
-      config, game, music, onLayout: () => layout(),
+      config, game, onLayout: () => layout(),
+      onGear: () => { if (forge.isOpen) forge.render(); },
       onOpenChange: (open) => { debugOpen = open; updatePaused(); },
       // jump straight to a floor (or the practice arena) to test bosses
       onFloor: (floor) => {

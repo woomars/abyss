@@ -215,7 +215,6 @@ export default {
   'hall.essenceBy': '遺した者: {list}',
   'hall.cap': '最大{n}',
   'hall.reached': '達成: {who}',
-  'pause.skillLayout': 'スキルボタンの位置',
   'layout.hint': 'ボタンをドラッグして好きな位置へ',
   'layout.reset': '初期位置',
   'layout.done': '完了',
@@ -271,4 +270,5 @@ export default {
   // menu and quit
   'go.menu': "メニュー画面",
   'title.quit': "終了",
+  'title.layout': "ボタン配置",
 };

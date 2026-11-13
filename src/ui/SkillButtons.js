@@ -111,7 +111,7 @@ export class SkillButtons {
     const pos = this.pos.slice();
     pos[i] = {
       x: Math.min(1 - 36 / w, Math.max(36 / w, p.x / w)),
-      y: Math.min(1 - 50 / h, Math.max(36 / h, p.y / h)),
+      y: Math.min(1 - 50 / h, Math.max(Math.max(36 / h, 0.2), p.y / h)), // keep off the HUD row
     };
     this.setLayout(pos);
   }
@@ -127,12 +127,20 @@ export class SkillButtons {
     this.bar.innerHTML = `<div class="le-bar"><span>${t('layout.hint')}</span>
       <button class="tm-btn small" data-act="reset">${t('layout.reset')}</button>
       <button class="tm-btn small primary" data-act="done">${t('layout.done')}</button></div>`;
-    this.bar.addEventListener('pointerdown', (e) => e.stopPropagation());
-    this.bar.addEventListener('click', (e) => {
+    // act on pointerup: right after a drag some phones never send the click, which left the editor
+    // up (covering the screen) and the game waiting
+    let down = null, handled = 0;
+    const run = (act) => { if (act === 'reset') this.setLayout(null); else if (act === 'done') this.endEdit(); };
+    this.bar.addEventListener('pointerdown', (e) => { e.stopPropagation(); const a = e.target.closest('[data-act]'); down = a ? a.dataset.act : null; });
+    this.bar.addEventListener('pointerup', (e) => {
+      const a = e.target.closest('[data-act]') || (document.elementFromPoint(e.clientX, e.clientY) || { closest: () => null }).closest('[data-act]');
+      if (a && a.dataset.act === down) { handled = performance.now(); run(down); }
+      down = null;
+    });
+    this.bar.addEventListener('click', (e) => { // keyboard / mouse fallback, never twice
+      if (performance.now() - handled < 600) return;
       const a = e.target.closest('[data-act]');
-      if (!a) return;
-      if (a.dataset.act === 'reset') this.setLayout(null);
-      else this.endEdit();
+      if (a) run(a.dataset.act);
     });
     this.root.appendChild(this.bar);
   }
@@ -141,6 +149,7 @@ export class SkillButtons {
     if (!this.editing) return;
     this.editing = false;
     this.el.classList.remove('editing');
+    for (const u of this.buttons) { u.drag = null; u.aiming = null; u.b.classList.remove('dragging', 'aiming'); } // nothing left held
     if (this.bar) this.bar.remove();
     this.bar = null;
     if (this.onDone) this.onDone(this.pos ? this.pos.map((p) => ({ ...p })) : null);

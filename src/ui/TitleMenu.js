@@ -25,7 +25,8 @@ export function langSwitch(cls = '') {
 }
 
 export class TitleMenu {
-  constructor(root, { store, names, rng = Math.random, onContinue, onHall = () => {}, onNew, onGuide = () => {}, onStory = () => {}, onQuit = () => {} }) {
+  constructor(root, { store, names, rng = Math.random, onContinue, onHall = () => {}, onNew, onGuide = () => {}, onStory = () => {}, onQuit = () => {}, onLayout = () => {} }) {
+    this.onLayout = onLayout;
     this.onQuit = onQuit;
     this.onGuide = onGuide;
     this.onStory = onStory;
@@ -80,6 +81,7 @@ export class TitleMenu {
       <div class="tm-icons">
         <button class="tm-icon" data-act="guide" aria-label="${t('title.guide')}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v5V4a1.5 1.5 0 0 1 3 0v6V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2.5-4a1.5 1.5 0 0 1 2.5-1.5L9 13"/></svg><span>${t('title.guide')}</span></button>
         <button class="tm-icon" data-act="story" aria-label="${t('title.story')}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M8 7h6M8 11h6"/></svg><span>${t('title.story')}</span></button>
+        <button class="tm-icon" data-act="layout" aria-label="${t('title.layout')}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="16" r="4"/><circle cx="17" cy="9" r="3"/><path d="M12 3v4M10 5h4M20 16l-3 3M17 16l3 3"/></svg><span>${t('title.layout')}</span></button>
         <button class="tm-icon" data-act="quit" aria-label="${t('title.quit')}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 8l-4 4 4 4M6 12h9"/></svg><span>${t('title.quit')}</span></button>
       </div>
       ${flagSwitch()}`;
@@ -162,6 +164,7 @@ export class TitleMenu {
   act(a, data) {
     if (a === 'lang') { setLang(data.lang); return; } // main.js re-renders every open screen
     if (a === 'quit') { this.onQuit(); return; }
+    if (a === 'layout') { this.onLayout(); return; }
     if (a === 'guide') { this.onGuide(); return; }
     if (a === 'story') { this.onStory(); return; }
     if (a === 'continue') this.showSlots('continue');

@@ -217,7 +217,6 @@ export default {
   'hall.essenceBy': 'Left by: {list}',
   'hall.cap': 'Max {n}',
   'hall.reached': 'Reached by {who}',
-  'pause.skillLayout': 'Skill button layout',
   'layout.hint': 'Drag the buttons where you want them',
   'layout.reset': 'Default',
   'layout.done': 'Done',
@@ -273,4 +272,5 @@ export default {
   // menu and quit
   'go.menu': "Main menu",
   'title.quit': "Quit",
+  'title.layout': "Buttons",
 };

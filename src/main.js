@@ -73,9 +73,8 @@ async function boot() {
   const stage = document.getElementById('stage');
   let started = false;
   let menu = null;
-  let editingLayout = false; // dragging the special-attack buttons
   const updatePaused = () => {
-    game.paused = !started || (menu && menu.isOpen) || editingLayout;
+    game.paused = !started || (menu && menu.isOpen);
   };
   // save slots: the vault in play is saved whenever it changes
   const store = new VaultStore(safeStorage());
@@ -154,12 +153,6 @@ async function boot() {
     onChange: (s) => { applySettings(s); save.save(s); },
     onRestart: () => { gameOver.hide(); game.giveUp(); },
     onOpenChange: updatePaused,
-    // drag the special-attack buttons where the player likes them; saved with the settings
-    onSkillLayout: () => {
-      editingLayout = true;
-      skillButtons.startEdit((pos) => { editingLayout = false; settings.skillPos = pos; save.save(settings); layout(); updatePaused(); });
-      updatePaused();
-    },
   });
   events.on('setComplete', (e) => { if (forge.isOpen) forge.flash(t('notice.setComplete', { name: tr(e.name) }), true); });
   events.on('medal', (e) => toast.medal(e.medal, config.medals, e.first));
@@ -200,6 +193,8 @@ async function boot() {
     store, names: config.names,
     onGuide: () => guide.show(),
     onQuit: () => quitGame(),
+    // drag the special-attack buttons where the player likes them (title screen only); saved with the settings
+    onLayout: () => skillButtons.startEdit((pos) => { settings.skillPos = pos; save.save(settings); layout(); }),
     onStory: () => story.show(),
     onHall: (n) => { const v = store.load(n); if (v) hall.show(v); },
     onContinue: (n) => {

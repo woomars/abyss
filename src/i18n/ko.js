@@ -230,7 +230,6 @@ export default {
   'hall.essenceBy': '남긴 이: {list}',
   'hall.cap': '최대 {n}',
   'hall.reached': '달성: {who}',
-  'pause.skillLayout': '특수기 버튼 위치',
   'layout.hint': '버튼을 끌어 원하는 곳에 놓으세요',
   'layout.reset': '기본 위치',
   'layout.done': '완료',
@@ -286,4 +285,5 @@ export default {
   // menu and quit
   'go.menu': "메뉴 화면",
   'title.quit': "종료",
+  'title.layout': "버튼 위치",
 };

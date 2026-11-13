@@ -124,10 +124,9 @@ export default {
     '받는 피해 -{v}': 'Damage Taken -{v}', '콤보 5마다 공격력 +{v}': 'Attack +{v} per 5 combo', '연쇄 공격 +{v}회': 'Chain attacks +{v}',
     // essences and trophies
     "칼날의 정수": "Essence of the Blade",
-    "구르기": "Roll",
-    "구르기의 정수": "Essence of the Roll",
-    "구르기 거리 +{v}": "Roll distance +{v}",
-    "구르기 끝에 땅을 내려찍는다": "The roll ends with a ground slam",
+    "점프": "Jump",
+    "점프 착지 범위 +40%, 피해 +50%": "Jump landing area +40%, damage +50%",
+    "세트 장비 하나마다 점프 착지 범위 +8%, 피해 +10%": "Each set piece: jump landing area +8%, damage +10%",
     "생명의 정수": "Essence of Life",
     "매의 정수": "Essence of the Hawk",
     "바람의 정수": "Essence of the Wind",

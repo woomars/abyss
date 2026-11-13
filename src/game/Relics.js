@@ -39,7 +39,7 @@ export class Relics {
   // owned relics in pick order, for the HUD: [{ id, icon, name, count }]
   list() {
     const all = (this.cfg && this.cfg.list) || {};
-    return Object.keys(this.owned).map((id) => ({ id, icon: all[id].icon, name: all[id].name, count: this.owned[id] }));
+    return Object.keys(this.owned).filter((id) => all[id]).map((id) => ({ id, icon: all[id].icon, name: all[id].name, count: this.owned[id] })); // retired cards drop out
   }
 
   available() {

@@ -1,4 +1,4 @@
-// How to play: six cards, one at a time, each a small drawing and a line or two.
+// How to play: seven cards, one at a time, each a small drawing and a line or two.
 import { t } from '../i18n/index.js';
 
 const K = '<path d="M18 0 L-10 -11 L-5 0 L-10 11Z" fill="#f0e6cf" stroke="#c9a86a" stroke-width="2"/>'; // the knight
@@ -19,8 +19,8 @@ const ART = [
   `<path d="M120 55 L40 15 A 90 90 0 0 0 40 95 Z" fill="rgba(255,80,60,0.22)" stroke="#ff5a4a" stroke-width="2"/>${foe(130, 55, 24)}${knight(70, 102, -20)}<path d="M60 92 L70 70" stroke="#ffe08a" stroke-width="3" stroke-dasharray="5 4"/><text x="175" y="25" fill="#ffe08a" font-size="13" font-weight="700" text-anchor="middle">GAP!</text>`,
   // 6 skills: drag to aim, tap for the nearest
   `<circle cx="40" cy="78" r="20" fill="#221a2c" stroke="#c9a86a" stroke-width="3"/><circle cx="92" cy="86" r="20" fill="#221a2c" stroke="#c9a86a" stroke-width="3"/><circle cx="52" cy="30" r="20" fill="#221a2c" stroke="#c9a86a" stroke-width="3"/><path d="M92 86 L150 52" stroke="#9fd8ff" stroke-width="3" stroke-dasharray="7 5"/>${finger(150, 52)}${foe(182, 34)}<path d="M150 52 L176 38" stroke="#9fd8ff" stroke-width="2"/>`,
-  // 7 roll: a band sweeps out from the boss; tumble through it at the right moment
-  `${foe(36, 55, 22)}<circle cx="36" cy="55" r="78" fill="none" stroke="rgba(255,90,60,0.55)" stroke-width="16"/><path d="M128 30 q 14 -10 24 4" fill="none" stroke="#9fd8ff" stroke-width="3"/><circle cx="104" cy="48" r="12" fill="none" stroke="#e8f4ff" stroke-width="3" stroke-dasharray="10 6"/><path d="M150 40 L182 30" stroke="#ffe08a" stroke-width="4" stroke-linecap="round"/>${knight(150, 40, -18)}<text x="150" y="92" fill="#ffe08a" font-size="13" font-weight="700" text-anchor="middle">ROLL!</text>`,
+  // 7 jump: a band sweeps out from the boss; leap over it, land with a slam; a pillar casts a safe shadow
+  `${foe(30, 55, 20)}<circle cx="30" cy="55" r="70" fill="none" stroke="rgba(255,90,60,0.55)" stroke-width="14"/><path d="M70 66 L118 82 L108 106 L64 80Z" fill="rgba(160,220,140,0.28)"/><rect x="56" y="66" width="14" height="14" fill="#4a4250" stroke="#2a2433"/><path d="M84 40 Q 112 -6 140 40" fill="none" stroke="#9fd8ff" stroke-width="3" stroke-dasharray="6 5"/><ellipse cx="84" cy="44" rx="9" ry="4" fill="rgba(0,0,0,0.4)"/>${knight(112, 14, 0)}<circle cx="146" cy="44" r="26" fill="rgba(255,210,140,0.18)" stroke="#ffd28a" stroke-width="3"/>${foe(166, 52, 9)}<text x="160" y="96" fill="#ffe08a" font-size="13" font-weight="700" text-anchor="middle">JUMP!</text>`,
 ];
 
 export class ControlsGuide {

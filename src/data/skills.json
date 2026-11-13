@@ -22,15 +22,12 @@
       "chainCritStep": 0.05
     },
     "rushStrike": {
-      "name": "구르기",
+      "name": "점프",
       "cooldown": 10,
-      "distance": 107,
+      "distance": 150,
       "speed": 450,
       "damage": 45,
-      "thrust": {
-        "length": 140,
-        "width": 56
-      },
+      "radius": 110,
       "recover": 0.3
     },
     "bladeWave": {

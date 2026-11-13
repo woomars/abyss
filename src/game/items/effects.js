@@ -69,15 +69,7 @@ export function installGearEffects(game) {
     ev.emit('thrallRise', { pos: { x: k.pos.x, y: k.pos.y } });
   });
 
-  // 지진의 장화 / 강철 맹세 5세트: Rush Strike ends with a ground slam
-  ev.on('rushEnd', (r) => {
-    if (!on('rushSlam')) return;
-    const c = cfg().rushSlam, b = game.bonusStats;
-    ev.emit('setBlast', { pos: { x: r.pos.x, y: r.pos.y }, radius: c.radius });
-    for (const e of game.enemies.targetable()) {
-      if (Math.hypot(e.pos.x - r.pos.x, e.pos.y - r.pos.y) <= c.radius + e.radius) strike(e, c.damage * (1 + b.damage + b.skillDamage), r.pos, 'slam');
-    }
-  });
+  // 지진의 장화 (rushSlam): a wider, harder jump landing — read by SkillSystem.landing
 
   // 그림자 갑주: a moment of invulnerability as a dash starts (with a cooldown)
   let evadeAt = -99;

@@ -157,15 +157,6 @@
       "stat": "chain",
       "add": 1,
       "fixed": true
-    },
-    "tumble": {
-      "name": "구르기의 정수",
-      "desc": "구르기 거리 +{v}",
-      "fmt": "pct",
-      "icon": "boots",
-      "rarity": "common",
-      "stat": "rollRange",
-      "add": 0.25
     }
   },
   "healGuarantee": {

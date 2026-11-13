@@ -43,6 +43,7 @@ export function itemDetail(item, cfg) {
     ${d.lostPower ? `<div class="ilost">${d.lostPower}</div>` : ''}
     ${d.token ? `<div class="itoken">${d.token}</div>` : ''}
     ${d.setText ? `<div class="iset">${t('item.set', { name: d.setText })}</div>` : ''}
+    ${d.setJump ? `<div class="iset">${d.setJump}</div>` : ''}
     ${d.heirloom ? `<div class="iheir">${t('item.heir', { gen: t('gen', { n: d.heirloom.generation }), given: esc(trPerson(d.heirloom.given, 'given')), family: esc(trPerson(d.heirloom.family, 'family')) })}${d.heirloom.feat ? `<br><i>${esc(featLine(d.heirloom, item, cfg))}</i>` : ''}</div>` : ''}
   </div>`;
 }

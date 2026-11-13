@@ -2,7 +2,7 @@
 // one object of these keys; combat, skills, movement and health read it.
 export const STAT_KEYS = [
   'damage', 'attackFlat', 'maxHp', 'crit', 'critDamage', 'speed', 'cooldown', 'lifesteal', 'armor',
-  'chain', 'chainRange', 'chainDamage', 'range', 'dashRange', 'knockback', 'attackSpeed', 'skillDamage', 'comboStep', 'rollRange',
+  'chain', 'chainRange', 'chainDamage', 'range', 'dashRange', 'knockback', 'attackSpeed', 'skillDamage', 'comboStep', 'jumpRadius', 'jumpDamage',
 ];
 
 export function zeroStats() {

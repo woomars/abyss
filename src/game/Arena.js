@@ -7,6 +7,22 @@ export class Arena {
   get height() { return this.cfg.height; }
   get pillars() { return this.cfg.pillars; }
 
+  // does a pillar stand between a and b (the segment crosses a pillar rectangle)? Liang–Barsky clip.
+  blocks(a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    for (const p of this.pillars) {
+      let t0 = 0, t1 = 1, ok = true;
+      for (const [q, d] of [[a.x - p.x, -dx], [p.x + p.w - a.x, dx], [a.y - p.y, -dy], [p.y + p.h - a.y, dy]]) {
+        if (Math.abs(d) < 1e-12) { if (q < 0) { ok = false; break; } continue; }
+        const r = q / d;
+        if (d < 0) { if (r > t1) { ok = false; break; } if (r > t0) t0 = r; }
+        else { if (r < t0) { ok = false; break; } if (r < t1) t1 = r; }
+      }
+      if (ok && t0 <= t1) return true;
+    }
+    return false;
+  }
+
   // Push a circle out of walls and pillars. Returns resolved pos, whether it hit, and the last contact normal.
   resolveCircle(pos, radius) {
     let x = pos.x, y = pos.y;
@@ -35,7 +51,7 @@ export class Arena {
       const cy = Math.max(p.y, Math.min(y, p.y + p.h));
       const dx = x - cx, dy = y - cy;
       const d2 = dx * dx + dy * dy;
-      if (d2 >= radius * radius) continue;
+      if (d2 >= radius * radius - 1e-6) continue; // resting exactly against it is not a hit
       hitWall = true;
       if (d2 > 1e-12) {
         const d = Math.sqrt(d2);

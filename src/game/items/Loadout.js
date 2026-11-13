@@ -47,6 +47,12 @@ export class Loadout {
       if (it.effect) effects.add(it.effect);
       if (it.set) sets[it.set] = (sets[it.set] || 0) + 1;
     }
+    const sj = cfg.setJump; // each worn set piece, of any set, widens and strengthens the jump's landing
+    if (sj) {
+      const pieces = Object.values(sets).reduce((a, b) => a + b, 0);
+      stats.jumpRadius += sj.radius * pieces;
+      stats.jumpDamage += sj.damage * pieces;
+    }
     for (const [id, n] of Object.entries(sets)) {
       const bonuses = cfg.sets[id].bonuses;
       for (const [need, b] of Object.entries(bonuses)) {

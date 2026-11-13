@@ -69,19 +69,26 @@ export class Hazards {
         if (h.follow && h.t < h.lockAt) { h.x = player.pos.x; h.y = player.pos.y; }
         if (!h.done && h.t >= h.delay) {
           h.done = true;
-          if (h.damage > 0 && this.inside(h, player.pos, pr)) this.hit(h, player);
+          if (h.damage > 0 && this.inside(h, player.pos, pr) && !this.covered(h, player.pos)) this.hit(h, player);
         }
         if (h.done && h.t >= h.delay + ((this.cfg && this.cfg.hazardFlash) || 0.15)) remove = true;
       } else if (h.kind === 'ring') {
         if (h.t >= h.delay) {
           h.r = (h.t - h.delay) * h.speed;
           const d = Math.hypot(player.pos.x - h.x, player.pos.y - h.y);
-          if (!h.hit && Math.abs(d - h.r) <= h.thickness / 2 + pr) { h.hit = true; this.hit(h, player); }
+          if (!h.hit && Math.abs(d - h.r) <= h.thickness / 2 + pr && !this.covered(h, player.pos)) { h.hit = true; this.hit(h, player); }
           if (h.r - h.thickness / 2 > h.maxRadius) remove = true;
         }
       }
       if (remove) this.list.splice(i, 1);
     }
+  }
+
+  // attacks that spread out from their source (rings, bands, zone rings, cones, lanes) stop at pillars:
+  // a player whose centre is in a pillar's shadow is safe. Circles dropped onto a spot are not blocked.
+  covered(h, p) {
+    if (h.kind === 'circle' || !this.arena || !this.arena.blocks) return false;
+    return this.arena.blocks({ x: h.x, y: h.y }, p);
   }
 
   // is a circle of radius pr at p inside the area (counting the player's size)

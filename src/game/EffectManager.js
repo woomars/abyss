@@ -38,6 +38,10 @@ export class EffectManager {
       for (let i = 0; i <= n; i++) this.ring(e.from.x + ((e.to.x - e.from.x) * i) / n, e.from.y + ((e.to.y - e.from.y) * i) / n, 6, 40, '#d9a35b');
     });
     events.on('bomberBlast', (e) => { this.ring(e.pos.x, e.pos.y, 10, e.radius, '#ff8a3a'); this.ring(e.pos.x, e.pos.y, 6, e.radius * 0.55, '#ffe08a'); for (const d of [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) this.spark(e.pos.x, e.pos.y, d, 4, 320, '#ffb060', 4, 0.45); });
+    events.on('jumpLand', (e) => { // the landing slam: a shockwave the size of the hit circle, and dust thrown out
+      this.ring(e.pos.x, e.pos.y, 14, e.radius, '#ffd28a'); this.ring(e.pos.x, e.pos.y, 8, e.radius * 0.6, '#fff4dc');
+      for (const d of [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) this.spark(e.pos.x, e.pos.y, d, 5, e.radius * 2.4, '#bfae98', 5, 0.4);
+    });
     events.on('setBlast', (e) => { this.ring(e.pos.x, e.pos.y, 12, e.radius, '#c27cff'); this.ring(e.pos.x, e.pos.y, 6, e.radius * 0.6, '#ffffff'); });
     events.on('enemyStrike', (e) => {
       if (!e.riposte) return; // riposte: a red burst on the angry enemy

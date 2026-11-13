@@ -93,6 +93,7 @@ export class Game {
     this.hazards.onHit = (dmg, h) => this.damagePlayer(dmg, { pos: { x: h.x, y: h.y } });
     this.enemies.game = this;
     events.on('bossEnrage', () => this.camera.addShake(this.config.camera.shake.crit));
+    events.on('jumpLand', () => this.camera.addShake(this.config.camera.shake.strong)); // the landing thuds
     events.on('floorStart', (e) => {
       // every 100th floor: a legacy token, and the scene to put it on an item (once per floor per run)
       const tk = this.config.items.legacyToken;
@@ -472,7 +473,7 @@ export class Game {
   }
 
   // returns true if the damage landed
-  // rolling (구르기) the hero cannot be touched — except by a riposte
+  // in the air (점프) the hero cannot be touched — except by a riposte
   dashInvuln() { return !!this.skills.rush; }
 
   damagePlayer(amount, source, { riposte = false } = {}) {

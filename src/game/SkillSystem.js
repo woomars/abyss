@@ -97,10 +97,10 @@ export class SkillSystem {
     const hd = p.heading && Math.hypot(p.heading.x, p.heading.y) > 1e-6 ? p.heading : this.combat.inputDir;
     const dir = len > 1e-6 && def.directional
       ? { x: aimDir.x / len, y: aimDir.y / len }
-      : auto || (id === 'rushStrike' ? { x: hd.x, y: hd.y } : { x: this.combat.inputDir.x, y: this.combat.inputDir.y }); // the roll goes the way the hero is moving
+      : auto || (id === 'rushStrike' ? { x: hd.x, y: hd.y } : { x: this.combat.inputDir.x, y: this.combat.inputDir.y }); // the jump goes the way the hero is moving
     this.events.emit('skill', { id, pos: { x: p.pos.x, y: p.pos.y }, dir });
     if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
-    else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, hit: new Set(), dist: def.distance * (1 + (this.bonus().rollRange || 0)) }; // 구르기
+    else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, dist: def.distance }; // 점프 (the distance grows with the skill's growth cards)
     else if (id === 'bladeWave') {
       this.projectiles.push({ def, x: p.pos.x, y: p.pos.y, dir, traveled: 0, hit: new Set() });
       if (this.gear().has('waveFan')) { // 세 갈래 팔찌: two more waves at an angle
@@ -164,16 +164,31 @@ export class SkillSystem {
     if (s.swept >= TAU - 1e-9) this.spin = null;
   }
 
-  // the thrust that ends a roll: everything along a short lane ahead is hit hard; if anything was hit,
-  // an automatic chain dash carries on from there
-  thrust(r) {
-    const th = r.def.thrust, p = this.player.pos, dir = r.dir;
+  // the landing circle: base size and damage, grown by worn set pieces (jumpRadius / jumpDamage), the
+  // 지진의 장화 legendary (rushSlam) and the hero's base attack (level-ups and flat attack raise it too)
+  landing(def) {
+    const b = this.bonus(), c = this.combatCfg;
+    const slam = this.gear().has('rushSlam') ? (this.gearCfg().rushSlam || {}) : {};
+    const base = c.attackDamage > 0 ? (c.attackDamage + (b.attackFlat || 0)) / c.attackDamage : 1;
+    return {
+      radius: def.radius * (1 + (b.jumpRadius || 0) + (slam.radius || 0)),
+      damage: def.damage * base * (1 + (b.jumpDamage || 0) + (slam.damage || 0)),
+    };
+  }
+
+  // the jump comes down: everything inside the landing circle is struck and knocked outward; if anything
+  // was hit, an automatic chain dash carries on from there
+  land(r) {
+    const p = this.player.pos, { radius, damage } = this.landing(r.def);
     const hit = new Set();
-    this.events.emit('slash', { pos: { x: p.x, y: p.y }, dir: { x: dir.x, y: dir.y }, radius: th.length, arcDeg: 22, chainIndex: 0, strong: false, thrust: true });
-    const n = Math.ceil(th.length / 20);
-    for (let k = 1; k <= n; k++) this.sweep(p.x + dir.x * th.length * (k / n), p.y + dir.y * th.length * (k / n), th.width / 2, hit, dir, r.def.damage, 'rushStrike');
-    this.events.emit('thrust', { pos: { x: p.x, y: p.y }, dir: { x: dir.x, y: dir.y }, hits: hit.size });
-    if (hit.size) this.combat.chainFrom(dir, hit);
+    this.events.emit('jumpLand', { pos: { x: p.x, y: p.y }, radius });
+    for (const e of this.enemies.targetable()) {
+      const dx = e.pos.x - p.x, dy = e.pos.y - p.y, d = Math.hypot(dx, dy);
+      if (d > radius + e.radius) continue;
+      hit.add(e.id);
+      this.hitEnemy(e, damage, d > 1e-6 ? { x: dx / d, y: dy / d } : r.dir, { skill: 'rushStrike' });
+    }
+    if (hit.size) this.combat.chainFrom(r.dir, hit);
     return hit.size;
   }
 
@@ -197,7 +212,7 @@ export class SkillSystem {
 
     if (this.rush) {
       const r = this.rush;
-      // 구르기: a short roll (the hero cannot be hit meanwhile), then a strong thrust straight ahead
+      // 점프: a leap (the hero cannot be hit while airborne), then a slam all around the landing spot
       const stepLen = Math.min(r.def.speed * dt, r.dist - r.traveled);
       const { blocked } = this.movement.step(r.dir, stepLen);
       this.player.visualAngle = Math.atan2(r.dir.y, r.dir.x);
@@ -205,7 +220,7 @@ export class SkillSystem {
       if (blocked || r.traveled >= r.dist - 1e-6) {
         this.rush = null;
         this.stiff = r.def.recover || 0;
-        this.thrust(r);
+        this.land(r);
         this.events.emit('rushEnd', { pos: { x: this.player.pos.x, y: this.player.pos.y }, dir: r.dir });
         if (!this.combat.inCombat) this.movement.setDirection(this.combat.inputDir, { burst: false });
       }

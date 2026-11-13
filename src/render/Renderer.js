@@ -8,6 +8,15 @@ export const COLORS = {
 };
 
 const lerpPos = (prev, pos, a) => ({ x: prev.x + (pos.x - prev.x) * a, y: prev.y + (pos.y - prev.y) * a });
+// monotone-chain convex hull of [x, y] points
+function convexHull(pts) {
+  const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], up = [];
+  for (const q of p) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
 
 export class Renderer {
   constructor(canvas, config) {
@@ -74,7 +83,7 @@ export class Renderer {
     this.drawAfterimages(fx, game.player);
     this.drawWinds(fx);
     this.drawRoll(game, alpha);
-    this.drawPlayer(game.player, alpha);
+    this.drawPlayer(game.player, alpha, this.jumpLift(game.skills));
     this.drawSpin(game.skills, game.player, alpha);
     this.drawAim(game.skills, game.player, alpha);
     this.drawPointer(game, alpha);
@@ -211,22 +220,32 @@ export class Renderer {
     ctx.stroke();
   }
 
-  // the roll: a motion streak, a spinning ring and dust; the stiffness after it: a dim pulse
+  // how high the hero is in the jump (0 on the ground): an arc over the jump's length
+  jumpLift(sk) {
+    if (!sk.rush) return null;
+    const k = Math.min(1, sk.rush.traveled / Math.max(1, sk.rush.dist)), h = Math.sin(Math.PI * k);
+    return { z: h * 46, s: 1 + h * 0.45, k };
+  }
+
+  // the jump: a shadow left on the floor that shrinks as the hero rises, a faint trail of air and a
+  // marker where the hero will come down; the stiffness after landing: a dim pulse
   drawRoll(game, alpha) {
     const sk = game.skills, p = game.player, ctx = this.ctx;
     const { x, y } = lerpPos(p.prevPos, p.pos, alpha);
     if (sk.rush) {
-      const d = sk.rush.dir, k = sk.rush.traveled / Math.max(1, sk.rush.dist), r = p.radius;
-      const g = ctx.createLinearGradient(x, y, x - d.x * 90, y - d.y * 90);
-      g.addColorStop(0, 'rgba(200,230,255,0.55)'); g.addColorStop(1, 'rgba(200,230,255,0)');
-      ctx.strokeStyle = g; ctx.lineWidth = r * 2.2; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - d.x * 90, y - d.y * 90); ctx.stroke();
-      ctx.save(); ctx.translate(x, y); ctx.rotate(k * Math.PI * 4);
-      ctx.strokeStyle = 'rgba(235,245,255,0.9)'; ctx.lineWidth = 3;
-      for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(0, 0, r * 1.55, i * 2.1, i * 2.1 + 1.3); ctx.stroke(); }
+      const d = sk.rush.dir, lift = this.jumpLift(sk), r = p.radius, h = lift.z / 46;
+      const left = Math.max(0, sk.rush.dist - sk.rush.traveled);
+      ctx.save(); // where it lands
+      ctx.setLineDash([6, 6]);
+      ctx.strokeStyle = 'rgba(255,210,140,0.55)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x + d.x * left, y + d.y * left, sk.landing(sk.rush.def).radius, 0, Math.PI * 2); ctx.stroke();
       ctx.restore();
-      ctx.fillStyle = 'rgba(180,170,190,0.35)';
-      for (let i = 1; i <= 3; i++) { ctx.beginPath(); ctx.arc(x - d.x * 28 * i + Math.sin(i * 7 + k * 9) * 6, y - d.y * 28 * i + Math.cos(i * 5) * 6, 5 + i * 2, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = `rgba(0,0,0,${0.45 - 0.2 * h})`; // shadow
+      ctx.beginPath(); ctx.ellipse(x, y + 4, r * (1.1 - 0.35 * h), r * (0.6 - 0.2 * h), 0, 0, Math.PI * 2); ctx.fill();
+      const g = ctx.createLinearGradient(x, y - lift.z, x - d.x * 70, y - d.y * 70);
+      g.addColorStop(0, 'rgba(220,235,255,0.4)'); g.addColorStop(1, 'rgba(220,235,255,0)');
+      ctx.strokeStyle = g; ctx.lineWidth = r * 1.4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x, y - lift.z); ctx.quadraticCurveTo(x - d.x * 35, y - d.y * 35 - lift.z * 0.9, x - d.x * 70, y - d.y * 70); ctx.stroke();
     } else if (sk.stiff > 0) {
       ctx.strokeStyle = `rgba(255,120,90,${0.35 + 0.3 * Math.sin(performance.now() / 50)})`; ctx.lineWidth = 2;
       ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(x, y, p.radius * 1.6, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
@@ -618,6 +637,30 @@ export class Renderer {
     ctx.fillRect(x + r * 0.17, y - r * 0.2, r * 0.25, r * 0.12);
   }
 
+  // the floor a pillar hides from (h.x, h.y) is cut out of the clip, pillar by pillar (each clip intersects)
+  clipCover(h, arena) {
+    if (!arena || !arena.pillars || !arena.pillars.length) return;
+    const ctx = this.ctx, W = arena.width, H = arena.height, ox = h.x, oy = h.y;
+    for (const p of arena.pillars) {
+      if (ox >= p.x && ox <= p.x + p.w && oy >= p.y && oy <= p.y + p.h) continue;
+      const pts = [];
+      for (const [cx, cy] of [[p.x, p.y], [p.x + p.w, p.y], [p.x + p.w, p.y + p.h], [p.x, p.y + p.h]]) {
+        const dx = cx - ox, dy = cy - oy, k = 4000 / Math.max(1, Math.hypot(dx, dy));
+        pts.push([cx, cy], [ox + dx * (1 + k), oy + dy * (1 + k)]);
+      }
+      const hull = convexHull(pts);
+      let area = 0;
+      for (let i = 0; i < hull.length; i++) { const a = hull[i], b = hull[(i + 1) % hull.length]; area += a[0] * b[1] - b[0] * a[1]; }
+      if (area > 0) hull.reverse(); // opposite winding to the room rectangle: nonzero leaves the shadow out
+      ctx.beginPath();
+      ctx.rect(-4000, -4000, W + 8000, H + 8000);
+      ctx.moveTo(hull[0][0], hull[0][1]);
+      for (let i = 1; i < hull.length; i++) ctx.lineTo(hull[i][0], hull[i][1]);
+      ctx.closePath();
+      ctx.clip();
+    }
+  }
+
   // telegraphs and arrows (drawn on the floor, under the enemies)
   drawHazards(hz) {
     const ctx = this.ctx;
@@ -652,6 +695,7 @@ export class Renderer {
       const k = Math.min(1, h.t / h.delay);
       const flash = h.kind !== 'ring' && h.done;
       ctx.save();
+      if (h.kind !== 'circle') this.clipCover(h, hz.arena);
       ctx.translate(h.x, h.y);
       if (h.kind === 'annulus') { // one ring of a sequential zone attack
         const ring = () => { ctx.beginPath(); ctx.arc(0, 0, h.r1, 0, Math.PI * 2); if (h.r0 > 0) ctx.arc(0, 0, h.r0, 0, Math.PI * 2, true); };
@@ -1036,12 +1080,13 @@ export class Renderer {
     }
   }
 
-  drawPlayer(p, alpha) {
+  drawPlayer(p, alpha, lift = null) {
     const ctx = this.ctx;
     const { x, y } = lerpPos(p.prevPos, p.pos, alpha);
     const r = p.radius;
     ctx.save();
-    ctx.translate(x, y);
+    ctx.translate(x, y - (lift ? lift.z : 0)); // in a jump the hero rises and looks bigger
+    if (lift) ctx.scale(lift.s, lift.s);
     ctx.rotate(p.visualAngle);
     ctx.beginPath();
     ctx.moveTo(r * 1.3, 0);

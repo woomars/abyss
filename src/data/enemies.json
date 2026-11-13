@@ -124,7 +124,7 @@
         "shockwave": {
           "kind": "ring",
           "windup": 0.7,
-          "speed": 420,
+          "speed": 336,
           "maxRadius": 520,
           "thickness": 34,
           "damage": 18,
@@ -132,8 +132,8 @@
         },
         "band": {
           "kind": "band",
-          "windup": 1.0,
-          "speed": 450,
+          "windup": 1,
+          "speed": 360,
           "thickness": 56,
           "damage": 22,
           "recover": 0.36
@@ -208,7 +208,7 @@
         "shockwave": {
           "kind": "ring",
           "windup": 0.8,
-          "speed": 460,
+          "speed": 368,
           "maxRadius": 640,
           "thickness": 38,
           "damage": 24,
@@ -226,8 +226,8 @@
         },
         "band": {
           "kind": "band",
-          "windup": 1.0,
-          "speed": 450,
+          "windup": 1,
+          "speed": 360,
           "thickness": 56,
           "damage": 28,
           "recover": 0.36
@@ -360,8 +360,8 @@
         },
         "band": {
           "kind": "band",
-          "windup": 1.0,
-          "speed": 450,
+          "windup": 1,
+          "speed": 360,
           "thickness": 56,
           "damage": 22,
           "recover": 0.36
@@ -456,7 +456,7 @@
           "kind": "barrage",
           "windup": 0.9,
           "tellRadius": 80,
-          "duration": 4.0,
+          "duration": 4,
           "wave": 0.7,
           "speed": 260,
           "radius": 9,
@@ -535,7 +535,7 @@
           "kind": "barrage",
           "windup": 0.9,
           "tellRadius": 80,
-          "duration": 4.0,
+          "duration": 4,
           "wave": 0.7,
           "speed": 260,
           "radius": 9,
@@ -612,7 +612,7 @@
         },
         "snipe": {
           "kind": "snipe",
-          "windup": 1.0,
+          "windup": 1,
           "speed": 1200,
           "radius": 10,
           "range": 1100,
@@ -625,7 +625,7 @@
           "kind": "zones",
           "count": 5,
           "windup": 0.9,
-          "stagger": 0.35,
+          "stagger": 0.438,
           "damage": 20,
           "recover": 0.36
         }
@@ -668,7 +668,7 @@
       "patterns": {
         "snipe": {
           "kind": "snipe",
-          "windup": 1.0,
+          "windup": 1,
           "speed": 1200,
           "radius": 10,
           "range": 1100,
@@ -692,7 +692,7 @@
           "kind": "zones",
           "count": 5,
           "windup": 0.9,
-          "stagger": 0.35,
+          "stagger": 0.438,
           "damage": 20,
           "recover": 0.36
         }
@@ -912,7 +912,7 @@
         "shockwave": {
           "kind": "ring",
           "windup": 0.7,
-          "speed": 420,
+          "speed": 336,
           "maxRadius": 520,
           "thickness": 34,
           "damage": 24,
@@ -920,8 +920,8 @@
         },
         "band": {
           "kind": "band",
-          "windup": 1.0,
-          "speed": 450,
+          "windup": 1,
+          "speed": 360,
           "thickness": 56,
           "damage": 30,
           "recover": 0.36
@@ -1016,8 +1016,8 @@
         },
         "band": {
           "kind": "band",
-          "windup": 1.0,
-          "speed": 450,
+          "windup": 1,
+          "speed": 360,
           "thickness": 56,
           "damage": 30,
           "recover": 0.36
@@ -1117,7 +1117,7 @@
           "kind": "barrage",
           "windup": 0.9,
           "tellRadius": 80,
-          "duration": 4.0,
+          "duration": 4,
           "wave": 0.7,
           "speed": 260,
           "radius": 9,
@@ -1203,7 +1203,7 @@
           "kind": "barrage",
           "windup": 0.9,
           "tellRadius": 80,
-          "duration": 4.0,
+          "duration": 4,
           "wave": 0.7,
           "speed": 260,
           "radius": 9,
@@ -1256,7 +1256,7 @@
       "patterns": {
         "snipe": {
           "kind": "snipe",
-          "windup": 1.0,
+          "windup": 1,
           "speed": 1200,
           "radius": 10,
           "range": 1100,
@@ -1282,7 +1282,7 @@
           "kind": "zones",
           "count": 5,
           "windup": 0.9,
-          "stagger": 0.35,
+          "stagger": 0.438,
           "damage": 27,
           "recover": 0.36
         }
@@ -1361,7 +1361,7 @@
           "kind": "zones",
           "count": 5,
           "windup": 0.9,
-          "stagger": 0.35,
+          "stagger": 0.438,
           "damage": 27,
           "recover": 0.36
         }
@@ -1587,7 +1587,7 @@
         "shockwave": {
           "kind": "ring",
           "windup": 0.7,
-          "speed": 420,
+          "speed": 336,
           "maxRadius": 520,
           "thickness": 34,
           "damage": 24,
@@ -1595,8 +1595,8 @@
         },
         "band": {
           "kind": "band",
-          "windup": 1.0,
-          "speed": 450,
+          "windup": 1,
+          "speed": 360,
           "thickness": 56,
           "damage": 30,
           "recover": 0.36
@@ -1697,7 +1697,7 @@
           "kind": "barrage",
           "windup": 0.9,
           "tellRadius": 80,
-          "duration": 4.0,
+          "duration": 4,
           "wave": 0.7,
           "speed": 260,
           "radius": 9,
@@ -1784,7 +1784,7 @@
           "kind": "barrage",
           "windup": 0.9,
           "tellRadius": 80,
-          "duration": 4.0,
+          "duration": 4,
           "wave": 0.7,
           "speed": 260,
           "radius": 9,
@@ -1861,7 +1861,7 @@
         },
         "snipe": {
           "kind": "snipe",
-          "windup": 1.0,
+          "windup": 1,
           "speed": 1200,
           "radius": 10,
           "range": 1100,
@@ -1874,7 +1874,7 @@
           "kind": "zones",
           "count": 5,
           "windup": 0.9,
-          "stagger": 0.35,
+          "stagger": 0.438,
           "damage": 27,
           "recover": 0.36
         }
@@ -1954,7 +1954,7 @@
           "kind": "zones",
           "count": 5,
           "windup": 0.9,
-          "stagger": 0.35,
+          "stagger": 0.438,
           "damage": 27,
           "recover": 0.36
         }
@@ -2109,7 +2109,7 @@
         "shockwave": {
           "kind": "ring",
           "windup": 0.7,
-          "speed": 420,
+          "speed": 336,
           "maxRadius": 520,
           "thickness": 34,
           "damage": 24,
@@ -2300,7 +2300,7 @@
       },
       {
         "beats": [
-          1.0,
+          1,
           2.4
         ],
         "tele": [

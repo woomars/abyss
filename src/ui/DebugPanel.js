@@ -19,7 +19,7 @@ export class DebugPanel {
         <div class="dbtns">방 이동 <select data-act="floor"><option value="">고르기</option><option value="0">연습장</option><option value="-1">보물방</option><option value="-2">대장간</option><option value="-3">증표 받기</option><option value="-4">보스 연전 (끝없는 보스방)</option>${
           Array.from({ length: 21 }, (_, i) => `<option value="${i + 1}">지하 ${i + 1}층</option>`).join('')}<option value="100">지하 100층 (시조)</option></select></div>
         <div class="dbtns">장비 지급 <select data-act="grant"><option value="">고르기</option><option value="common">일반</option><option value="uncommon">고급</option><option value="rare">희귀</option><option value="epic">영웅</option><option value="legendary">전설</option><option value="set">세트</option></select></div>
-        <div class="dbtns">내 레벨 <input type="number" class="dlevel" min="1" max="99" step="1" value="1" inputmode="numeric" style="width:56px;user-select:text;-webkit-user-select:text"><button data-act="setLevel">적용</button><span class="dlevel-now"></span></div>
+        <div class="dbtns">내 레벨 <input type="number" class="dlevel" min="1" step="1" value="1" inputmode="numeric" style="width:56px;user-select:text;-webkit-user-select:text"><button data-act="setLevel">적용</button><span class="dlevel-now"></span></div>
         <div class="dbtns"><button data-act="ending">엔딩 보기</button></div>
       </div>`;
     root.appendChild(this.el);
@@ -61,7 +61,7 @@ export class DebugPanel {
 
   // debug: set the family level (stats and max hp follow; growth cards owed by the level show at the next cleared room)
   setLevel(n) {
-    const g = this.game, max = (g.config.progress && g.config.progress.maxLevel) || 99;
+    const g = this.game, max = (g.config.progress && g.config.progress.maxLevel) || Infinity;
     const lv = Math.max(1, Math.min(max, Math.round(n) || 1));
     g.vault.progress.level = lv;
     g.vault.progress.xp = 0;

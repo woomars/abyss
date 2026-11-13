@@ -10,16 +10,17 @@ export function xpForKill(cfg, enemy, floor = 1) {
   return x[kind] * (1 + x.perFloor * Math.max(0, floor - 1));
 }
 
-// adds xp to progress {level, xp}; returns how many levels were gained
+// adds xp to progress {level, xp}; returns how many levels were gained. No cap unless cfg.maxLevel is set.
 export function addXp(cfg, progress, amount) {
+  const cap = cfg.maxLevel || Infinity;
   let gained = 0;
   progress.xp += amount;
-  while (progress.level < cfg.maxLevel && progress.xp >= xpNeed(cfg, progress.level)) {
+  while (progress.level < cap && progress.xp >= xpNeed(cfg, progress.level)) {
     progress.xp -= xpNeed(cfg, progress.level);
     progress.level += 1;
     gained += 1;
   }
-  if (progress.level >= cfg.maxLevel) progress.xp = 0;
+  if (progress.level >= cap) progress.xp = 0;
   return gained;
 }
 

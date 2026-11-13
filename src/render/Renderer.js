@@ -1020,7 +1020,7 @@ export class Renderer {
     ctx.lineWidth = 1;
     ctx.strokeRect(x - 0.5, y - 0.5, w + 1, h + 1);
     // the quest: what the boss hides behind, or the opening
-    const q = boss.tcfg.quest, s = boss.ai || {};
+    const s = boss.ai || {}, q = s.quest !== undefined ? s.quest : boss.tcfg.quest; // the founder's quest changes by phase
     if (q) {
       ctx.font = 'bold 12px system-ui, sans-serif';
       ctx.textBaseline = 'top';

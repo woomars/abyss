@@ -2400,7 +2400,7 @@
           }
         ]
       },
-      "guardFrac": 0.12,
+      "guardFrac": 0.05,
       "final": true,
       "sigils": {
         "count": 3

@@ -467,9 +467,10 @@ export class Renderer {
       ctx.font = `bold ${Math.round((n.crit ? 26 : 17) * pop)}px system-ui, sans-serif`;
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#000000';
-      const label = n.tag ? t(`fx.${n.tag}`) : String(n.value);
+      // a blow the shield soaked still shows its damage, in the shield's gold; immunity shows a word
+      const shield = n.tag === 'guard', label = n.tag && !shield ? t(`fx.${n.tag}`) : String(n.value);
       ctx.strokeText(label, n.x, n.y);
-      ctx.fillStyle = n.tag ? '#9fb8d8' : n.hurt ? '#ff4a4a' : n.crit ? '#ffb347' : '#f4f0e6';
+      ctx.fillStyle = shield ? '#e8cf6a' : n.tag ? '#9fb8d8' : n.hurt ? '#ff4a4a' : n.crit ? '#ffb347' : '#f4f0e6';
       ctx.fillText(label, n.x, n.y);
     });
     ctx.globalAlpha = 1;

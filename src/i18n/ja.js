@@ -326,8 +326,8 @@ export default {
   // boss quests
   'boss.immuneMinions': "無敵 — 手下を全滅させよ",
   'boss.immuneSigils': "無敵 — 魔法陣をすべて壊せ",
-  'boss.guard': "ガード — 攻撃し続けて崩せ",
+  'boss.guard': "シールド — 攻撃し続けて破れ",
   'boss.exposed': "隙あり！今だ",
   'fx.immune': "無敵",
-  'fx.guard': "ガード",
+  'fx.guard': "シールド",
 };

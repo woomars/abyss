@@ -341,8 +341,8 @@ export default {
   // boss quests
   'boss.immuneMinions': "무적 — 졸개를 모두 쓰러뜨리세요",
   'boss.immuneSigils': "무적 — 마법진을 모두 부수세요",
-  'boss.guard': "방어 — 계속 공격해 깨뜨리세요",
+  'boss.guard': "방어막 — 계속 공격해 깨뜨리세요",
   'boss.exposed': "빈틈! 지금 공격하세요",
   'fx.immune': "무적",
-  'fx.guard': "방어",
+  'fx.guard': "방어막",
 };

@@ -1,4 +1,10 @@
-// ?debug=1 — FPS and a few helpers: go to a room (floor 100 too), set the level, get an item (worn at once), play the ending.
+// ?debug=1 — FPS and a few helpers: go to a room (floor 100 too), set the level, get an item (worn at once),
+// set the special-attack growth cards, play the ending; and the hero's numbers (with the gear's share).
+import { heroSheet } from './debugSheet.js';
+import { owedPicks, picksTaken } from '../game/SkillGrowth.js';
+
+// growth cards by name (debug is Korean only)
+const CARD = { spinRadius: '회전 베기 반경', spinCooldown: '회전 베기 쿨타임', rushDistance: '점프 거리', rushCooldown: '점프 쿨타임', waveRange: '질풍 베기 사거리·기절', waveCooldown: '질풍 베기 쿨타임' };
 export class DebugPanel {
   constructor(root, { config, game, onLayout, onFloor = null, onOpenChange = () => {}, onGear = () => {}, onEnding = () => {} }) {
     this.onEnding = onEnding; // debug: play the ending
@@ -21,6 +27,10 @@ export class DebugPanel {
         <div class="dbtns">장비 지급 <select data-act="grant"><option value="">고르기</option><option value="common">일반</option><option value="uncommon">고급</option><option value="rare">희귀</option><option value="epic">영웅</option><option value="legendary">전설</option><option value="set">세트</option></select></div>
         <div class="dbtns">내 레벨 <input type="number" class="dlevel" min="1" step="1" value="1" inputmode="numeric" style="width:56px;user-select:text;-webkit-user-select:text"><button data-act="setLevel">적용</button><span class="dlevel-now"></span></div>
         <div class="dbtns"><button data-act="ending">엔딩 보기</button></div>
+        <div class="dsec">특수기술 성장 <span class="dups-note"></span></div>
+        <div class="dups"></div>
+        <div class="dsec">내 수치 <span class="dnote">(초록 = 장비가 더한 몫)</span></div>
+        <div class="dsheet"></div>
       </div>`;
     root.appendChild(this.el);
     this.fpsEl = this.el.querySelector('.fps');
@@ -42,6 +52,7 @@ export class DebugPanel {
       if (b.dataset.act === 'toggle') this.setOpen(this.el.classList.contains('collapsed'));
       if (b.dataset.act === 'ending') { this.setOpen(false); this.onEnding(); }
       if (b.dataset.act === 'setLevel') this.setLevel(Number(this.el.querySelector('.dlevel').value));
+      if (b.dataset.act === 'up') this.setUp(b.dataset.card, Number(b.dataset.v));
     });
   }
 
@@ -55,6 +66,7 @@ export class DebugPanel {
   // opening the panel pauses the game; closing it (or going back to the game) carries on
   setOpen(open) {
     this.el.classList.toggle('collapsed', !open);
+    if (open) this.refresh();
     this.onLayout();
     this.onOpenChange(open);
   }
@@ -70,6 +82,36 @@ export class DebugPanel {
     g.player.hp = g.player.maxHp;
     if (g.vault.state !== 'idle' || g.forge) g.saveVault();
     this.el.querySelector('.dlevel-now').textContent = ` → Lv ${lv}`;
+    this.refresh();
+  }
+
+  // debug: a growth card's count (the skill grows at once; the level's owed cards follow what is left)
+  setUp(card, dv) {
+    const g = this.game, ups = g.vault.skillUps || (g.vault.skillUps = {});
+    ups[card] = Math.max(0, (ups[card] || 0) + dv);
+    if (!ups[card]) delete ups[card];
+    g.refreshBonus();
+    if (g.vault.state !== 'idle' || g.forge) g.saveVault();
+    this.onGear();
+    this.refresh();
+  }
+
+  // the growth cards and the hero's numbers, as they stand
+  refresh() {
+    const g = this.game, growth = g.config.skills.growth, ups = g.vault.skillUps || {};
+    const lv = g.vault.progress.level;
+    this.el.querySelector('.dlevel').value = lv;
+    this.el.querySelector('.dups-note').textContent = `(Lv ${lv}: 받을 카드 ${Math.floor(lv / growth.every)} · 고름 ${picksTaken(ups, growth)} · 남음 ${owedPicks(growth, lv, ups)})`;
+    this.el.querySelector('.dups').innerHTML = growth.cards.map((c) => `<div class="dup"><span>${CARD[c.id] || c.id}</span><button data-act="up" data-card="${c.id}" data-v="-1">−</button><b>${ups[c.id] || 0}</b><button data-act="up" data-card="${c.id}" data-v="1">+</button></div>`).join('');
+    const sh = heroSheet(g);
+    const rows = sh.sections.map((s) => `<div class="dsh-t">${s.title}</div>${s.rows.map((r) => `<div class="dsh-r"><span>${r.label}</span><b>${r.value}</b><i class="${r.gear ? (r.good ? 'up' : 'down') : ''}">${r.gear}</i></div>`).join('')}`).join('');
+    const gear = [...sh.sets, ...sh.gearFx];
+    const boss = sh.boss ? `<div class="dsh-t">이 방의 보스</div>
+      <div class="dsh-r"><span>체력</span><b>${sh.boss.hp} / ${sh.boss.maxHp}</b><i></i></div>
+      ${sh.boss.guard ? `<div class="dsh-r"><span>방어막</span><b>${sh.boss.guard}</b><i></i></div>` : ''}
+      <div class="dsh-r"><span>평타로 (평균 1타)</span><b>${sh.boss.hits}타</b><i></i></div>
+      ${sh.boss.mirror != null ? `<div class="dsh-r"><span>거울의 평타 → 나</span><b>${sh.boss.mirror}</b><i></i></div>` : ''}` : '';
+    this.el.querySelector('.dsheet').innerHTML = `${rows}<div class="dsh-t">장비 효과</div><div class="dsh-fx">${gear.length ? gear.join('<br>') : '없음'}</div>${boss}`;
   }
 
   // a new item of the chosen grade is put on at once; what was worn in that slot goes to the pocket
@@ -82,6 +124,7 @@ export class DebugPanel {
     import('../game/items/ItemFactory.js').then(({ createItem }) => {
       g.wearNew(createItem(cfg, Math.random, opts));
       this.onGear();
+      this.refresh();
     });
   }
 

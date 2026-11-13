@@ -77,21 +77,6 @@ export class CombatController {
     return true;
   }
 
-  // carry on as a chain from a hit made elsewhere (the roll's thrust): the next dash goes to the nearest
-  // enemy in reach that was not just hit
-  chainFrom(dir, hitIds) {
-    if (this.inCombat) this.finish();
-    this.inputDir = { x: dir.x, y: dir.y };
-    this.excludeIds.clear();
-    for (const id of hitIds) this.excludeIds.add(id);
-    this.chainIndex = 0;
-    this.linkPoint = { x: this.player.pos.x, y: this.player.pos.y };
-    this.linkTime = 0;
-    this.dashFrom = null;
-    this.camera.setMode('combat');
-    this._state = 'link';
-  }
-
   // hard reset for restart (no events)
   reset() {
     this._state = 'move';

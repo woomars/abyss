@@ -23,7 +23,7 @@ export class SkillSystem {
     this.spin = null;
     this.projectiles = [];
     this.aim = null;
-    this.stiff = 0; // stiffness after the roll's thrust: no moving, and no longer untouchable
+    this.stiff = 0; // stiffness after the jump lands: no moving, and no longer untouchable
   }
 
   get slots() {
@@ -93,7 +93,7 @@ export class SkillSystem {
     this.combat.cancel();
     const p = this.player;
     const len = aimDir ? Math.hypot(aimDir.x, aimDir.y) : 0;
-    const auto = def.directional && !(len > 1e-6) ? this.nearestDir() : null;
+    const auto = def.directional && !(len > 1e-6) && id !== 'rushStrike' ? this.nearestDir() : null; // a plain tap of the jump goes the way the hero runs
     const hd = p.heading && Math.hypot(p.heading.x, p.heading.y) > 1e-6 ? p.heading : this.combat.inputDir;
     const dir = len > 1e-6 && def.directional
       ? { x: aimDir.x / len, y: aimDir.y / len }
@@ -112,13 +112,13 @@ export class SkillSystem {
     return true;
   }
 
-  hitEnemy(e, damage, dir, { critChance = this.combatCfg.critChance + this.bonus().crit, chainIndex = 0, skill = null } = {}) {
+  hitEnemy(e, damage, dir, { critChance = this.combatCfg.critChance + this.bonus().crit, chainIndex = 0, skill = null, knockback = null } = {}) {
     const c = this.combatCfg;
     const crit = this.rng() < critChance;
     const b = this.bonus();
     const dmg = Math.round(damage * (1 + b.damage + b.skillDamage) * (crit ? c.critMultiplier + b.critDamage : 1));
     const kind = crit ? 'crit' : 'strong';
-    const { killed } = e.takeHit({ damage: dmg, knockDir: dir, knockback: c.knockback[kind] * (1 + b.knockback), stagger: c.stagger[kind] });
+    const { killed } = e.takeHit({ damage: dmg, knockDir: dir, knockback: (knockback != null ? knockback : c.knockback[kind]) * (1 + b.knockback), stagger: c.stagger[kind] });
     const pos = { x: e.pos.x, y: e.pos.y };
     this.events.emit('hit', { enemy: e, damage: dmg, crit, strong: true, chainIndex, pos, dir, skill });
     if (killed) { this.events.emit('kill', { enemy: e, pos, dir, crit }); return; }
@@ -176,8 +176,8 @@ export class SkillSystem {
     };
   }
 
-  // the jump comes down: everything inside the landing circle is struck and knocked outward; if anything
-  // was hit, an automatic chain dash carries on from there
+  // the jump comes down: everything inside the landing circle is struck and thrown back, away from the
+  // landing spot (no chain dash follows)
   land(r) {
     const p = this.player.pos, { radius, damage } = this.landing(r.def);
     const hit = new Set();
@@ -186,9 +186,8 @@ export class SkillSystem {
       const dx = e.pos.x - p.x, dy = e.pos.y - p.y, d = Math.hypot(dx, dy);
       if (d > radius + e.radius) continue;
       hit.add(e.id);
-      this.hitEnemy(e, damage, d > 1e-6 ? { x: dx / d, y: dy / d } : r.dir, { skill: 'rushStrike' });
+      this.hitEnemy(e, damage, d > 1e-6 ? { x: dx / d, y: dy / d } : r.dir, { skill: 'rushStrike', knockback: r.def.knockback });
     }
-    if (hit.size) this.combat.chainFrom(r.dir, hit);
     return hit.size;
   }
 

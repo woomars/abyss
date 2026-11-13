@@ -313,6 +313,7 @@ export class Renderer {
     const ux = a.dir.x / len, uy = a.dir.y / len;
     const reach = def.distance || def.range || 300;
     const { x, y } = lerpPos(player.prevPos, player.pos, alpha);
+    if (skills.cfg.slots[a.slot] === 'rushStrike') { this.drawJumpAim(skills, def, player, x, y, ux, uy); return; }
     const ex = x + ux * reach, ey = y + uy * reach;
     const ctx = this.ctx;
     ctx.save();
@@ -332,6 +333,33 @@ export class Renderer {
     ctx.closePath();
     ctx.fillStyle = 'rgba(159,216,255,0.9)';
     ctx.fill();
+    ctx.restore();
+  }
+
+  // jump aim: an arching arrow to where the hero will come down (walls and pillars cut it short) and the
+  // landing circle there
+  drawJumpAim(skills, def, player, x, y, ux, uy) {
+    const ctx = this.ctx, ar = skills.arena;
+    let d = 0;
+    while (d < def.distance) {
+      const n = Math.min(def.distance, d + 8);
+      if (ar && ar.resolveCircle({ x: x + ux * n, y: y + uy * n }, player.radius).hitWall) break;
+      d = n;
+    }
+    const ex = x + ux * d, ey = y + uy * d;
+    const lift = Math.min(60, 20 + d * 0.3), mx = (x + ex) / 2, my = (y + ey) / 2 - lift;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(ex, ey, skills.landing(def).radius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,210,140,0.12)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,210,140,0.75)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.setLineDash([12, 8]);
+    ctx.strokeStyle = 'rgba(255,224,138,0.95)'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(mx, my, ex, ey); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.translate(ex, ey); // arrowhead along the curve's end tangent
+    ctx.rotate(Math.atan2(ey - my, ex - mx));
+    ctx.beginPath(); ctx.moveTo(4, 0); ctx.lineTo(-16, 11); ctx.lineTo(-16, -11); ctx.closePath();
+    ctx.fillStyle = 'rgba(255,224,138,0.95)'; ctx.fill();
     ctx.restore();
   }
 

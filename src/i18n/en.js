@@ -276,7 +276,7 @@ export default {
   'title.quit': "Quit",
   'title.layout': "Buttons",
   'guide.7.title': "Jump",
-  'guide.7.body': "The Jump button leaps forward in the direction you are running. You are untouchable while in the air; the landing slams everything around you, then you stiffen for a moment (you can be hit then). Jump over boss attacks that cover the whole arena just as they reach you, or hide behind a pillar.",
+  'guide.7.body': "Hold the Jump button and drag to aim an arrow at your landing spot, then release to leap there (a plain tap leaps the way you are running). You are untouchable while in the air; the landing slams everything around you and throws it back, then you stiffen for a moment (you can be hit then). Jump over boss attacks that cover the whole arena just as they reach you, or hide behind a pillar.",
   // boss quests
   'boss.immuneMinions': "Invulnerable — defeat every minion",
   'boss.immuneSigils': "Invulnerable — break every sigil",

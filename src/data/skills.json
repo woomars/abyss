@@ -23,12 +23,14 @@
     },
     "rushStrike": {
       "name": "점프",
+      "directional": true,
       "cooldown": 10,
       "distance": 150,
-      "speed": 450,
-      "damage": 45,
+      "speed": 300,
+      "damage": 49.5,
       "radius": 110,
-      "recover": 0.3
+      "recover": 0.3,
+      "knockback": 340
     },
     "bladeWave": {
       "name": "원거리 공격",

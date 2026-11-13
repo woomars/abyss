@@ -100,8 +100,8 @@
       ],
       "name": "오크 대장",
       "hp": 700,
-      "attack": 22,
-      "speed": 85,
+      "attack": 19,
+      "speed": 144,
       "radius": 40,
       "color": "#9a3a2a",
       "patterns": {
@@ -111,14 +111,14 @@
           "arcDeg": 100,
           "windup": 0.8,
           "damage": 22,
-          "recover": 0.6
+          "recover": 0.36
         },
         "summon": {
           "kind": "summon",
           "type": "soldier",
           "count": 3,
           "windup": 0.6,
-          "recover": 0.4,
+          "recover": 0.24,
           "maxMinions": 8
         },
         "shockwave": {
@@ -128,7 +128,7 @@
           "maxRadius": 520,
           "thickness": 34,
           "damage": 18,
-          "recover": 0.5
+          "recover": 0.3
         },
         "band": {
           "kind": "band",
@@ -136,11 +136,11 @@
           "speed": 450,
           "thickness": 56,
           "damage": 22,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -170,7 +170,10 @@
       "tier": "mid",
       "minCycle": 0,
       "shape": "horned",
-      "shieldMul": 0.4
+      "shieldMul": 0.4,
+      "quest": "guard",
+      "guardFrac": 0.12,
+      "exposed": 5
     },
     "gatekeeper": {
       "rank": "boss",
@@ -190,7 +193,7 @@
       "name": "심연의 수문장",
       "hp": 1800,
       "attack": 28,
-      "speed": 90,
+      "speed": 153,
       "radius": 52,
       "color": "#3b2f6b",
       "patterns": {
@@ -200,7 +203,7 @@
           "arcDeg": 110,
           "windup": 0.85,
           "damage": 28,
-          "recover": 0.6
+          "recover": 0.36
         },
         "shockwave": {
           "kind": "ring",
@@ -209,7 +212,7 @@
           "maxRadius": 640,
           "thickness": 38,
           "damage": 24,
-          "recover": 0.5
+          "recover": 0.3
         },
         "summon": {
           "kind": "summon",
@@ -218,7 +221,7 @@
           "extraType": "soldier",
           "extraCount": 2,
           "windup": 0.7,
-          "recover": 0.4,
+          "recover": 0.24,
           "maxMinions": 8
         },
         "band": {
@@ -227,11 +230,11 @@
           "speed": 450,
           "thickness": 56,
           "damage": 28,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -271,7 +274,10 @@
       "tier": "great",
       "minCycle": 0,
       "shape": "horned",
-      "shieldMul": 0.4
+      "shieldMul": 0.4,
+      "quest": "guard",
+      "guardFrac": 0.12,
+      "exposed": 5
     },
     "spearman": {
       "hp": 26,
@@ -307,8 +313,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -320,8 +326,8 @@
       "shape": "horned",
       "color": "#a8a08a",
       "hp": 700,
-      "attack": 22,
-      "speed": 88,
+      "attack": 19,
+      "speed": 150,
       "radius": 40,
       "patterns": {
         "triple": {
@@ -332,7 +338,7 @@
           "gap": 0.3,
           "spread": 25,
           "damage": 18,
-          "recover": 0.5
+          "recover": 0.3
         },
         "charge": {
           "kind": "charge",
@@ -341,14 +347,16 @@
           "windup": 0.75,
           "dashTime": 0.25,
           "damage": 24,
-          "recover": 0.6
+          "recover": 0.36,
+          "repeat": 3,
+          "chainWindup": 0.38
         },
         "sweep": {
           "kind": "sweep",
           "radius": 150,
           "windup": 0.6,
           "damage": 18,
-          "recover": 0.4
+          "recover": 0.24
         },
         "band": {
           "kind": "band",
@@ -356,7 +364,7 @@
           "speed": 450,
           "thickness": 56,
           "damage": 22,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "basics": {
@@ -381,7 +389,10 @@
             "recover": 0.2
           }
         ]
-      }
+      },
+      "quest": "guard",
+      "guardFrac": 0.12,
+      "exposed": 5
     },
     "hexWitch": {
       "rank": "boss",
@@ -397,8 +408,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -410,19 +421,19 @@
       "shape": "robed",
       "color": "#6a3a8a",
       "hp": 630,
-      "attack": 22,
-      "speed": 80,
+      "attack": 19,
+      "speed": 160,
       "radius": 40,
       "patterns": {
         "fields": {
           "kind": "fields",
-          "count": 3,
-          "radius": 85,
-          "spread": 170,
+          "count": 6,
+          "radius": 110,
+          "spread": 560,
           "windup": 0.9,
-          "stagger": 0.25,
+          "stagger": 0.22,
           "damage": 22,
-          "recover": 0.5
+          "recover": 0.3
         },
         "seeker": {
           "kind": "seeker",
@@ -430,7 +441,7 @@
           "windup": 1.4,
           "lock": 0.45,
           "damage": 24,
-          "recover": 0.5
+          "recover": 0.3
         },
         "blink": {
           "kind": "blink",
@@ -439,7 +450,7 @@
           "radius": 100,
           "windup": 0.45,
           "damage": 22,
-          "recover": 0.6
+          "recover": 0.36
         },
         "barrage": {
           "kind": "barrage",
@@ -456,9 +467,14 @@
         }
       },
       "keep": [
-        280,
-        460
-      ]
+        300,
+        540
+      ],
+      "quest": "sigils",
+      "sigils": {
+        "count": 3
+      },
+      "exposed": 7
     },
     "emberAdept": {
       "rank": "boss",
@@ -474,8 +490,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -487,8 +503,8 @@
       "shape": "robed",
       "color": "#c0582a",
       "hp": 630,
-      "attack": 22,
-      "speed": 80,
+      "attack": 19,
+      "speed": 160,
       "radius": 40,
       "patterns": {
         "spiral": {
@@ -503,17 +519,17 @@
           "radius": 9,
           "range": 700,
           "damage": 11,
-          "recover": 0.5
+          "recover": 0.3
         },
         "fields": {
           "kind": "fields",
-          "count": 4,
-          "radius": 85,
-          "spread": 170,
+          "count": 6,
+          "radius": 110,
+          "spread": 560,
           "windup": 0.9,
-          "stagger": 0.25,
+          "stagger": 0.22,
           "damage": 22,
-          "recover": 0.5
+          "recover": 0.3
         },
         "barrage": {
           "kind": "barrage",
@@ -530,9 +546,14 @@
         }
       },
       "keep": [
-        280,
-        460
-      ]
+        300,
+        540
+      ],
+      "quest": "sigils",
+      "sigils": {
+        "count": 3
+      },
+      "exposed": 7
     },
     "goblinChief": {
       "rank": "boss",
@@ -548,8 +569,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -561,20 +582,22 @@
       "shape": "hooded",
       "color": "#5a7a3a",
       "hp": 595,
-      "attack": 22,
-      "speed": 95,
+      "attack": 19,
+      "speed": 162,
       "radius": 40,
       "patterns": {
         "volley": {
           "kind": "volley",
           "windup": 0.7,
-          "count": 4,
+          "count": 6,
           "every": 0.12,
           "speed": 520,
           "radius": 8,
           "range": 820,
           "damage": 13,
-          "recover": 0.5
+          "recover": 0.3,
+          "home": 1.8,
+          "homeTime": 0.9
         },
         "fan": {
           "kind": "fan",
@@ -585,7 +608,7 @@
           "radius": 8,
           "range": 760,
           "damage": 13,
-          "recover": 0.5
+          "recover": 0.3
         },
         "snipe": {
           "kind": "snipe",
@@ -594,7 +617,9 @@
           "radius": 10,
           "range": 1100,
           "damage": 29,
-          "recover": 0.6
+          "recover": 0.36,
+          "repeat": 3,
+          "repeatWindup": 0.45
         },
         "zones": {
           "kind": "zones",
@@ -602,7 +627,7 @@
           "windup": 0.9,
           "stagger": 0.35,
           "damage": 20,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "keep": [
@@ -624,8 +649,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -637,8 +662,8 @@
       "shape": "hooded",
       "color": "#3a6a5a",
       "hp": 595,
-      "attack": 22,
-      "speed": 95,
+      "attack": 19,
+      "speed": 162,
       "radius": 40,
       "patterns": {
         "snipe": {
@@ -648,7 +673,9 @@
           "radius": 10,
           "range": 1100,
           "damage": 29,
-          "recover": 0.6
+          "recover": 0.36,
+          "repeat": 3,
+          "repeatWindup": 0.45
         },
         "fan": {
           "kind": "fan",
@@ -659,7 +686,7 @@
           "radius": 8,
           "range": 760,
           "damage": 13,
-          "recover": 0.5
+          "recover": 0.3
         },
         "zones": {
           "kind": "zones",
@@ -667,7 +694,7 @@
           "windup": 0.9,
           "stagger": 0.35,
           "damage": 20,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "keep": [
@@ -689,8 +716,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -702,23 +729,23 @@
       "shape": "crowned",
       "color": "#6a6a5a",
       "hp": 630,
-      "attack": 22,
-      "speed": 70,
+      "attack": 19,
+      "speed": 119,
       "radius": 40,
       "patterns": {
         "summon": {
           "kind": "summon",
           "type": "soldier",
-          "count": 3,
+          "count": 8,
           "windup": 0.7,
-          "recover": 0.4,
-          "maxMinions": 8
+          "recover": 0.24,
+          "maxMinions": 16
         },
         "shield": {
           "kind": "shield",
           "windup": 0.6,
           "duration": 6,
-          "recover": 0.4
+          "recover": 0.24
         },
         "fields": {
           "kind": "fields",
@@ -728,20 +755,29 @@
           "windup": 0.9,
           "stagger": 0.25,
           "damage": 22,
-          "recover": 0.5
+          "recover": 0.3
         },
         "bombers": {
           "kind": "bombers",
           "windup": 0.55,
           "count": 8,
           "ring": 190,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "keep": [
         380,
         640
-      ]
+      ],
+      "quest": "minions",
+      "exposed": 6,
+      "summonZones": {
+        "boss": 0.15,
+        "near": 0.2,
+        "mid": 0.25,
+        "far": 0.2,
+        "map": 0.2
+      }
     },
     "wraithcaller": {
       "rank": "boss",
@@ -757,8 +793,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -770,19 +806,19 @@
       "shape": "crowned",
       "color": "#7a6aa8",
       "hp": 630,
-      "attack": 22,
-      "speed": 70,
+      "attack": 19,
+      "speed": 119,
       "radius": 40,
       "patterns": {
         "summon": {
           "kind": "summon",
           "type": "wraith",
-          "count": 2,
+          "count": 5,
           "windup": 0.7,
-          "recover": 0.4,
-          "maxMinions": 8,
+          "recover": 0.24,
+          "maxMinions": 16,
           "extraType": "soldier",
-          "extraCount": 1
+          "extraCount": 3
         },
         "empower": {
           "kind": "empower",
@@ -790,20 +826,29 @@
           "duration": 6,
           "attack": 0.3,
           "speed": 0.3,
-          "recover": 0.4
+          "recover": 0.24
         },
         "bombers": {
           "kind": "bombers",
           "windup": 0.55,
           "count": 8,
           "ring": 190,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "keep": [
         380,
         640
-      ]
+      ],
+      "quest": "minions",
+      "exposed": 6,
+      "summonZones": {
+        "boss": 0.15,
+        "near": 0.2,
+        "mid": 0.25,
+        "far": 0.2,
+        "map": 0.2
+      }
     },
     "ironJuggernaut": {
       "rank": "boss",
@@ -819,8 +864,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -833,7 +878,7 @@
       "color": "#7a7f88",
       "hp": 1500,
       "attack": 30,
-      "speed": 88,
+      "speed": 150,
       "radius": 46,
       "patterns": {
         "charge": {
@@ -843,14 +888,16 @@
           "windup": 0.75,
           "dashTime": 0.25,
           "damage": 33,
-          "recover": 0.6
+          "recover": 0.36,
+          "repeat": 3,
+          "chainWindup": 0.38
         },
         "slam": {
           "kind": "slam",
           "radius": 130,
           "windup": 0.8,
           "damage": 30,
-          "recover": 0.5
+          "recover": 0.3
         },
         "triple": {
           "kind": "triple",
@@ -860,7 +907,7 @@
           "gap": 0.3,
           "spread": 25,
           "damage": 24,
-          "recover": 0.5
+          "recover": 0.3
         },
         "shockwave": {
           "kind": "ring",
@@ -869,7 +916,7 @@
           "maxRadius": 520,
           "thickness": 34,
           "damage": 24,
-          "recover": 0.5
+          "recover": 0.3
         },
         "band": {
           "kind": "band",
@@ -877,7 +924,7 @@
           "speed": 450,
           "thickness": 56,
           "damage": 30,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "basics": {
@@ -902,7 +949,10 @@
             "recover": 0.2
           }
         ]
-      }
+      },
+      "quest": "guard",
+      "guardFrac": 0.12,
+      "exposed": 5
     },
     "bloodReaver": {
       "rank": "boss",
@@ -918,8 +968,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -932,7 +982,7 @@
       "color": "#8a1f2a",
       "hp": 1425,
       "attack": 30,
-      "speed": 88,
+      "speed": 150,
       "radius": 46,
       "patterns": {
         "triple": {
@@ -943,7 +993,7 @@
           "gap": 0.25,
           "spread": 25,
           "damage": 24,
-          "recover": 0.5
+          "recover": 0.3
         },
         "cleave": {
           "kind": "cone",
@@ -951,7 +1001,7 @@
           "arcDeg": 120,
           "windup": 0.8,
           "damage": 30,
-          "recover": 0.6
+          "recover": 0.36
         },
         "charge": {
           "kind": "charge",
@@ -960,7 +1010,9 @@
           "windup": 0.75,
           "dashTime": 0.25,
           "damage": 33,
-          "recover": 0.6
+          "recover": 0.36,
+          "repeat": 3,
+          "chainWindup": 0.38
         },
         "band": {
           "kind": "band",
@@ -968,7 +1020,7 @@
           "speed": 450,
           "thickness": 56,
           "damage": 30,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "basics": {
@@ -993,7 +1045,10 @@
             "recover": 0.2
           }
         ]
-      }
+      },
+      "quest": "guard",
+      "guardFrac": 0.12,
+      "exposed": 5
     },
     "frostSeer": {
       "rank": "boss",
@@ -1009,8 +1064,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1023,18 +1078,18 @@
       "color": "#5aa0c8",
       "hp": 1350,
       "attack": 30,
-      "speed": 80,
+      "speed": 160,
       "radius": 46,
       "patterns": {
         "fields": {
           "kind": "fields",
-          "count": 4,
-          "radius": 85,
-          "spread": 170,
+          "count": 6,
+          "radius": 110,
+          "spread": 560,
           "windup": 0.9,
-          "stagger": 0.25,
+          "stagger": 0.22,
           "damage": 30,
-          "recover": 0.5
+          "recover": 0.3
         },
         "seeker": {
           "kind": "seeker",
@@ -1042,7 +1097,7 @@
           "windup": 1.4,
           "lock": 0.45,
           "damage": 33,
-          "recover": 0.5
+          "recover": 0.3
         },
         "spiral": {
           "kind": "spiral",
@@ -1056,7 +1111,7 @@
           "radius": 9,
           "range": 700,
           "damage": 15,
-          "recover": 0.5
+          "recover": 0.3
         },
         "barrage": {
           "kind": "barrage",
@@ -1073,9 +1128,14 @@
         }
       },
       "keep": [
-        280,
-        460
-      ]
+        300,
+        540
+      ],
+      "quest": "sigils",
+      "sigils": {
+        "count": 3
+      },
+      "exposed": 7
     },
     "voidMagus": {
       "rank": "boss",
@@ -1091,8 +1151,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1105,7 +1165,7 @@
       "color": "#3a2a5a",
       "hp": 1350,
       "attack": 30,
-      "speed": 80,
+      "speed": 160,
       "radius": 46,
       "patterns": {
         "blink": {
@@ -1115,7 +1175,7 @@
           "radius": 100,
           "windup": 0.45,
           "damage": 30,
-          "recover": 0.6
+          "recover": 0.36
         },
         "spiral": {
           "kind": "spiral",
@@ -1129,7 +1189,7 @@
           "radius": 9,
           "range": 700,
           "damage": 15,
-          "recover": 0.5
+          "recover": 0.3
         },
         "seeker": {
           "kind": "seeker",
@@ -1137,7 +1197,7 @@
           "windup": 1.4,
           "lock": 0.45,
           "damage": 33,
-          "recover": 0.5
+          "recover": 0.3
         },
         "barrage": {
           "kind": "barrage",
@@ -1154,9 +1214,14 @@
         }
       },
       "keep": [
-        280,
-        460
-      ]
+        300,
+        540
+      ],
+      "quest": "sigils",
+      "sigils": {
+        "count": 3
+      },
+      "exposed": 7
     },
     "deadeye": {
       "rank": "boss",
@@ -1172,8 +1237,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1186,7 +1251,7 @@
       "color": "#c8c0a8",
       "hp": 1275,
       "attack": 30,
-      "speed": 95,
+      "speed": 162,
       "radius": 46,
       "patterns": {
         "snipe": {
@@ -1196,18 +1261,22 @@
           "radius": 10,
           "range": 1100,
           "damage": 39,
-          "recover": 0.6
+          "recover": 0.36,
+          "repeat": 3,
+          "repeatWindup": 0.45
         },
         "volley": {
           "kind": "volley",
           "windup": 0.7,
-          "count": 5,
+          "count": 7,
           "every": 0.12,
           "speed": 520,
           "radius": 8,
           "range": 820,
           "damage": 18,
-          "recover": 0.5
+          "recover": 0.3,
+          "home": 1.8,
+          "homeTime": 0.9
         },
         "zones": {
           "kind": "zones",
@@ -1215,7 +1284,7 @@
           "windup": 0.9,
           "stagger": 0.35,
           "damage": 27,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "keep": [
@@ -1237,8 +1306,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1251,7 +1320,7 @@
       "color": "#4a7a2a",
       "hp": 1275,
       "attack": 30,
-      "speed": 95,
+      "speed": 162,
       "radius": 46,
       "patterns": {
         "fan": {
@@ -1263,18 +1332,20 @@
           "radius": 8,
           "range": 760,
           "damage": 18,
-          "recover": 0.5
+          "recover": 0.3
         },
         "volley": {
           "kind": "volley",
           "windup": 0.7,
-          "count": 4,
+          "count": 6,
           "every": 0.12,
           "speed": 520,
           "radius": 8,
           "range": 820,
           "damage": 18,
-          "recover": 0.5
+          "recover": 0.3,
+          "home": 1.8,
+          "homeTime": 0.9
         },
         "fields": {
           "kind": "fields",
@@ -1284,7 +1355,7 @@
           "windup": 0.9,
           "stagger": 0.25,
           "damage": 30,
-          "recover": 0.5
+          "recover": 0.3
         },
         "zones": {
           "kind": "zones",
@@ -1292,7 +1363,7 @@
           "windup": 0.9,
           "stagger": 0.35,
           "damage": 27,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "keep": [
@@ -1314,8 +1385,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1328,24 +1399,24 @@
       "color": "#8a9aa8",
       "hp": 1350,
       "attack": 30,
-      "speed": 70,
+      "speed": 119,
       "radius": 46,
       "patterns": {
         "summon": {
           "kind": "summon",
           "type": "soldier",
-          "count": 2,
+          "count": 5,
           "windup": 0.7,
-          "recover": 0.4,
-          "maxMinions": 8,
+          "recover": 0.24,
+          "maxMinions": 16,
           "extraType": "spearman",
-          "extraCount": 2
+          "extraCount": 5
         },
         "shield": {
           "kind": "shield",
           "windup": 0.6,
           "duration": 6,
-          "recover": 0.4
+          "recover": 0.24
         },
         "empower": {
           "kind": "empower",
@@ -1353,20 +1424,29 @@
           "duration": 6,
           "attack": 0.3,
           "speed": 0.3,
-          "recover": 0.4
+          "recover": 0.24
         },
         "bombers": {
           "kind": "bombers",
           "windup": 0.55,
           "count": 8,
           "ring": 190,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "keep": [
         380,
         640
-      ]
+      ],
+      "quest": "minions",
+      "exposed": 6,
+      "summonZones": {
+        "boss": 0.15,
+        "near": 0.2,
+        "mid": 0.25,
+        "far": 0.2,
+        "map": 0.2
+      }
     },
     "broodMother": {
       "rank": "boss",
@@ -1382,8 +1462,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1396,16 +1476,16 @@
       "color": "#9a7ab8",
       "hp": 1350,
       "attack": 30,
-      "speed": 70,
+      "speed": 119,
       "radius": 46,
       "patterns": {
         "summon": {
           "kind": "summon",
           "type": "wraith",
-          "count": 3,
+          "count": 8,
           "windup": 0.7,
-          "recover": 0.4,
-          "maxMinions": 8
+          "recover": 0.24,
+          "maxMinions": 16
         },
         "empower": {
           "kind": "empower",
@@ -1413,7 +1493,7 @@
           "duration": 6,
           "attack": 0.3,
           "speed": 0.3,
-          "recover": 0.4
+          "recover": 0.24
         },
         "seeker": {
           "kind": "seeker",
@@ -1421,20 +1501,29 @@
           "windup": 1.4,
           "lock": 0.45,
           "damage": 33,
-          "recover": 0.5
+          "recover": 0.3
         },
         "bombers": {
           "kind": "bombers",
           "windup": 0.55,
           "count": 8,
           "ring": 190,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "keep": [
         380,
         640
-      ]
+      ],
+      "quest": "minions",
+      "exposed": 6,
+      "summonZones": {
+        "boss": 0.15,
+        "near": 0.2,
+        "mid": 0.25,
+        "far": 0.2,
+        "map": 0.2
+      }
     },
     "abyssKnight": {
       "rank": "boss",
@@ -1450,8 +1539,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1464,7 +1553,7 @@
       "color": "#2a2a3a",
       "hp": 1900,
       "attack": 30,
-      "speed": 88,
+      "speed": 150,
       "radius": 52,
       "patterns": {
         "triple": {
@@ -1475,7 +1564,7 @@
           "gap": 0.3,
           "spread": 25,
           "damage": 24,
-          "recover": 0.5
+          "recover": 0.3
         },
         "charge": {
           "kind": "charge",
@@ -1484,14 +1573,16 @@
           "windup": 0.75,
           "dashTime": 0.25,
           "damage": 33,
-          "recover": 0.6
+          "recover": 0.36,
+          "repeat": 3,
+          "chainWindup": 0.38
         },
         "slam": {
           "kind": "slam",
           "radius": 140,
           "windup": 0.8,
           "damage": 30,
-          "recover": 0.5
+          "recover": 0.3
         },
         "shockwave": {
           "kind": "ring",
@@ -1500,7 +1591,7 @@
           "maxRadius": 520,
           "thickness": 34,
           "damage": 24,
-          "recover": 0.5
+          "recover": 0.3
         },
         "band": {
           "kind": "band",
@@ -1508,7 +1599,7 @@
           "speed": 450,
           "thickness": 56,
           "damage": 30,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "basics": {
@@ -1533,7 +1624,10 @@
             "recover": 0.2
           }
         ]
-      }
+      },
+      "quest": "guard",
+      "guardFrac": 0.12,
+      "exposed": 5
     },
     "starEater": {
       "rank": "boss",
@@ -1549,8 +1643,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1563,7 +1657,7 @@
       "color": "#2a3a7a",
       "hp": 1805,
       "attack": 30,
-      "speed": 80,
+      "speed": 160,
       "radius": 52,
       "patterns": {
         "spiral": {
@@ -1578,17 +1672,17 @@
           "radius": 9,
           "range": 700,
           "damage": 15,
-          "recover": 0.5
+          "recover": 0.3
         },
         "fields": {
           "kind": "fields",
-          "count": 4,
-          "radius": 85,
-          "spread": 170,
+          "count": 6,
+          "radius": 110,
+          "spread": 560,
           "windup": 0.9,
-          "stagger": 0.25,
+          "stagger": 0.22,
           "damage": 30,
-          "recover": 0.5
+          "recover": 0.3
         },
         "blink": {
           "kind": "blink",
@@ -1597,7 +1691,7 @@
           "radius": 100,
           "windup": 0.45,
           "damage": 30,
-          "recover": 0.6
+          "recover": 0.36
         },
         "barrage": {
           "kind": "barrage",
@@ -1614,9 +1708,14 @@
         }
       },
       "keep": [
-        280,
-        460
-      ]
+        300,
+        540
+      ],
+      "quest": "sigils",
+      "sigils": {
+        "count": 3
+      },
+      "exposed": 7
     },
     "dreamWeaver": {
       "rank": "boss",
@@ -1632,8 +1731,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1646,7 +1745,7 @@
       "color": "#5a2a6a",
       "hp": 1805,
       "attack": 30,
-      "speed": 80,
+      "speed": 160,
       "radius": 52,
       "patterns": {
         "seeker": {
@@ -1655,17 +1754,17 @@
           "windup": 1.4,
           "lock": 0.45,
           "damage": 33,
-          "recover": 0.5
+          "recover": 0.3
         },
         "fields": {
           "kind": "fields",
-          "count": 5,
-          "radius": 85,
-          "spread": 170,
+          "count": 6,
+          "radius": 110,
+          "spread": 560,
           "windup": 0.9,
-          "stagger": 0.2,
+          "stagger": 0.22,
           "damage": 30,
-          "recover": 0.5
+          "recover": 0.3
         },
         "spiral": {
           "kind": "spiral",
@@ -1679,7 +1778,7 @@
           "radius": 9,
           "range": 700,
           "damage": 15,
-          "recover": 0.5
+          "recover": 0.3
         },
         "barrage": {
           "kind": "barrage",
@@ -1696,9 +1795,14 @@
         }
       },
       "keep": [
-        280,
-        460
-      ]
+        300,
+        540
+      ],
+      "quest": "sigils",
+      "sigils": {
+        "count": 3
+      },
+      "exposed": 7
     },
     "stormMarksman": {
       "rank": "boss",
@@ -1714,8 +1818,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1728,19 +1832,21 @@
       "color": "#4a6a9a",
       "hp": 1710,
       "attack": 30,
-      "speed": 95,
+      "speed": 162,
       "radius": 52,
       "patterns": {
         "volley": {
           "kind": "volley",
           "windup": 0.7,
-          "count": 6,
+          "count": 8,
           "every": 0.12,
           "speed": 520,
           "radius": 8,
           "range": 820,
           "damage": 18,
-          "recover": 0.5
+          "recover": 0.3,
+          "home": 1.8,
+          "homeTime": 0.9
         },
         "fan": {
           "kind": "fan",
@@ -1751,7 +1857,7 @@
           "radius": 8,
           "range": 760,
           "damage": 18,
-          "recover": 0.5
+          "recover": 0.3
         },
         "snipe": {
           "kind": "snipe",
@@ -1760,7 +1866,9 @@
           "radius": 10,
           "range": 1100,
           "damage": 39,
-          "recover": 0.6
+          "recover": 0.36,
+          "repeat": 3,
+          "repeatWindup": 0.45
         },
         "zones": {
           "kind": "zones",
@@ -1768,7 +1876,7 @@
           "windup": 0.9,
           "stagger": 0.35,
           "damage": 27,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "keep": [
@@ -1790,8 +1898,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1804,7 +1912,7 @@
       "color": "#1f1f2a",
       "hp": 1710,
       "attack": 30,
-      "speed": 95,
+      "speed": 162,
       "radius": 52,
       "patterns": {
         "snipe": {
@@ -1814,7 +1922,9 @@
           "radius": 10,
           "range": 1100,
           "damage": 39,
-          "recover": 0.6
+          "recover": 0.36,
+          "repeat": 3,
+          "repeatWindup": 0.45
         },
         "fan": {
           "kind": "fan",
@@ -1825,18 +1935,20 @@
           "radius": 8,
           "range": 760,
           "damage": 18,
-          "recover": 0.5
+          "recover": 0.3
         },
         "volley": {
           "kind": "volley",
           "windup": 0.7,
-          "count": 4,
+          "count": 6,
           "every": 0.12,
           "speed": 520,
           "radius": 8,
           "range": 820,
           "damage": 18,
-          "recover": 0.5
+          "recover": 0.3,
+          "home": 1.8,
+          "homeTime": 0.9
         },
         "zones": {
           "kind": "zones",
@@ -1844,7 +1956,7 @@
           "windup": 0.9,
           "stagger": 0.35,
           "damage": 27,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "keep": [
@@ -1866,8 +1978,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1880,24 +1992,24 @@
       "color": "#4a4a4a",
       "hp": 1805,
       "attack": 30,
-      "speed": 70,
+      "speed": 119,
       "radius": 52,
       "patterns": {
         "summon": {
           "kind": "summon",
           "type": "soldier",
-          "count": 2,
+          "count": 5,
           "windup": 0.7,
-          "recover": 0.4,
-          "maxMinions": 8,
+          "recover": 0.24,
+          "maxMinions": 16,
           "extraType": "archer",
-          "extraCount": 2
+          "extraCount": 5
         },
         "shield": {
           "kind": "shield",
           "windup": 0.6,
           "duration": 6,
-          "recover": 0.4
+          "recover": 0.24
         },
         "empower": {
           "kind": "empower",
@@ -1905,7 +2017,7 @@
           "duration": 6,
           "attack": 0.3,
           "speed": 0.3,
-          "recover": 0.4
+          "recover": 0.24
         },
         "fields": {
           "kind": "fields",
@@ -1915,20 +2027,29 @@
           "windup": 0.9,
           "stagger": 0.25,
           "damage": 30,
-          "recover": 0.5
+          "recover": 0.3
         },
         "bombers": {
           "kind": "bombers",
           "windup": 0.55,
           "count": 8,
           "ring": 190,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "keep": [
         380,
         640
-      ]
+      ],
+      "quest": "minions",
+      "exposed": 6,
+      "summonZones": {
+        "boss": 0.15,
+        "near": 0.2,
+        "mid": 0.25,
+        "far": 0.2,
+        "map": 0.2
+      }
     },
     "abyssMother": {
       "rank": "boss",
@@ -1944,8 +2065,8 @@
         1.1,
         1.9
       ],
-      "openingDelay": 1.2,
-      "retryDelay": 0.5,
+      "openingDelay": 0.6,
+      "retryDelay": 0.3,
       "stopDistance": 30,
       "summonRing": 50,
       "attackRange": 36,
@@ -1958,18 +2079,18 @@
       "color": "#4a1f3a",
       "hp": 1805,
       "attack": 30,
-      "speed": 70,
+      "speed": 119,
       "radius": 52,
       "patterns": {
         "summon": {
           "kind": "summon",
           "type": "elite",
-          "count": 1,
+          "count": 3,
           "windup": 0.7,
-          "recover": 0.4,
-          "maxMinions": 8,
+          "recover": 0.24,
+          "maxMinions": 16,
           "extraType": "wraith",
-          "extraCount": 2
+          "extraCount": 5
         },
         "empower": {
           "kind": "empower",
@@ -1977,13 +2098,13 @@
           "duration": 6,
           "attack": 0.3,
           "speed": 0.3,
-          "recover": 0.4
+          "recover": 0.24
         },
         "shield": {
           "kind": "shield",
           "windup": 0.6,
           "duration": 6,
-          "recover": 0.4
+          "recover": 0.24
         },
         "shockwave": {
           "kind": "ring",
@@ -1992,20 +2113,29 @@
           "maxRadius": 520,
           "thickness": 34,
           "damage": 24,
-          "recover": 0.5
+          "recover": 0.3
         },
         "bombers": {
           "kind": "bombers",
           "windup": 0.55,
           "count": 8,
           "ring": 190,
-          "recover": 0.6
+          "recover": 0.36
         }
       },
       "keep": [
         380,
         640
-      ]
+      ],
+      "quest": "minions",
+      "exposed": 6,
+      "summonZones": {
+        "boss": 0.15,
+        "near": 0.2,
+        "mid": 0.25,
+        "far": 0.2,
+        "map": 0.2
+      }
     },
     "bomber": {
       "name": "폭탄병",
@@ -2027,6 +2157,20 @@
         "radius": 70,
         "warn": 0.6
       }
+    },
+    "sigil": {
+      "name": "마법진",
+      "hp": 28,
+      "attack": 0,
+      "speed": 0,
+      "radius": 22,
+      "knockbackResist": 1,
+      "staggerResist": 1,
+      "color": "#7a5ad8",
+      "attackRange": 0,
+      "attackWindup": 0.3,
+      "rank": "normal",
+      "ai": "sigil"
     }
   },
   "counterWindow": 1,
@@ -2082,7 +2226,7 @@
     "boss": [
       {
         "beats": [
-          2.4
+          1.44
         ],
         "tele": [
           "mid"
@@ -2090,8 +2234,8 @@
       },
       {
         "beats": [
-          1.0,
-          2.2
+          0.6,
+          1.32
         ],
         "tele": [
           "short",
@@ -2100,9 +2244,9 @@
       },
       {
         "beats": [
-          0.8,
-          0.8,
-          2.0
+          0.48,
+          0.48,
+          1.2
         ],
         "tele": [
           "short",
@@ -2112,10 +2256,10 @@
       },
       {
         "beats": [
-          0.6,
-          1.2,
-          0.6,
-          1.8
+          0.36,
+          0.72,
+          0.36,
+          1.08
         ],
         "tele": [
           "short",

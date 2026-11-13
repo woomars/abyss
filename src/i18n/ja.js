@@ -275,4 +275,11 @@ export default {
   'title.layout': "ボタン配置",
   'guide.7.title': "ローリング",
   'guide.7.body': "ローリングボタンを押すと走っている方向へ短く転がって攻撃をかわす。転がっている間だけ無敵で、最後に強く突いたあと少し硬直する（その間は攻撃を受ける）。画面全体を覆うボスの攻撃は、届く瞬間に転がってすり抜けよう。",
+  // boss quests
+  'boss.immuneMinions': "無敵 — 手下を全滅させよ",
+  'boss.immuneSigils': "無敵 — 魔法陣をすべて壊せ",
+  'boss.guard': "ガード — 攻撃し続けて崩せ",
+  'boss.exposed': "隙あり！今だ",
+  'fx.immune': "無敵",
+  'fx.guard': "ガード",
 };

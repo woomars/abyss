@@ -290,4 +290,11 @@ export default {
   'title.layout': "버튼 위치",
   'guide.7.title': "구르기",
   'guide.7.body': "구르기 버튼을 누르면 달리던 방향으로 짧게 굴러 공격을 피합니다. 구르는 동안만 무적이고, 끝에 강하게 찌른 뒤 잠깐 경직돼요(이때는 맞아요). 화면 전체를 덮는 보스 공격은 다가올 때 맞춰 굴러서 통과하세요.",
+  // boss quests
+  'boss.immuneMinions': "무적 — 졸개를 모두 쓰러뜨리세요",
+  'boss.immuneSigils': "무적 — 마법진을 모두 부수세요",
+  'boss.guard': "방어 — 계속 공격해 깨뜨리세요",
+  'boss.exposed': "빈틈! 지금 공격하세요",
+  'fx.immune': "무적",
+  'fx.guard': "방어",
 };

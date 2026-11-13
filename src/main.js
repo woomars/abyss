@@ -158,6 +158,7 @@ async function boot() {
   events.on('setComplete', (e) => { if (forge.isOpen) forge.flash(t('notice.setComplete', { name: tr(e.name) }), true); });
   events.on('medal', (e) => toast.medal(e.medal, config.medals, e.first));
   events.on('trophy', (e) => { if (!e.heir) toast.trophy(e.trophy, config.medals); });
+  events.on('bossExposed', () => banner.show(t('boss.exposed'), '', { kind: 'reward', ms: 1400 }));
   events.on('levelUp', (e) => banner.show(t('banner.levelUp'), t('banner.levelUpSub', { level: e.level }), { kind: 'reward', ms: 1600 }));
 
   // --- family, forge and title (all inside the landscape stage) ---

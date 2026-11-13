@@ -87,6 +87,13 @@ export class Enemy {
   }
 
   takeHit({ damage, knockDir, knockback, stagger }) {
+    this.lastBlocked = null;
+    if (this.immune) { damage = 0; this.lastBlocked = 'immune'; } // a boss quest: minions or sigils still stand
+    else if (this.guard > 0) { // a warrior's guard soaks blows until it breaks; what is left over goes through
+      const soak = Math.min(this.guard, damage);
+      this.guard -= soak; damage -= soak;
+      if (damage <= 0) this.lastBlocked = 'guard';
+    }
     if (this.shieldOn) damage *= this.tcfg.shieldMul != null ? this.tcfg.shieldMul : 0.4; // a summoner shielded by its minions
     if (!this.targetable) return { killed: false };
     this.hp -= damage;

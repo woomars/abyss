@@ -72,6 +72,7 @@ export class AudioSystem {
     events.on('stormZap', () => this.play('blink', { pitch: 1.8, gain: 0.5 }));
     events.on('quake', () => this.play('roar', { pitch: 2, gain: 0.35 }));
     events.on('setBlast', () => this.play('portal', { pitch: 0.7, gain: 0.8 }));
+    events.on('bossExposed', () => { this.play('chime', { pitch: 1.4, gain: 1.2 }); this.play('crush', { pitch: 0.8, gain: 0.6 }); });
     events.on('bomberBlast', () => this.play('crush', { pitch: 1.3, gain: 0.7 }));
     events.on('evade', () => this.play('blink', { pitch: 1.2, gain: 0.6 }));
     events.on('relicReroll', () => this.play('coins', { gain: 0.8 }));

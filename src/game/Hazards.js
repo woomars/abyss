@@ -14,8 +14,9 @@ export class Hazards {
   clear() { this.list.length = 0; }
 
   // style: 'arrow' (archers) or 'bolt' (boss magic and shots) — same flight, different look
-  arrow({ x, y, dir, speed, radius, damage, range, style = 'arrow' }) {
-    this.list.push({ kind: 'arrow', x, y, dir, speed, radius, damage, range, traveled: 0, t: 0, style });
+  // home: turn rate (rad/s) toward the player for the first homeTime seconds
+  arrow({ x, y, dir, speed, radius, damage, range, style = 'arrow', home = 0, homeTime = 0 }) {
+    this.list.push({ kind: 'arrow', x, y, dir: { x: dir.x, y: dir.y }, speed, radius, damage, range, traveled: 0, t: 0, style, home, homeTime });
   }
 
   // follow: the circle tracks the player until lockAt, then stays put for the rest of its warning
@@ -53,6 +54,11 @@ export class Hazards {
       h.t += dt;
       let remove = false;
       if (h.kind === 'arrow') {
+        if (h.home && h.t < h.homeTime) { // homing: bend toward the player a little each step
+          const want = Math.atan2(player.pos.y - h.y, player.pos.x - h.x), cur = Math.atan2(h.dir.y, h.dir.x);
+          const diff = wrapAngle(want - cur), turn = Math.max(-h.home * dt, Math.min(h.home * dt, diff));
+          h.dir = { x: Math.cos(cur + turn), y: Math.sin(cur + turn) };
+        }
         const step = h.speed * dt;
         h.x += h.dir.x * step;
         h.y += h.dir.y * step;

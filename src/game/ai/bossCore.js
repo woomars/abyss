@@ -30,7 +30,20 @@ export function freeSpot(game, c, min, max, radius) {
 
 function shoot(e, game, dir, p) {
   const off = e.radius + 6;
-  game.hazards.arrow({ x: e.pos.x + dir.x * off, y: e.pos.y + dir.y * off, dir: { x: dir.x, y: dir.y }, speed: p.speed, radius: p.radius, damage: p.damage * e.mods.attack, range: p.range, style: 'bolt' });
+  game.hazards.arrow({ x: e.pos.x + dir.x * off, y: e.pos.y + dir.y * off, dir: { x: dir.x, y: dir.y }, speed: p.speed, radius: p.radius, damage: p.damage * e.mods.attack, range: p.range, style: 'bolt', home: (p.home || 0) * e.ai.k, homeTime: p.homeTime || 0 });
+}
+
+// a string of straight moves/shots: do one, mark the next lane at the player, wait, do it again
+function chained(e, g, p, first, again, mark) {
+  let left = Math.round(((p.repeat || 1) - 1) * e.ai.k) + (p.repeat ? e.ai.extra : 0), wait = 0, cur = first();
+  return {
+    update(dt) {
+      if (cur) { const mv = cur.update(dt); if (mv) return mv; cur = null; if (left <= 0) return null; wait = p.chainWindup || p.repeatWindup || 0.4; e.ai.dir = mark(); left--; return { x: 0, y: 0 }; }
+      wait -= dt;
+      if (wait <= 0) cur = again();
+      return { x: 0, y: 0 };
+    },
+  };
 }
 
 // pattern kinds: cast(e, game, p, windup, dir) lays the telegraph; fire(...) runs when the windup ends
@@ -50,17 +63,18 @@ const EXEC = {
   // a lane is marked, then the boss crashes along it
   charge: {
     cast(e, g, p, w, dir) { g.hazards.line({ x: e.pos.x, y: e.pos.y, dir, length: p.length, width: p.width, delay: w, damage: p.damage * e.mods.attack }); },
-    fire(e, g, p, dir) {
-      let t = p.dashTime;
-      const sp = p.length / p.dashTime;
-      return { update(dt) { t -= dt; return t > 0 ? { x: dir.x * sp, y: dir.y * sp } : null; } };
+    // charges come in strings: crash along the lane, then mark a new lane at the player and crash again
+    fire(e, g, p) {
+      const dash = () => { const d = { ...e.ai.dir }; let t = p.dashTime; const sp = p.length / p.dashTime; return { update(dt) { t -= dt; return t > 0 ? { x: d.x * sp, y: d.y * sp } : null; } }; };
+      const mark = () => { const v = toward(e, g.player.pos); g.hazards.line({ x: e.pos.x, y: e.pos.y, dir: { x: v.x, y: v.y }, length: p.length, width: p.width, delay: p.chainWindup || 0.4, damage: p.damage * e.mods.attack }); return { x: v.x, y: v.y }; };
+      return chained(e, g, p, dash, dash, mark);
     },
   },
   // several circles around the player, landing one after another
   fields: {
-    hold: (p, e) => (p.count + e.ai.extra - 1) * p.stagger,
+    hold: (p, e) => (Math.round(p.count * (0.6 + 0.4 * e.ai.k)) + e.ai.extra - 1) * p.stagger,
     cast(e, g, p, w) {
-      const n = p.count + e.ai.extra, c = g.player.pos;
+      const n = Math.round(p.count * (0.6 + 0.4 * e.ai.k)) + e.ai.extra, c = g.player.pos;
       for (let i = 0; i < n; i++) {
         const q = i === 0 ? { x: c.x, y: c.y } : (freeSpot(g, c, p.radius * 0.6, p.spread, 10) || { x: c.x, y: c.y });
         g.hazards.circle({ x: q.x, y: q.y, radius: p.radius, delay: w + i * p.stagger, damage: p.damage * e.mods.attack });
@@ -119,7 +133,14 @@ const EXEC = {
   // a long thin line, then one very fast shot along it
   snipe: {
     cast(e, g, p, w, dir) { g.hazards.line({ x: e.pos.x, y: e.pos.y, dir, length: p.range, width: 10, delay: w }); },
-    fire(e, g, p, dir) { shoot(e, g, dir, p); },
+    // shot after shot: each fast shot follows a fresh aiming line
+    fire(e, g, p) {
+      const shot = () => { shoot(e, g, e.ai.dir, p); return null; };
+      const mark = () => { const v = toward(e, g.player.pos); g.hazards.line({ x: e.pos.x, y: e.pos.y, dir: { x: v.x, y: v.y }, length: p.range, width: 10, delay: p.repeatWindup || 0.45 }); return { x: v.x, y: v.y }; };
+      shoot(e, g, e.ai.dir, p);
+      if (!p.repeat) return null;
+      return chained(e, g, p, () => null, shot, mark);
+    },
   },
   summon: { cast() {}, fire(e, g, p) { bossCore.summon(e, g, p); } },
   // a thick band sweeps out across the whole room: too fast to outrun — roll through it
@@ -210,6 +231,7 @@ export const bossCore = {
       state: 'chase', t: t.openingDelay, pattern: null, last: null, enraged: false, dir: { x: -1, y: 0 }, task: null,
       bt: b ? b.every : Infinity, bw: 0, bi: 0,
       rhythm: rhythmFor(e.root, 'boss', Math.min(4, lv)), tele: Math.max(0.6, 1 - 0.08 * (lv - 1)), extra: Math.floor((lv - 1) / 2),
+      k: Math.min(1, 0.5 + 0.25 * (lv - 1)), // how much of the full aggression this level shows (1 from level 3)
       wait: 0, shield: 0, buffs: [], strafe: e.id % 2 ? 1 : -1,
     };
   },
@@ -226,14 +248,16 @@ export const bossCore = {
 
   mods(e) { return e.ai.enraged ? e.tcfg.enrage : CALM; },
 
-  minions(e, game) { return game.enemies.all().filter((m) => m !== e && m.alive && !m.dying && !m.isBoss).length; },
+  minions(e, game) { return game.enemies.all().filter((m) => m !== e && m.alive && !m.dying && !m.isBoss && m.type !== 'sigil').length; },
 
   pick(e, game) {
     const t = e.tcfg, n = this.minions(e, game);
+    const exposed = e.ai.qphase === 'exposed';
     const z = game.config.enemies.summon, floor = (game.dungeon && game.dungeon.floor) || 1;
     const names = (e.patterns || Object.keys(t.patterns)).filter((name) => {
       const p = t.patterns[name];
       if (!p || !EXEC[p.kind]) return false;
+      if (exposed && (p.kind === 'summon' || p.kind === 'bombers')) return false; // the opening stays open
       if (p.kind === 'summon') return n < p.maxMinions + Math.floor((z ? z.capPerFloor : 0) * (floor - 1));
       if (p.kind === 'empower' || p.kind === 'shield') return n > 0 && !(p.kind === 'shield' && e.ai.shield > 0);
       return true;
@@ -290,8 +314,14 @@ export const bossCore = {
   // where a minion appears: around the boss, or near / mid / far from the player
   summonPoint(e, game, i, n) {
     const z = game.config.enemies.summon, rng = game.rng, ar = game.arena;
-    let zone = 'boss', r = rng() * (z.zones.boss + z.zones.near + z.zones.mid + z.zones.far);
-    for (const k of ['boss', 'near', 'mid', 'far']) { r -= z.zones[k]; if (r <= 0) { zone = k; break; } }
+    const zones = e.tcfg.summonZones || z.zones; // summoners also call minions out anywhere on the map
+    let zone = 'boss', r = rng() * Object.values(zones).reduce((a, b) => a + b, 0);
+    for (const k of Object.keys(zones)) { r -= zones[k]; if (r <= 0) { zone = k; break; } }
+    if (zone === 'map') {
+      const q = freeSpot(game, { x: ar.width / 2, y: ar.height / 2 }, 0, Math.max(ar.width, ar.height) / 2, 16);
+      if (q) return { pos: q, zone };
+      zone = 'far';
+    }
     let c, d;
     if (zone === 'boss') { c = e.pos; d = e.radius + (e.tcfg.summonRing || 50); }
     else { c = game.player.pos; d = z[zone][0] + rng() * (z[zone][1] - z[zone][0]); }
@@ -307,8 +337,9 @@ export const bossCore = {
     const cap = p.maxMinions + Math.floor((z ? z.capPerFloor : 0) * (floor - 1));
     const room = Math.max(0, cap - this.minions(e, game));
     const list = [];
-    for (let i = 0; i < Math.round(p.count * scale); i++) list.push(p.type);
-    for (let i = 0; i < Math.round((p.extraCount || 0) * scale); i++) list.push(p.extraType);
+    const lk = e.ai && e.ai.k != null ? 0.6 + 0.4 * e.ai.k : 1; // fewer at low boss levels
+    for (let i = 0; i < Math.round(p.count * scale * lk); i++) list.push(p.type);
+    for (let i = 0; i < Math.round((p.extraCount || 0) * scale * lk); i++) list.push(p.extraType);
     const info = game.dungeon && game.dungeon.info;
     const mods = { ...(info ? info.mods : {}), minion: true }; // minions press the attack on their own
     list.slice(0, room).forEach((type, i, arr) => {
@@ -316,6 +347,53 @@ export const bossCore = {
       game.enemies.spawnAt(type, pos, mods);
       game.events.emit('minionSpawn', { pos, zone });
     });
+  },
+
+  // ---- quests: what makes the boss open to harm ----
+  // minions (summoner): untouchable while its minions live; sigils (mage): while its sigils stand;
+  // guard (warrior): a guard soaks blows until enough of them land. Then an opening of `exposed` s.
+  sigils(e, game) { return game.enemies.all().filter((m) => m.alive && !m.dying && m.type === 'sigil'); },
+
+  raiseGuard(e, game) {
+    const t = e.tcfg, s = e.ai;
+    s.qphase = 'guarded';
+    if (t.quest === 'minions') {
+      const p = Object.values(t.patterns).find((x) => x.kind === 'summon');
+      if (p) this.summon(e, game, p);
+    } else if (t.quest === 'sigils') {
+      const ar = game.arena, n = t.sigils.count + s.extra;
+      const info = game.dungeon && game.dungeon.info;
+      for (let i = 0; i < n; i++) {
+        const q = freeSpot(game, { x: ar.width / 2, y: ar.height / 2 }, 0, Math.max(ar.width, ar.height) / 2, 28);
+        if (!q) continue;
+        game.enemies.spawnAt('sigil', q, { ...(info ? info.mods : {}), minion: true });
+        game.events.emit('minionSpawn', { pos: q, zone: 'map' });
+      }
+    } else if (t.quest === 'guard') {
+      e.guardMax = e.maxHp * (t.guardFrac || 0.12);
+      e.guard = e.guardMax;
+    }
+    if (t.quest) game.events.emit('bossGuard', { enemy: e, quest: t.quest, pos: { x: e.pos.x, y: e.pos.y } });
+  },
+
+  quest(e, dt, game) {
+    const t = e.tcfg, s = e.ai;
+    if (!t.quest) { e.immune = false; return; }
+    if (s.qphase === 'guarded') {
+      const done = t.quest === 'minions' ? this.minions(e, game) === 0 : t.quest === 'sigils' ? this.sigils(e, game).length === 0 : !(e.guard > 0);
+      e.immune = !done && t.quest !== 'guard';
+      if (done) {
+        s.qphase = 'exposed';
+        s.qt = t.exposed || 5;
+        e.immune = false;
+        e.guard = 0;
+        game.events.emit('bossExposed', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } });
+      }
+    } else {
+      e.immune = false;
+      s.qt -= dt;
+      if (s.qt <= 0 && s.state === 'chase') this.raiseGuard(e, game);
+    }
   },
 
   // per-step bookkeeping shared by every brain: enrage, shield, minion buffs
@@ -341,10 +419,11 @@ export const bossCore = {
   update(e, dt, game, brain) {
     const t = e.tcfg, s = e.ai;
     this.upkeep(e, dt, game);
-    if (!s.opened) { // summoners arrive with their minions already attacking
+    if (!s.opened) { // summoners arrive with their minions already attacking; mages raise their sigils
       s.opened = true;
-      if (t.ai === 'summoner') { const p = Object.values(t.patterns).find((x) => x.kind === 'summon'); if (p) this.summon(e, game, p); }
+      this.raiseGuard(e, game);
     }
+    this.quest(e, dt, game);
     if (s.state === 'basic') { // the pattern clock waits while a basic attack plays out
       s.bw -= dt;
       if (s.bw <= 0) s.state = 'chase';
@@ -384,7 +463,7 @@ export const bossCore = {
       if (s.bt <= 0 && v.d - e.radius <= t.basics.triggerRange) { this.basic(e, game); return { x: 0, y: 0 }; }
     }
     const mv = brain.move(e, game, v, dt);
-    const sp = this.mods(e).speed;
+    const sp = this.mods(e).speed * (0.8 + 0.2 * s.k);
     return { x: mv.x * sp, y: mv.y * sp };
   },
 };
@@ -406,5 +485,6 @@ export function keepBand(e, game, v, near, far) {
   if (v.d < near) return { x: -v.x * sp, y: -v.y * sp };
   if (v.d > far) return { x: v.x * sp, y: v.y * sp };
   const s = e.ai.strafe;
-  return { x: -v.y * s * sp * 0.55, y: v.x * s * sp * 0.55 };
+  if (game.rng() < 0.004) e.ai.strafe *= -1; // change sides now and then
+  return { x: -v.y * s * sp * 0.9, y: v.x * s * sp * 0.9 };
 }

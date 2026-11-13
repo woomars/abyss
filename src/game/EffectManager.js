@@ -135,6 +135,7 @@ export class EffectManager {
     const n = this.numbers.acquire();
     n.x = pos.x + (this.rng() * 2 - 1) * 8; n.y = pos.y - 18;
     n.value = damage; n.crit = crit; n.hurt = false;
+    n.tag = enemy && enemy.lastBlocked ? enemy.lastBlocked : null; // immune / guard instead of a number
     n.life = n.max = this.fb.damageNumberLife;
     if (crit || strong) {
       const r = this.rings.acquire();

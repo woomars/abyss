@@ -389,9 +389,10 @@ export class Renderer {
       ctx.font = `bold ${Math.round((n.crit ? 26 : 17) * pop)}px system-ui, sans-serif`;
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#000000';
-      ctx.strokeText(String(n.value), n.x, n.y);
-      ctx.fillStyle = n.hurt ? '#ff4a4a' : n.crit ? '#ffb347' : '#f4f0e6';
-      ctx.fillText(String(n.value), n.x, n.y);
+      const label = n.tag ? t(`fx.${n.tag}`) : String(n.value);
+      ctx.strokeText(label, n.x, n.y);
+      ctx.fillStyle = n.tag ? '#9fb8d8' : n.hurt ? '#ff4a4a' : n.crit ? '#ffb347' : '#f4f0e6';
+      ctx.fillText(label, n.x, n.y);
     });
     ctx.globalAlpha = 1;
   }
@@ -446,6 +447,14 @@ export class Renderer {
         ctx.fill();
         ctx.strokeStyle = e.mods.enhanced ? '#ffcf5a' : '#cdb8ff';
         ctx.stroke();
+      } else if (ai === 'sigil') { // a turning magic circle
+        const sp = e.ai ? e.ai.spin : 0;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(sp);
+        ctx.strokeStyle = '#b89cff'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); for (let i = 0; i < 6; i++) { const a = (i * Math.PI * 2) / 6 * 2; ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * r * 0.85, Math.sin(a) * r * 0.85); } ctx.closePath(); ctx.stroke();
+        ctx.fillStyle = e.flashTime > 0 ? '#ffffff' : 'rgba(150,110,255,0.35)'; ctx.beginPath(); ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
       } else if (ai === 'bomber') { // round powder keg with a fuse that blinks faster near the end
         const blink = e.ai && e.ai.fuse < 1.2 && Math.floor(performance.now() / (e.ai.fuse < 0.6 ? 60 : 130)) % 2 === 0;
         ctx.beginPath(); ctx.arc(x + wob, y, r, 0, Math.PI * 2);
@@ -544,6 +553,13 @@ export class Renderer {
       ctx.arc(x, y, r * 1.5, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(255,50,30,${pulse})`;
       ctx.fill();
+    }
+    if (e.immune || e.guard > 0) { // untouchable (blue) or guarded (gold)
+      ctx.beginPath();
+      ctx.arc(x, y, r * 1.5, 0, Math.PI * 2);
+      ctx.strokeStyle = e.immune ? `rgba(140,200,255,${0.6 + Math.sin(performance.now() / 140) * 0.25})` : `rgba(230,200,110,${0.35 + 0.5 * (e.guard / (e.guardMax || 1))})`;
+      ctx.lineWidth = e.immune ? 5 : 4;
+      ctx.stroke();
     }
     if (e.shieldOn) { // summoner shield while minions live
       ctx.beginPath();
@@ -875,6 +891,19 @@ export class Renderer {
     ctx.strokeStyle = '#c9a86a';
     ctx.lineWidth = 1;
     ctx.strokeRect(x - 0.5, y - 0.5, w + 1, h + 1);
+    // the quest: what the boss hides behind, or the opening
+    const q = boss.tcfg.quest, s = boss.ai || {};
+    if (q) {
+      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.textBaseline = 'top';
+      if (s.qphase === 'exposed') { ctx.fillStyle = '#ffe08a'; ctx.fillText(t('boss.exposed'), this.cssW / 2, y + h + 4); }
+      else if (q === 'guard' && boss.guard > 0) {
+        ctx.fillStyle = '#20242c'; ctx.fillRect(x, y + h + 2, w, 5);
+        ctx.fillStyle = '#d8c070'; ctx.fillRect(x, y + h + 2, w * (boss.guard / boss.guardMax), 5);
+        ctx.fillStyle = '#e8d9a8'; ctx.fillText(t('boss.guard'), this.cssW / 2, y + h + 9);
+      } else if (boss.immune) { ctx.fillStyle = '#9fd8ff'; ctx.fillText(t(q === 'minions' ? 'boss.immuneMinions' : 'boss.immuneSigils'), this.cssW / 2, y + h + 4); }
+      ctx.textBaseline = 'bottom';
+    }
     // enrage threshold tick
     const at = boss.tcfg.enrageAt;
     if (at) {

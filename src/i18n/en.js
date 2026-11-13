@@ -277,4 +277,11 @@ export default {
   'title.layout': "Buttons",
   'guide.7.title': "Roll",
   'guide.7.body': "The Roll button tumbles a short way in the direction you are running. You are untouchable only while rolling; it ends in a strong thrust and a brief stiffness (you can be hit then). Roll through boss attacks that cover the whole arena just as they reach you.",
+  // boss quests
+  'boss.immuneMinions': "Invulnerable — defeat every minion",
+  'boss.immuneSigils': "Invulnerable — break every sigil",
+  'boss.guard': "Guard — keep striking to break it",
+  'boss.exposed': "Opening! Strike now",
+  'fx.immune': "IMMUNE",
+  'fx.guard': "GUARD",
 };

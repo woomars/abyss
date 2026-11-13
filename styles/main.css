@@ -4,7 +4,7 @@ html, body {
   overflow: hidden;
   background: #07070b;
   color: #ddd6c4;
-  font-family: system-ui, -apple-system, "Noto Sans KR", sans-serif;
+  font-family: system-ui, -apple-system, "Noto Sans KR", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", sans-serif;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -545,3 +545,21 @@ html, body {
 .loot-toast.medal { border-color: var(--mc); }
 .loot-toast.medal small { margin-left: 6px; font-size: 10px; color: #ffe08a; }
 .hs-medals { justify-content: center; margin-top: 6px; max-width: 520px; }
+
+/* ---- language (Japanese glyphs first in Japanese, so kanji do not take Korean shapes) ---- */
+html:lang(ja), html:lang(ja) body { font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", "Noto Sans KR", sans-serif; }
+.lang-switch { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid #3b2f4f; border-radius: 10px; background: rgba(21, 17, 28, 0.72); }
+.lang-switch .lang-btn {
+  min-width: 44px; min-height: 40px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent;
+  color: #9c91ad; font: inherit; font-size: 13px; touch-action: manipulation;
+}
+.lang-switch .lang-btn.on { background: #3a2f45; color: #ffe08a; }
+.lang-flags { display: flex; gap: 4px; }
+.lang-flags .lang-flag {
+  display: flex; align-items: center; justify-content: center; width: 36px; height: 32px; padding: 0;
+  border: 1px solid transparent; border-radius: 6px; background: transparent; opacity: 0.5; touch-action: manipulation; cursor: pointer;
+}
+.lang-flags .lang-flag svg { display: block; width: 22px; height: 15px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18); }
+.lang-flags .lang-flag[aria-pressed="true"] { opacity: 1; border-color: #c9a86a; background: rgba(58, 47, 69, 0.6); }
+.tm-lang { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)); }
+.pm-lang { display: flex; justify-content: center; margin-top: 2px; }

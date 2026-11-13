@@ -1,4 +1,5 @@
 import { BUILD } from '../version.js';
+import { t, tr } from '../i18n/index.js';
 
 export const COLORS = {
   bg: '#07070b', floor: '#0e0e15', grid: '#1a1a26', wall: '#2a2236', pillar: '#241d30', pillarEdge: '#3b2f4f',
@@ -674,7 +675,7 @@ export class Renderer {
     ctx.textBaseline = 'bottom';
     ctx.font = 'bold 13px system-ui, sans-serif';
     ctx.fillStyle = enraged ? '#ff7a60' : '#f0dfae';
-    ctx.fillText(boss.tcfg.name + (enraged ? ' (분노)' : ''), this.cssW / 2, y - 3);
+    ctx.fillText(tr(boss.tcfg.name) + (enraged ? t('boss.enraged') : ''), this.cssW / 2, y - 3);
     ctx.fillStyle = '#1a0d10';
     ctx.fillRect(x, y, w, h);
     ctx.fillStyle = enraged ? '#ff3b2a' : '#c0392b';

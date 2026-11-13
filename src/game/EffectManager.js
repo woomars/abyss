@@ -1,4 +1,5 @@
 import { Pool } from '../core/Pool.js';
+import { t } from '../i18n/index.js';
 
 const SLASH_LIFE = 0.2;
 const RING_LIFE = 0.28;
@@ -27,8 +28,8 @@ export class EffectManager {
     events.on('chainLink', (e) => this.onLink(e));
     events.on('turn', (e) => this.onTurn(e));
     events.on('playerHit', (e) => this.onPlayerHit(e));
-    events.on('chainBroken', (e) => this.text(e.pos.x, e.pos.y - 52, '끊김'));
-    events.on('evade', (e) => this.text(e.pos.x, e.pos.y - 52, '회피'));
+    events.on('chainBroken', (e) => this.text(e.pos.x, e.pos.y - 52, t('fx.chainBroken')));
+    events.on('evade', (e) => this.text(e.pos.x, e.pos.y - 52, t('fx.evade')));
     events.on('minionSpawn', (e) => { this.ring(e.pos.x, e.pos.y, 4, 42, '#a070ff'); this.ring(e.pos.x, e.pos.y, 20, 8, '#e0c8ff'); });
     events.on('stun', (e) => this.ring(e.pos.x, e.pos.y, e.enemy.radius, e.enemy.radius + 26, '#ffe08a'));
     events.on('stormZap', (e) => { this.onLink({ ...e, chainIndex: 4 }); this.ring(e.to.x, e.to.y, 6, 34, '#9fd8ff'); });

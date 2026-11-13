@@ -1,5 +1,6 @@
 // What an item gives (after grade, quality, level and enhancement) and how it reads on screen. Pure.
 import { zeroStats } from '../Stats.js';
+import { tr, trItemName } from '../../i18n/index.js';
 
 export function enhanceBonus(cfg, level) {
   return level > 0 ? cfg.enhance.bonus[Math.min(level, cfg.enhance.bonus.length) - 1] : 0;
@@ -18,7 +19,8 @@ export function itemStats(item, cfg) {
 }
 
 export function formatStat(cfg, stat, v) {
-  const [label, fmt] = cfg.statLabels[stat] || [stat, 'int'];
+  const [ko, fmt] = cfg.statLabels[stat] || [stat, 'int'];
+  const label = tr(ko);
   if (fmt === 'int') return `${label} +${Math.round(v)}`;
   const pct = Math.round(v * 1000) / 10;
   return fmt === 'pctMinus' ? `${label} -${pct}%` : `${label} +${pct}%`;
@@ -32,16 +34,16 @@ export function describeItem(item, cfg) {
   const lines = keys.map((k) => formatStat(cfg, k, s[k]));
   const set = item.set ? cfg.sets[item.set] : null;
   return {
-    name: (item.enhance ? `+${item.enhance} ` : '') + item.name,
-    gradeLabel: g.label, gradeColor: g.color, qualityLabel: q.label, qualityColor: q.color,
-    partLabel: cfg.parts[item.slot].label, icon: cfg.parts[item.slot].icon,
+    name: (item.enhance ? `+${item.enhance} ` : '') + trItemName(item.name),
+    gradeLabel: tr(g.label), gradeColor: g.color, qualityLabel: tr(q.label), qualityColor: q.color,
+    partLabel: tr(cfg.parts[item.slot].label), icon: cfg.parts[item.slot].icon,
     lines,
-    effectText: item.effect ? cfg.effects[item.effect].label : null,
-    setText: set ? set.name : null,
+    effectText: item.effect ? tr(cfg.effects[item.effect].label) : null,
+    setText: set ? tr(set.name) : null,
     scar: !!item.scar,
     // heirloom: the latest owner who passed it down (and his feat for notable items)
     heirloom: item.legacy && item.legacy.length ? item.legacy[item.legacy.length - 1] : null,
-    lostPower: item.lostPower || null,
-    token: item.token ? cfg.legacyToken.text : null,
+    lostPower: item.lostPower ? tr(item.lostPower) : null,
+    token: item.token ? tr(cfg.legacyToken.text) : null,
   };
 }

@@ -171,11 +171,12 @@ export function isNotable(item, cfg) {
   return gradeIndex(cfg, item.grade) >= 3 || item.enhance >= 5 || item.level >= 10;
 }
 
-// the father's story told by an inherited notable item
+// the father's story told by an inherited notable item (saved in Korean; the screen retells it in
+// the current language from item.origin and the entry's floor, see ui/itemView.js)
 export function featText(item, cfg, record) {
-  const part = cfg.parts[item.slot].label, o = item.origin;
-  const got = o ? (o.boss ? `${floorLabel(o.floor)}에서 ${josa(o.boss, '을', '를')} 쓰러뜨리고 얻은 ${part}` : `${floorLabel(o.floor)}에서 얻은 ${part}`) : `오래전에 얻은 ${part}`;
-  return `${got}. 그는 ${floorLabel(record.floor)}까지 내려갔다.`;
+  const part = cfg.parts[item.slot].label, o = item.origin, F = (n) => floorLabel(n, 'ko');
+  const got = o ? (o.boss ? `${F(o.floor)}에서 ${josa(o.boss, '을', '를')} 쓰러뜨리고 얻은 ${part}` : `${F(o.floor)}에서 얻은 ${part}`) : `오래전에 얻은 ${part}`;
+  return `${got}. 그는 ${F(record.floor)}까지 내려갔다.`;
 }
 
 // lifesteal does not pass to the next generation: strip it (affix and the vampire lord's power)
@@ -206,7 +207,7 @@ export function resolveDeath(ctx, rng, record) {
     if (rng() < survivalChance(it, cfg)) {
       if (!it.token) it.scar = true; // the token ignores the once-only rule
       (it.legacy = it.legacy || []).push({
-        given: record.given, family: record.family, generation: record.generation,
+        given: record.given, family: record.family, generation: record.generation, floor: record.floor,
         feat: isNotable(it, cfg) ? featText(it, cfg, record) : null,
       });
       survived.push(it);

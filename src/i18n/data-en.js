@@ -1,0 +1,98 @@
+// English for the Korean display strings in src/data/*.json (keyed by the Korean text), and the
+// name lists (index-aligned with names.json).
+export default {
+  text: {
+    // items: parts and base names
+    '무기': 'Weapon', '투구': 'Helm', '갑옷': 'Armor', '장갑': 'Gloves', '신발': 'Boots', '목걸이': 'Amulet', '반지': 'Ring',
+    '장검': 'Longsword', '도끼': 'Axe', '단검': 'Dagger', '대검': 'Greatsword',
+    '두건': 'Hood', '철모': 'Iron Cap',
+    '사슬 갑옷': 'Chainmail', '판금': 'Plate',
+    '건틀릿': 'Gauntlets',
+    '장화': 'High Boots', '군화': 'War Boots',
+    '부적': 'Talisman',
+    '인장 반지': 'Signet Ring',
+    // stats
+    '공격력': 'Attack', '최대 체력': 'Max HP', '치명타 확률': 'Crit Chance', '치명타 피해': 'Crit Damage',
+    '이동 속도': 'Move Speed', '특수기 재사용 대기': 'Skill Cooldown', '보스 처치 시 체력': 'HP per Boss Kill',
+    '받는 피해': 'Damage Taken', '연쇄 횟수': 'Chain Count', '연쇄 거리': 'Chain Range', '연쇄 피해': 'Chain Damage',
+    '공격 범위': 'Attack Range', '돌진 거리': 'Dash Range', '넉백': 'Knockback', '기본 공격 속도': 'Attack Speed',
+    '특수기 피해': 'Skill Damage', '콤보 5마다 공격력': 'Attack per 5 Combo',
+    // grades and qualities (items and treasure cards)
+    '일반': 'Common', '고급': 'Uncommon', '희귀': 'Rare', '영웅': 'Epic', '전설': 'Legendary',
+    '상급': 'Fine', '최상급': 'Superior',
+    // legendaries, effects, sets
+    '폭풍의 대검': 'Stormblade', '흡혈 군주의 검': 'Sword of the Vampire Lord', '대지 파쇄자': 'Earthshatter',
+    '망령의 갑옷': 'Wraith Armor', '심연의 반지': 'Ring of the Abyss',
+    '연쇄 공격이 번개로 바뀌어 근처 적 하나에게 튄다 · 연쇄 거리 +30%': 'Chain hits turn to lightning and leap to a nearby enemy · Chain Range +30%',
+    '중간 보스 이상을 쓰러뜨리면 최대 체력의 25% 회복': 'Slaying a mid-boss or stronger restores 25% of Max HP',
+    '돌진 경로를 따라 충격파가 일어난다': 'A shockwave rips along your dash',
+    '15% 확률로 받는 피해를 무효로 한다': '15% chance to negate a blow',
+    '체력이 낮을수록 공격력 증가 (30% 이하에서 +40%)': 'More Attack the lower your HP (+40% at 30% or less)',
+    '연쇄 마지막 타격에서 폭발': 'The last chain strike explodes',
+    '심연의 군주': 'Lord of the Abyss',
+    '심연의 투구': 'Abyssal Helm', '심연의 판금': 'Abyssal Plate', '심연의 장갑': 'Abyssal Gloves', '심연의 군화': 'Abyssal Boots', '심연의 검': 'Abyssal Sword',
+    '공격력 +10%': 'Attack +10%', '연쇄 횟수 +1': 'Chain Count +1', '연쇄 피해 +25%': 'Chain Damage +25%',
+    '흡혈의 힘은 대를 잇지 못했다': 'The power of lifesteal did not pass down',
+    '유산의 증표': 'Mark of Legacy',
+    '유산의 증표 — 분해하지 않는 한 영원히 대를 잇는다': 'Mark of Legacy — passes down forever unless salvaged',
+    // enemies and bosses
+    '해골 전사': 'Skeleton Warrior', '오크 전사': 'Orc Warrior', '고블린 궁수': 'Goblin Archer', '망령': 'Wraith',
+    '오크 대장': 'Orc Warchief', '심연의 수문장': 'Gatekeeper of the Abyss',
+    '중간보스': 'Mid-Boss', '지역 보스': 'Area Boss', '대형 보스': 'Great Boss',
+    // skills
+    '회전 베기': 'Spin Slash', '돌진 일격': 'Rush Strike', '원거리 공격': 'Ranged Strike',
+    // treasure cards
+    '숫돌': 'Whetstone', '붉은 심장': 'Crimson Heart', '회복의 물약': 'Healing Potion', '매의 눈': 'Hawk Eye',
+    '바람 장화': 'Wind Boots', '금화 주머니': 'Coin Purse', '모래시계': 'Hourglass', '흡혈 송곳니': 'Vampire Fang',
+    '강철 흉갑': 'Steel Breastplate', '전투의 열기': 'Battle Fervor', '연쇄의 고리': 'Chain Link',
+    '공격력 +{v}': 'Attack +{v}', '최대 체력 +{v}': 'Max HP +{v}', '체력 {v} 회복': 'Restore {v} HP',
+    '치명타 확률 +{v}': 'Crit Chance +{v}', '이동 속도 +{v}': 'Move Speed +{v}', '골드 +{v}': 'Gold +{v}',
+    '특수기 재사용 대기 -{v}': 'Skill Cooldown -{v}', '중간 보스 이상을 쓰러뜨리면 체력 +{v}': 'Slay a mid-boss or stronger: HP +{v}',
+    '받는 피해 -{v}': 'Damage Taken -{v}', '콤보 5마다 공격력 +{v}': 'Attack +{v} per 5 combo', '연쇄 공격 +{v}회': 'Chain attacks +{v}',
+    // medals
+    '동': 'Bronze', '은': 'Silver', '금': 'Gold',
+    '어둠에 내딛은 발': 'First Step into Darkness', '깊은 곳의 방랑자': 'Wanderer of the Deep', '수문장의 문 앞에서': "At the Gatekeeper's Door",
+    '끝없는 계단': 'The Endless Stair', '빛이 닿지 않는 곳': 'Where No Light Reaches', '심연의 밑바닥': 'Floor of the Abyss',
+    '첫 토벌': 'First Hunt', '토벌대장': 'Hunt Captain', '보스 사냥꾼': 'Boss Hunter', '흠 없는 승리': 'Flawless Victory',
+    '몰아치는 칼': 'Storm of Blades', '멈추지 않는 칼': 'Unceasing Blade', '백 번의 칼날': 'A Hundred Edges',
+    '백의 무덤': 'A Hundred Graves', '오백의 무덤': 'Five Hundred Graves', '무덤 위의 왕': 'King upon the Graves',
+    '단련된 핏줄': 'Tempered Blood', '강철의 핏줄': 'Blood of Steel', '전설의 핏줄': 'Legendary Blood',
+    '전설을 쥔 손': 'The Hand That Holds a Legend', '장인의 망치': "Master's Hammer", '갖춰 입은 자': 'Fully Clad', '영원한 유산': 'Eternal Legacy',
+    '지하 5층에 닿는다': 'Reach Depth 5', '지하 10층에 닿는다': 'Reach Depth 10', '지하 20층에 닿는다': 'Reach Depth 20',
+    '지하 40층에 닿는다': 'Reach Depth 40', '지하 60층에 닿는다': 'Reach Depth 60', '지하 100층에 닿는다': 'Reach Depth 100',
+    '한 생에 보스 1마리를 쓰러뜨린다': 'Slay 1 boss in a single life', '한 생에 보스 3마리를 쓰러뜨린다': 'Slay 3 bosses in a single life',
+    '한 생에 보스 10마리를 쓰러뜨린다': 'Slay 10 bosses in a single life', '한 대도 맞지 않고 보스를 쓰러뜨린다': 'Slay a boss without taking a single hit',
+    '콤보 25를 잇는다': 'Chain a 25 combo', '콤보 50을 잇는다': 'Chain a 50 combo', '콤보 100을 잇는다': 'Chain a 100 combo',
+    '한 생에 적 100마리를 쓰러뜨린다': 'Slay 100 enemies in a single life', '한 생에 적 500마리를 쓰러뜨린다': 'Slay 500 enemies in a single life',
+    '한 생에 적 2000마리를 쓰러뜨린다': 'Slay 2000 enemies in a single life',
+    '가문이 레벨 10에 오른다': 'The house reaches Lv 10', '가문이 레벨 30에 오른다': 'The house reaches Lv 30', '가문이 레벨 60에 오른다': 'The house reaches Lv 60',
+    '전설 장비를 줍는다': 'Pick up legendary gear', '장비 하나를 +10까지 강화한다': 'Enhance one piece of gear to +10',
+    '세트 장비를 모두 갖춰 입는다': 'Wear every piece of a set', '장비에 유산의 증표를 새긴다': 'Engrave a Mark of Legacy on gear',
+  },
+  // affix prefixes: "<prefix> <base>" item names
+  prefix: {
+    '날카로운': 'Keen', '넓게 베는': 'Sweeping', '재빠른': 'Swift', '연쇄하는': 'Chaining', '뻗어 가는': 'Reaching',
+    '몰아치는': 'Raging', '가벼운': 'Light', '질주하는': 'Charging', '정확한': 'Precise', '잔혹한': 'Brutal',
+    '단단한': 'Sturdy', '강인한': 'Stalwart', '피에 굶주린': 'Bloodthirsty', '육중한': 'Heavy', '현자의': "Sage's",
+    '몰아붙이는': 'Relentless',
+  },
+  names: {
+    given: [
+      'Arden', 'Kael', 'Rowen', 'Cedric', 'Elion', 'Darius', 'Lucian', 'Garrett', 'Vale', 'Orin',
+      'Theoran', 'Marcus', 'Leon', 'Idric', 'Halbard', 'Bran', 'Kaelen', 'Aslan', 'Rokan', 'Edric',
+      'Fionn', 'Graham', 'Hadric', 'Ilan', 'Jaren', 'Calix', 'Rian', 'Morgan', 'Noel', 'Oswin',
+      'Perrin', 'Quentin', 'Linus', 'Sigmund', 'Talon', 'Ulric', 'Valen', 'Wyrn', 'Jaden', 'Alaric',
+      'Bardo', 'Corin', 'Damian', 'Eldrin', 'Ferol', 'Godwin', 'Helmut', 'Ivan', 'Johann', 'Kasper',
+      'Mikhail', 'Nero', 'Pavel', 'Ragna', 'Cyrus', 'Torvin', 'Uwe', 'Viktor', 'Winston', 'Albion',
+      'Belkis', 'Kaladin', 'Dorian', 'Evan', 'Felix', 'Gilbert', 'Harald', 'Ignis', 'Jude', 'Kenneth',
+      'Luka', 'Maxim', 'Nicholas', 'Owen', 'Pierce', 'Raphael', 'Solon', 'Tristan', 'Uriel', 'Basil',
+      'Waylon', 'Bern', 'Kyle', 'Drake', 'Ellan', 'Fabian', 'Gabriel', 'Horen', 'Isid', 'Jacques',
+      'Kirian', 'Loran', 'Miles', 'Nathan', 'Orlando', 'Bron', 'Silvas', 'Adrian', 'Sebastian', 'Ernst',
+    ],
+    family: [
+      'Blackwood', 'Ravencroft', 'Ashford', 'Stormheart', 'Ironside', 'Nightshade', 'Graymont', 'Winterbourne', 'Thornwood', 'Highrock',
+      'Draven', 'Moulton', 'Belmore', 'Crowley', 'Silverrain', 'Dunbrick', 'Oakshield', 'Redmane', 'Stonebrook', 'Everhart',
+      'Bloodwyn', 'Grimwald', 'Hartwick', 'Lockhart', 'Shadowell', 'Brightmore', 'Castellin', 'Valor', 'Asteron', 'Wolfren',
+    ],
+  },
+};

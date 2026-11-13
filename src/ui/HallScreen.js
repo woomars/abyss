@@ -3,15 +3,12 @@
 import { relicIcon } from './relicIcons.js';
 import { floorLabel } from '../core/floorLabel.js';
 import { bossRoster, backfillMedals } from '../game/Medals.js';
+import { t, tr, trItemName, trPerson, fullName, formatDate } from '../i18n/index.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const nameOf = (p) => `${p.generation}대손 ${esc(p.family)} ${esc(p.given)}`;
-
-function day(ms) {
-  if (!ms) return '';
-  const d = new Date(ms), p = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
-}
+const nameOf = (p) => `${t('gen', { n: p.generation })} ${esc(fullName(p.family, p.given))}`;
+const genName = (p) => t('hall.genName', { gen: t('gen', { n: p.generation }), given: esc(trPerson(p.given, 'given')) });
+const day = (ms) => formatDate(ms, false);
 
 export class HallScreen {
   constructor(root, { config, onBack }) {
@@ -63,6 +60,9 @@ export class HallScreen {
     return `<span class="hl-badge${earned ? '' : ' locked'}" style="--mc:${t.color};width:${size}px;height:${size}px">${relicIcon(m.icon, Math.round(size * 0.55))}</span>`;
   }
 
+  // the language changed while it is up
+  relabel() { if (this.isOpen && this.vault) this.render(); }
+
   render() {
     const v = this.vault, list = this.config.medals.list;
     const people = this.people();
@@ -74,9 +74,9 @@ export class HallScreen {
     this.el.innerHTML = `
       <div class="hl-wrap">
         <div class="hl-head">
-          <div class="hl-title">선조의 전당 <small>${esc(v.lineage.family)} 가문</small></div>
-          <div class="hl-tabs">${tab('ancestors', `선조 ${people.length}`)}${tab('medals', `메달 ${got}/${list.length}`)}${tab('bosses', `보스 ${slain}/${roster.length}`)}</div>
-          <button class="tm-btn small" data-act="back">뒤로</button>
+          <div class="hl-title">${t('hall.title')} <small>${t('title.house', { family: esc(trPerson(v.lineage.family, 'family')) })}</small></div>
+          <div class="hl-tabs">${tab('ancestors', t('hall.tabAncestors', { n: people.length }))}${tab('medals', t('hall.tabMedals', { a: got, b: list.length }))}${tab('bosses', t('hall.tabBosses', { a: slain, b: roster.length }))}</div>
+          <button class="tm-btn small" data-act="back">${t('back')}</button>
         </div>
         <div class="hl-body">${body}</div>
       </div>`;
@@ -86,8 +86,8 @@ export class HallScreen {
     const sel = Math.min(this.sel, people.length - 1), p = people[sel];
     const rows = people.map((q, i) => `
       <button class="hl-row${i === sel ? ' on' : ''}" data-act="pick" data-i="${i}">
-        <b>${q.generation}대손 ${esc(q.given)}</b>
-        <small>${q.living ? '<span class="hl-live">살아 있음</span>' : `${floorLabel(q.floor)} · Lv ${q.level}`}</small>
+        <b>${genName(q)}</b>
+        <small>${q.living ? `<span class="hl-live">${t('hall.alive')}</span>` : `${floorLabel(q.floor)} · Lv ${q.level}`}</small>
         <span class="hl-mini">${(q.medals || []).length ? `${relicIcon('shield', 11)}${q.medals.length}` : ''}</span>
       </button>`).join('');
     return `<div class="hl-split"><div class="hl-list">${rows}</div><div class="hl-detail">${this.renderPerson(p)}</div></div>`;
@@ -95,8 +95,8 @@ export class HallScreen {
 
   renderPerson(p) {
     const fell = p.living
-      ? (p.state === 'rest' ? `${floorLabel(p.floor)} 대장간에서 쉬는 중` : p.state === 'run' ? '싸우던 중 중단됨' : '출정을 준비하는 중')
-      : `${floorLabel(p.floor)}에서 ${p.killer ? `${esc(p.killer)}에게 ` : ''}쓰러짐${p.at ? ` <small>${day(p.at)}</small>` : ''}`;
+      ? (p.state === 'rest' ? t('where.rest', { floor: floorLabel(p.floor) }) : p.state === 'run' ? t('where.run') : t('where.idleHall'))
+      : `${t('hall.fell', { floor: floorLabel(p.floor), killer: p.killer ? esc(tr(p.killer)) : '' })}${p.at ? ` <small>${day(p.at)}</small>` : ''}`;
     const medals = (p.medals || []).map((id) => this.medal(id)).filter(Boolean);
     const bosses = Object.values(p.bosses || {});
     const nBoss = bosses.reduce((n, b) => n + b.count, 0);
@@ -105,16 +105,16 @@ export class HallScreen {
       <div class="hl-who">${nameOf(p)}</div>
       <div class="hl-fell${p.living ? ' live' : ''}">${fell}</div>
       <div class="hs-stats hl-stats">
-        <span>레벨<b>${p.level}</b></span><span>처치<b>${p.kills}</b></span><span>최고 콤보<b>${p.bestCombo}</b></span><span>보스<b>${p.bosses ? nBoss : '-'}</b></span>
+        <span>${t('stat.level')}<b>${p.level}</b></span><span>${t('stat.kills')}<b>${p.kills}</b></span><span>${t('stat.bestCombo')}<b>${p.bestCombo}</b></span><span>${t('stat.bosses')}<b>${p.bosses ? nBoss : '-'}</b></span>
       </div>
-      <div class="hl-sec">메달</div>
-      <div class="hl-medals">${medals.length ? medals.map((m) => `<span class="hl-chip">${this.medalBadge(m, true, 22)}${esc(m.name)}</span>`).join('') : '<span class="dim">아직 없음</span>'}</div>
-      <div class="hl-sec">쓰러뜨린 보스</div>
+      <div class="hl-sec">${t('hall.medals')}</div>
+      <div class="hl-medals">${medals.length ? medals.map((m) => `<span class="hl-chip">${this.medalBadge(m, true, 22)}${esc(tr(m.name))}</span>`).join('') : `<span class="dim">${t('hall.noneYet')}</span>`}</div>
+      <div class="hl-sec">${t('hall.slain')}</div>
       <div class="hl-bosses">${bosses.length
-        ? bosses.map((b) => `<div><b>${esc(b.name)}</b> <small>${esc(b.title)}</small> ×${b.count} <small>· 가장 깊은 곳 ${floorLabel(b.deepest)}</small></div>`).join('')
-        : `<span class="dim">${old ? '기록이 남아 있지 않음' : '없음'}</span>`}</div>
-      ${p.living ? '' : `<div class="hl-sec">물려준 장비</div>
-      <div class="hl-kept">${(p.survived || []).length ? p.survived.map((n) => `<b>${esc(n)}</b>`).join(', ') : '<span class="dim">없음</span>'}${p.lost ? ` <small class="dim">(잃은 장비 ${p.lost})</small>` : ''}</div>`}`;
+        ? bosses.map((b) => `<div><b>${esc(tr(b.name))}</b> <small>${esc(tr(b.title))}</small> ×${b.count} <small>· ${t('hall.deepest', { floor: floorLabel(b.deepest) })}</small></div>`).join('')
+        : `<span class="dim">${old ? t('hall.noRecord') : t('none')}</span>`}</div>
+      ${p.living ? '' : `<div class="hl-sec">${t('hall.passed')}</div>
+      <div class="hl-kept">${(p.survived || []).length ? p.survived.map((n) => `<b>${esc(trItemName(n))}</b>`).join(', ') : `<span class="dim">${t('none')}</span>`}${p.lost ? ` <small class="dim">${t('hall.lostN', { n: p.lost })}</small>` : ''}</div>`}`;
   }
 
   renderMedals() {
@@ -124,9 +124,9 @@ export class HallScreen {
       return `<div class="hl-medal${earned ? '' : ' locked'}">
         ${this.medalBadge(m, earned, 34)}
         <div class="hl-mtext">
-          <div class="hl-mname" style="${earned ? `color:${tiers[m.tier].color}` : ''}">${esc(m.name)} <small>${tiers[m.tier].label}</small></div>
-          <div class="hl-mdesc">${esc(m.desc)}</div>
-          ${earned ? `<div class="hl-mfirst">처음: ${nameOf(r.first)}${r.first.floor ? ` · ${floorLabel(r.first.floor)}` : ''}${r.count > 1 ? ` <small>· 선조 ${r.count}명</small>` : ''}</div>` : '<div class="hl-mfirst dim">아직 아무도 얻지 못함</div>'}
+          <div class="hl-mname" style="${earned ? `color:${tiers[m.tier].color}` : ''}">${esc(tr(m.name))} <small>${tr(tiers[m.tier].label)}</small></div>
+          <div class="hl-mdesc">${esc(tr(m.desc))}</div>
+          ${earned ? `<div class="hl-mfirst">${t('hall.first', { who: nameOf(r.first) })}${r.first.floor ? ` · ${floorLabel(r.first.floor)}` : ''}${r.count > 1 ? ` <small>· ${t('hall.count', { n: r.count })}</small>` : ''}</div>` : `<div class="hl-mfirst dim">${t('hall.nobody')}</div>`}
         </div>
       </div>`;
     }).join('')}</div>`;
@@ -136,16 +136,16 @@ export class HallScreen {
     const v = this.vault, hist = v.lineage.history;
     return `<div class="hl-blist">${roster.map((b) => {
       const r = v.bestiary[b.key];
-      const slayers = hist.filter((h) => h.bosses && h.bosses[b.key]).map((h) => `${h.generation}대손 ${esc(h.given)} ×${h.bosses[b.key].count}`);
+      const slayers = hist.filter((h) => h.bosses && h.bosses[b.key]).map((h) => `${genName(h)} ×${h.bosses[b.key].count}`);
       const cur = this.people()[0];
-      if (cur.bosses[b.key]) slayers.push(`${cur.generation}대손 ${esc(cur.given)} ×${cur.bosses[b.key].count} <small>(살아 있음)</small>`);
+      if (cur.bosses[b.key]) slayers.push(`${genName(cur)} ×${cur.bosses[b.key].count} <small>${t('hall.living')}</small>`);
       return `<div class="hl-boss${r ? '' : ' locked'}">
         <div class="hl-bicon">${relicIcon(b.type === 'gatekeeper' ? 'flame' : 'fang', 30)}</div>
         <div class="hl-btext">
-          <div class="hl-bname">${r ? esc(b.name) : '???'} <small>${esc(b.title)} · ${floorLabel(b.floor)}부터 ${this.config.dungeon.cycleLength}층마다</small></div>
-          ${r ? `<div>가문이 <b>${r.kills}</b>번 쓰러뜨림 · 가장 깊은 곳 ${floorLabel(r.deepest)}</div>
-          <div class="hl-mfirst">처음 쓰러뜨린 이: ${nameOf(r.first)} · ${floorLabel(r.first.floor)}</div>
-          ${slayers.length ? `<div class="hl-slayers">${slayers.join(' · ')}</div>` : ''}` : '<div class="dim">아직 쓰러뜨리지 못함</div>'}
+          <div class="hl-bname">${r ? esc(tr(b.name)) : '???'} <small>${esc(tr(b.title))} · ${t('hall.bossFrom', { floor: floorLabel(b.floor), n: this.config.dungeon.cycleLength })}</small></div>
+          ${r ? `<div>${t('hall.killsBy', { n: r.kills, floor: floorLabel(r.deepest) })}</div>
+          <div class="hl-mfirst">${t('hall.firstSlayer', { who: nameOf(r.first), floor: floorLabel(r.first.floor) })}</div>
+          ${slayers.length ? `<div class="hl-slayers">${slayers.join(' · ')}</div>` : ''}` : `<div class="dim">${t('hall.notYet')}</div>`}
         </div>
       </div>`;
     }).join('')}</div>`;

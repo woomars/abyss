@@ -1,5 +1,6 @@
 import { relicIcon } from './relicIcons.js';
 import { floorLabel } from '../core/floorLabel.js';
+import { t, tr, trPerson } from '../i18n/index.js';
 
 // Top HUD: HP bar, floor (or practice), gold, owned treasures, kills, enemies left, pause button.
 export class HUD {
@@ -10,11 +11,11 @@ export class HUD {
       <div class="hud-left">
         <div class="hp"><div class="hp-fill"></div><span class="hp-text">HP 100 / 100</span></div>
         <div class="xp-row"><span class="lv">Lv 1</span><div class="xp"><div class="xp-fill"></div></div><span class="who"></span></div>
-        <div class="meta"><span class="floor">연습장</span><span class="gold-wrap"><span class="gold-icon">◆</span> <span class="gold">0</span></span><span class="pocket-wrap">${relicIcon('bag', 13)} <span class="pocket">0</span></span></div>
+        <div class="meta"><span class="floor">${t('hud.practice')}</span><span class="gold-wrap"><span class="gold-icon">◆</span> <span class="gold">0</span></span><span class="pocket-wrap">${relicIcon('bag', 13)} <span class="pocket">0</span></span></div>
         <div class="relics"></div>
       </div>
-      <div class="hud-center"><span class="kills-label">처치</span> <span class="kills">0</span><span class="left-wrap"> · 남은 적 <span class="left">0</span></span></div>
-      <button class="pause interactive" aria-label="일시 정지">❚❚</button>`;
+      <div class="hud-center"><span class="kills-label" data-i18n="hud.kills">${t('hud.kills')}</span> <span class="kills">0</span><span class="left-wrap"> · <span data-i18n="hud.left">${t('hud.left')}</span> <span class="left">0</span></span></div>
+      <button class="pause interactive" aria-label="${t('pause.title')}" data-i18n-aria="pause.title">❚❚</button>`;
     root.appendChild(this.el);
     this.killsEl = this.el.querySelector('.kills');
     this.floorEl = this.el.querySelector('.floor');
@@ -48,20 +49,23 @@ export class HUD {
     el.classList.toggle('hidden', hidden);
   }
 
+  // the language changed: every cached text is written again on the next update
+  relabel() { this.last = {}; }
+
   update(game) {
     this.set('kills', this.killsEl, String(game.stats.kills));
     const d = game.dungeon, run = game.mode === 'dungeon';
-    this.set('floor', this.floorEl, !run ? '연습장' : d.roomKind === 'treasure' ? `${floorLabel(d.floor)} · 보물방` : floorLabel(d.floor));
+    this.set('floor', this.floorEl, !run ? t('hud.practice') : d.roomKind === 'treasure' ? t('hud.treasure', { floor: floorLabel(d.floor) }) : floorLabel(d.floor));
     this.set('gold', this.goldEl, String(d.gold));
     this.toggle('goldHidden', this.goldWrap, !run);
     this.toggle('pocketHidden', this.pocketWrap, !run);
     this.set('pocket', this.pocketEl, `${game.loot.pocket.length}/${game.config.items.pocketSize}`);
     const fighting = run && !d.exit.open && d.roomKind !== 'treasure';
     this.toggle('leftHidden', this.leftWrap, !fighting);
-    if (fighting) this.set('left', this.leftEl, d.waveCount > 1 ? `${d.remaining} (웨이브 ${d.waveIndex}/${d.waveCount})` : String(d.remaining));
+    if (fighting) this.set('left', this.leftEl, d.waveCount > 1 ? t('hud.wave', { n: d.remaining, i: d.waveIndex, count: d.waveCount }) : String(d.remaining));
     const v = game.vault, pr = v.progress;
     this.set('lv', this.el.querySelector('.lv'), `Lv ${pr.level}`);
-    this.set('who', this.el.querySelector('.who'), v.lineage.given ? `${v.lineage.given} · ${v.lineage.generation}대` : '');
+    this.set('who', this.el.querySelector('.who'), v.lineage.given ? t('hud.who', { given: trPerson(v.lineage.given, 'given'), n: v.lineage.generation }) : '');
     const need = Math.round(game.config.progress.need.base * Math.pow(pr.level, game.config.progress.need.exp));
     const xpw = `${Math.min(100, (100 * pr.xp) / need).toFixed(1)}%`;
     if (this.last.xpw !== xpw) { this.last.xpw = xpw; this.el.querySelector('.xp-fill').style.width = xpw; }
@@ -69,7 +73,7 @@ export class HUD {
     const key = owned.map((r) => r.id + r.count).join(',');
     if (this.last.relics !== key) {
       this.last.relics = key;
-      this.relicsEl.innerHTML = owned.map((r) => `<span class="rl" title="${r.name}">${relicIcon(r.icon, 15)}${r.count > 1 ? `<b>${r.count}</b>` : ''}</span>`).join('');
+      this.relicsEl.innerHTML = owned.map((r) => `<span class="rl" title="${tr(r.name)}">${relicIcon(r.icon, 15)}${r.count > 1 ? `<b>${r.count}</b>` : ''}</span>`).join('');
     }
     const p = game.player;
     const hp = Math.ceil(p.hp);

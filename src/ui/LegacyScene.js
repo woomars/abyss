@@ -2,8 +2,9 @@ import { itemCell, itemLabel } from './itemView.js';
 import { describeItem } from '../game/items/itemStats.js';
 import { tokenCandidates, canTakeToken } from '../game/items/Forge.js';
 import { floorLabel } from '../core/floorLabel.js';
+import { t, tr } from '../i18n/index.js';
 
-const WHERE = { equipped: '착용 중', stash: '보관함', pocket: '주머니' };
+const WHERE = { equipped: 'where.equipped', stash: 'where.stash', pocket: 'where.pocket' };
 
 // 유산의 증표: worn / stash / pocket items turn on a horizontal carousel; the one in front can take the
 // token unless it already carries one (golden halo, button off). Swipe, arrows or tap a side card.
@@ -47,33 +48,36 @@ export class LegacyScene {
 
   close() { this.hide(); this.onClose(); }
 
+  // the language changed while it is up
+  relabel() { if (this.isOpen && this.list) this.render(); }
+
   render() {
     const cfg = this.game.config.items, tokens = this.game.vault.tokens;
     const cards = this.list.map((c, i) => {
       const d = describeItem(c.item, cfg), sealed = !canTakeToken(c.item);
       return `<div class="lg-card${sealed ? ' sealed' : ''}" data-i="${i}" style="--gc:${d.gradeColor}">
-        <div class="lg-where">${WHERE[c.where]}</div>
+        <div class="lg-where">${t(WHERE[c.where])}</div>
         ${itemCell(c.item, cfg, { size: 34 })}
         <div class="lg-name" style="color:${d.gradeColor}">${d.name}</div>
         <div class="lg-sub">${d.gradeLabel}${d.qualityLabel ? ' · ' + d.qualityLabel : ''} ${d.partLabel}</div>
         <div class="lg-lines">${d.lines.slice(0, 3).map((l) => `<div>${l}</div>`).join('')}</div>
-        ${sealed ? '<div class="lg-sealed">이미 증표가 새겨짐</div>' : ''}
+        ${sealed ? `<div class="lg-sealed">${t('lg.sealed')}</div>` : ''}
       </div>`;
     }).join('');
     this.el.innerHTML = `
       <div class="lg-wrap">
-        <div class="lg-title">유산의 증표 <span>×${tokens}</span></div>
-        <div class="lg-sub2">${this.floor ? `${floorLabel(this.floor)}에 닿았습니다. ` : ''}증표를 새긴 장비는 분해하지 않는 한 영원히 대를 잇습니다.</div>
+        <div class="lg-title">${tr(cfg.legacyToken.label)} <span>×${tokens}</span></div>
+        <div class="lg-sub2">${this.floor ? t('lg.reached', { floor: floorLabel(this.floor) }) : ''}${t('lg.note')}</div>
         ${this.list.length ? `
           <div class="lg-stage">
             <button class="lg-arrow" data-act="prev">‹</button>
             <div class="lg-ring">${cards}</div>
             <button class="lg-arrow" data-act="next">›</button>
           </div>
-          <div class="lg-pick"></div>` : '<div class="lg-empty">증표를 새길 장비가 없습니다. 나중에 대장간에서 쓸 수 있습니다.</div>'}
+          <div class="lg-pick"></div>` : `<div class="lg-empty">${t('lg.empty')}</div>`}
         <div class="lg-buttons">
-          <button class="tm-btn small" data-act="later">${tokens > 0 && this.list.length ? '나중에' : '닫기'}</button>
-          ${this.list.length ? '<button class="tm-btn primary" data-act="apply">이 장비에 증표 새기기</button>' : ''}
+          <button class="tm-btn small" data-act="later">${tokens > 0 && this.list.length ? t('lg.later') : t('close')}</button>
+          ${this.list.length ? `<button class="tm-btn primary" data-act="apply">${t('lg.apply')}</button>` : ''}
         </div>
       </div>`;
     this.layout();
@@ -96,7 +100,7 @@ export class LegacyScene {
     const btn = this.el.querySelector('[data-act="apply"]');
     if (btn) btn.disabled = !c || !canTakeToken(c.item) || this.game.vault.tokens <= 0;
     const pick = this.el.querySelector('.lg-pick');
-    if (pick && c) pick.textContent = canTakeToken(c.item) ? itemLabel(c.item, this.game.config.items) : '이 장비에는 이미 증표가 있습니다';
+    if (pick && c) pick.textContent = canTakeToken(c.item) ? itemLabel(c.item, this.game.config.items) : t('lg.has');
   }
 
   turn(step) {

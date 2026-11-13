@@ -1,6 +1,8 @@
 // Bottom-right special attack buttons with cooldown sweep. Kept out of the stroke input area.
 // Non-directional skills fire on press. Directional skills (rush, blade wave): press, drag to aim,
 // release to fire; a plain tap fires in the current movement direction.
+import { tr } from '../i18n/index.js';
+
 const ICONS = { spin: '⟳', rushStrike: '➤', bladeWave: '≋' };
 const AIM_DEADZONE = 12; // px of drag before the aim counts
 
@@ -13,8 +15,8 @@ export class SkillButtons {
     this.buttons = skills.slots.map((s, i) => {
       const b = document.createElement('button');
       b.className = `skill interactive skill-${i}`;
-      b.setAttribute('aria-label', s.name);
-      b.innerHTML = `<span class="icon">${ICONS[s.id] || '★'}</span><span class="cd"></span><span class="label">${s.name}</span>`;
+      b.setAttribute('aria-label', tr(s.name));
+      b.innerHTML = `<span class="icon">${ICONS[s.id] || '★'}</span><span class="cd"></span><span class="label">${tr(s.name)}</span>`;
       this.el.appendChild(b);
       const ui = { b, cd: b.querySelector('.cd'), last: '', aiming: null };
       this.bind(ui, i);
@@ -60,6 +62,15 @@ export class SkillButtons {
     };
     b.addEventListener('pointerup', (e) => finish(e, true));
     b.addEventListener('pointercancel', (e) => finish(e, false));
+  }
+
+  // the language changed: skill names again
+  relabel() {
+    this.buttons.forEach(({ b }, i) => {
+      const name = tr(this.skills.slots[i].name);
+      b.setAttribute('aria-label', name);
+      b.querySelector('.label').textContent = name;
+    });
   }
 
   // client-space rects (the caller maps them into the stage)

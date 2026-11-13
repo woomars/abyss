@@ -1,5 +1,6 @@
 import { itemCell, itemLabel } from './itemView.js';
 import { relicIcon } from './relicIcons.js';
+import { t as tx, tr } from '../i18n/index.js';
 
 // Small stacked notices under the top HUD when an item is picked up.
 export class LootToast {
@@ -25,7 +26,7 @@ export class LootToast {
     const t = document.createElement('div'), c = cfg.tiers[m.tier].color;
     t.className = 'loot-toast medal';
     t.style.setProperty('--mc', c);
-    t.innerHTML = `<span class="hl-badge" style="--mc:${c};width:18px;height:18px">${relicIcon(m.icon, 11)}</span><span style="color:${c}">메달 · ${m.name}</span>${first ? '<small>가문 최초</small>' : ''}`;
+    t.innerHTML = `<span class="hl-badge" style="--mc:${c};width:18px;height:18px">${relicIcon(m.icon, 11)}</span><span style="color:${c}">${tx('toast.medal', { name: tr(m.name) })}</span>${first ? `<small>${tx('toast.familyFirst')}</small>` : ''}`;
     this.el.prepend(t);
     while (this.el.children.length > 3) this.el.lastChild.remove();
     setTimeout(() => t.classList.add('out'), 2600);

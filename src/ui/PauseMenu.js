@@ -1,4 +1,7 @@
-// Pause overlay: resume, restart (with confirmation), screen-shake, sound and music toggles.
+// Pause overlay: resume, restart (with confirmation), screen-shake, sound and music toggles, language.
+import { t, setLang, getLang } from '../i18n/index.js';
+import { langSwitch } from './TitleMenu.js';
+
 export class PauseMenu {
   constructor(root, { settings, onChange, onRestart, onOpenChange }) {
     this.settings = settings;
@@ -11,19 +14,20 @@ export class PauseMenu {
     this.el.className = 'overlay pause-menu interactive hidden';
     this.el.innerHTML = `
       <div class="panel main-view">
-        <h2>일시 정지</h2>
-        <button data-act="resume" class="primary">계속하기</button>
-        <button data-act="restart">포기하기</button>
+        <h2 data-i18n="pause.title">${t('pause.title')}</h2>
+        <button data-act="resume" class="primary" data-i18n="pause.resume">${t('pause.resume')}</button>
+        <button data-act="restart" data-i18n="pause.giveUp">${t('pause.giveUp')}</button>
         <button data-act="shake" class="toggle"></button>
         <button data-act="sound" class="toggle"></button>
         <button data-act="music" class="toggle"></button>
+        <div class="pm-lang"></div>
       </div>
       <div class="panel confirm-view hidden">
-        <h2>이번 판을 포기할까요?</h2>
-        <p>쓰러진 것으로 처리되고 아들이 대를 잇습니다.</p>
+        <h2 data-i18n="pause.confirm">${t('pause.confirm')}</h2>
+        <p data-i18n="pause.confirmNote">${t('pause.confirmNote')}</p>
         <div class="row">
-          <button data-act="confirm-yes" class="danger">예</button>
-          <button data-act="confirm-no" class="primary">아니오</button>
+          <button data-act="confirm-yes" class="danger" data-i18n="yes">${t('yes')}</button>
+          <button data-act="confirm-no" class="primary" data-i18n="no">${t('no')}</button>
         </div>
       </div>`;
     root.appendChild(this.el);
@@ -32,6 +36,7 @@ export class PauseMenu {
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.el.addEventListener('click', (e) => {
       const btn = e.target.closest('button');
+      if (btn && btn.dataset.act === 'lang') { setLang(btn.dataset.lang); return; } // main.js relabels everything
       if (btn) this.act(btn.dataset.act);
     });
 
@@ -39,9 +44,12 @@ export class PauseMenu {
   }
 
   renderToggles() {
-    this.el.querySelector('[data-act="shake"]').textContent = `화면 흔들림: ${this.settings.shake ? '켜짐' : '꺼짐'}`;
-    this.el.querySelector('[data-act="sound"]').textContent = `효과음: ${this.settings.sound ? '켜짐' : '꺼짐'}`;
-    this.el.querySelector('[data-act="music"]').textContent = `배경음악: ${this.settings.music ? '켜짐' : '꺼짐'}`;
+    const row = (k, key) => { this.el.querySelector(`[data-act="${k}"]`).textContent = t('pause.toggle', { name: t(key), state: t(this.settings[k] ? 'on' : 'off') }); };
+    row('shake', 'pause.shake');
+    row('sound', 'pause.sound');
+    row('music', 'pause.music');
+    const lang = this.el.querySelector('.pm-lang');
+    if (lang.dataset.lang !== getLang()) { lang.dataset.lang = getLang(); lang.innerHTML = langSwitch('pm-switch'); }
   }
 
   act(a) {

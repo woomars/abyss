@@ -1,5 +1,22 @@
 import { relicIcon } from './relicIcons.js';
 import { describeItem } from '../game/items/itemStats.js';
+import { t, tr, getLang, trPerson } from '../i18n/index.js';
+import { floorLabel } from '../core/floorLabel.js';
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// the heirloom story: saved in Korean; other languages retell it from the item's origin and the floor
+export function featLine(entry, item, cfg) {
+  if (!entry || !entry.feat) return null;
+  if (getLang() === 'ko') return entry.feat;
+  let floor = entry.floor;
+  if (floor == null) { const m = /(\d+)층까지/.exec(entry.feat); floor = m ? Number(m[1]) : null; } // saves from before the floor was kept
+  if (floor == null) return entry.feat;
+  const o = item.origin;
+  return t('item.feat', {
+    part: tr(cfg.parts[item.slot].label), at: o ? floorLabel(o.floor) : '', boss: o && o.boss ? tr(o.boss) : '', floor: floorLabel(floor),
+  });
+}
 
 // HTML for one item cell (grade border, quality outline, enhance level, icon)
 export function itemCell(item, cfg, { cls = '', size = 22 } = {}) {
@@ -20,12 +37,12 @@ export function itemDetail(item, cfg) {
   const d = describeItem(item, cfg);
   return `<div class="idetail">
     <div class="iname" style="color:${d.gradeColor}">${d.name}</div>
-    <div class="isub">${d.gradeLabel}${d.qualityLabel ? ` · <span style="color:${d.qualityColor}">${d.qualityLabel}</span>` : ''} ${d.partLabel} · Lv ${item.level}${d.scar ? ' · <span class="iscar">흔적</span>' : ''}</div>
+    <div class="isub">${d.gradeLabel}${d.qualityLabel ? ` · <span style="color:${d.qualityColor}">${d.qualityLabel}</span>` : ''} ${d.partLabel} · Lv ${item.level}${d.scar ? ` · <span class="iscar">${t('item.scar')}</span>` : ''}</div>
     ${d.lines.map((l, i) => `<div class="iline${i === 0 ? ' ibase' : ''}">${l}</div>`).join('')}
     ${d.effectText ? `<div class="ieffect">${d.effectText}</div>` : ''}
     ${d.lostPower ? `<div class="ilost">${d.lostPower}</div>` : ''}
     ${d.token ? `<div class="itoken">${d.token}</div>` : ''}
-    ${d.setText ? `<div class="iset">세트: ${d.setText}</div>` : ''}
-    ${d.heirloom ? `<div class="iheir">물려받음: ${d.heirloom.generation}대손 ${d.heirloom.given} ${d.heirloom.family}${d.heirloom.feat ? `<br><i>${d.heirloom.feat}</i>` : ''}</div>` : ''}
+    ${d.setText ? `<div class="iset">${t('item.set', { name: d.setText })}</div>` : ''}
+    ${d.heirloom ? `<div class="iheir">${t('item.heir', { gen: t('gen', { n: d.heirloom.generation }), given: esc(trPerson(d.heirloom.given, 'given')), family: esc(trPerson(d.heirloom.family, 'family')) })}${d.heirloom.feat ? `<br><i>${esc(featLine(d.heirloom, item, cfg))}</i>` : ''}</div>` : ''}
   </div>`;
 }

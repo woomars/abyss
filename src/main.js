@@ -25,6 +25,11 @@ import { HallScreen } from './ui/HallScreen.js';
 import { VaultStore } from './systems/VaultStore.js';
 import { Vault } from './game/items/Vault.js';
 import { chooseRotation, stageSize, stageTransform, toStage } from './systems/orientation.js';
+import { initLang, onLangChange, applyI18n, registerNames, t, tr, relicDesc } from './i18n/index.js';
+import { floorLabel } from './core/floorLabel.js';
+
+// the language is decided before anything is drawn (?lang= -> saved -> browser)
+initLang();
 
 function safeStorage() {
   try { return window.localStorage; } catch (_) { return null; }
@@ -44,6 +49,7 @@ async function boot() {
     if (!r.ok) throw new Error(`load failed: ${p}`);
     return r.json();
   }));
+  registerNames(config.names);
   const events = new Events();
   const rng = createRng((Date.now() & 0xffffffff) >>> 0);
   const canvas = document.getElementById('game');
@@ -76,9 +82,10 @@ async function boot() {
   const skillButtons = new SkillButtons(ui, game.skills, { toLocal: (x, y) => toLocal(x, y) });
   const hud = new HUD(ui, { onPause: () => menu.open() });
   let lastFate = null;
+  const heirLabel = () => (game.hasGear() ? 'toForge' : () => t('toFloor', { floor: floorLabel(1) }));
   const gameOver = new GameOver(ui, {
     onRetry: () => {
-      if (lastFate) heir.show(lastFate, { label: game.hasGear() ? '대장간으로' : '지하 1층으로' });
+      if (lastFate) heir.show(lastFate, { label: heirLabel() });
       else game.restart();
     },
   });
@@ -93,42 +100,43 @@ async function boot() {
   const banner = new Banner(ui);
   events.on('floorStart', (e) => {
     music.play(e.music);
-    if (e.kind === 'boss') banner.show(e.boss, e.title.replace(` — ${e.boss}`, ''), { kind: 'boss', ms: 2400 });
+    if (e.kind === 'boss') banner.show(tr(e.boss), `${floorLabel(e.floor)} ${tr(game.dungeon.info.band.title)}`, { kind: 'boss', ms: 2400 });
     else if (e.kind === 'treasure') { /* the card screen says it all */ }
-    else banner.show(e.title);
+    else banner.show(e.kind === 'combat' ? floorLabel(e.floor) : tr(e.title));
   });
   events.on('roomCleared', (e) => {
-    if (e.kind === 'boss') banner.show('보스 처치!', `보물 상자가 나타났습니다 · 골드 +${e.gold}`, { kind: 'reward', ms: 2400 });
-    else banner.show('방 정리', `출구가 열렸습니다 · 골드 +${e.gold}`);
+    if (e.kind === 'boss') banner.show(t('banner.bossDown'), t('banner.chest', { gold: e.gold }), { kind: 'reward', ms: 2400 });
+    else banner.show(t('banner.roomClear'), t('banner.exitOpen', { gold: e.gold }));
   });
-  events.on('bossEnrage', () => banner.show('분노!', '', { kind: 'boss', ms: 1200 }));
+  events.on('bossEnrage', () => banner.show(t('banner.enrage'), '', { kind: 'boss', ms: 1200 }));
   // treasure room and boss chests: pick one of three cards (the game waits meanwhile)
   let chest = null;
   events.on('chestOpen', (e) => { chest = e; });
   const picker = new RelicPicker(ui, {
     pickDelay: () => config.relics.pickDelay,
+    relics: () => config.relics,
     onPick: (i) => {
       const o = game.chooseRelic(i);
       if (!o) return;
-      const sub = [o.desc, chest ? `골드 +${chest.gold}` : ''].filter(Boolean).join(' · ');
-      banner.show(`${o.tierLabel ? o.tierLabel + ' ' : ''}${o.name} 획득`, sub, { kind: 'reward' });
+      const sub = [relicDesc(o, config.relics), chest ? t('banner.gold', { gold: chest.gold }) : ''].filter(Boolean).join(' · ');
+      banner.show(t('banner.relic', { name: `${o.tierLabel ? tr(o.tierLabel) + ' ' : ''}${tr(o.name)}` }), sub, { kind: 'reward' });
     },
     onReroll: () => game.rerollRelics(),
   });
-  events.on('relicOffer', (e) => picker.show(e.offers, { ...e, title: game.dungeon.state === 'treasure' ? '보물방' : '', gold: game.dungeon.gold, found: chest ? chest.gold : 0 }));
+  events.on('relicOffer', (e) => picker.show(e.offers, { ...e, title: game.dungeon.state === 'treasure' ? 'room.treasure' : '', gold: game.dungeon.gold, found: chest ? chest.gold : 0 }));
   const toast = new LootToast(ui, config.items);
   events.on('lootPickup', (e) => toast.show(e.item));
-  events.on('pocketFull', () => toast.text('주머니가 가득 찼습니다'));
-  events.on('relicReroll', (e) => picker.show(e.offers, { ...e, title: game.dungeon.state === 'treasure' ? '보물방' : '', found: chest ? chest.gold : 0 }));
+  events.on('pocketFull', () => toast.text(t('notice.pocketFull')));
+  events.on('relicReroll', (e) => picker.show(e.offers, { ...e, title: game.dungeon.state === 'treasure' ? 'room.treasure' : '', found: chest ? chest.gold : 0 }));
   menu = new PauseMenu(ui, {
     settings,
     onChange: (s) => { applySettings(s); save.save(s); },
     onRestart: () => { gameOver.hide(); game.giveUp(); },
     onOpenChange: updatePaused,
   });
-  events.on('setComplete', (e) => { if (forge.isOpen) forge.flash(`${e.name} 세트 완성! 연쇄 마지막 타격에서 폭발`, true); });
+  events.on('setComplete', (e) => { if (forge.isOpen) forge.flash(t('notice.setComplete', { name: tr(e.name) }), true); });
   events.on('medal', (e) => toast.medal(e.medal, config.medals, e.first));
-  events.on('levelUp', (e) => banner.show('레벨 업!', `Lv ${e.level} · 공격력과 최대 체력이 올랐습니다`, { kind: 'reward', ms: 1600 }));
+  events.on('levelUp', (e) => banner.show(t('banner.levelUp'), t('banner.levelUpSub', { level: e.level }), { kind: 'reward', ms: 1600 }));
 
   // --- family, forge and title (all inside the landscape stage) ---
   const heir = new HeirScreen(ui, { onContinue: () => game.beginRun(), medals: config.medals });
@@ -170,7 +178,7 @@ async function boot() {
         game.enterLimbo();
         if (v.runStats) Object.assign(game.stats, v.runStats); // what he did before the game closed
         const fate = game.endRunByDeath(v.lastFloor);
-        heir.show(fate, { note: '지난 판이 싸움 도중 중단되어, 쓰러진 것으로 처리했습니다.', label: game.hasGear() ? '대장간으로' : '지하 1층으로' });
+        heir.show(fate, { note: 'notice.interrupted', label: heirLabel() });
       } else game.beginRun();
     },
     onNew: (n, family, given) => {
@@ -223,10 +231,17 @@ async function boot() {
         }
         if (floor > 0) game.startRun(floor);
         else if (floor === -1) { game.startRun(3); game.dungeon.enterTreasure(); }
-        else { game.startPractice(); music.play(config.music.scenes.play); banner.show('연습장'); }
+        else { game.startPractice(); music.play(config.music.scenes.play); banner.show(t('hud.practice')); }
       },
     });
   }
+  // language switched (title or pause menu): every screen writes its text again, no reload
+  onLangChange(() => {
+    applyI18n(ui);
+    hud.relabel(); skillButtons.relabel(); menu.renderToggles(); gameOver.relabel(); picker.relabel();
+    title.relabel(); forge.relabel(); hall.relabel(); heir.relabel(); legacy.relabel();
+    layout(); // button sizes may change: refresh the stroke exclusion zones
+  });
   window.addEventListener('resize', layout);
   // turning the phone 180° while auto-rotate is off: follow gravity
   window.addEventListener('devicemotion', (e) => {

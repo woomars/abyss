@@ -32,10 +32,18 @@ function storage() {
   try { return typeof window !== 'undefined' ? window.localStorage : null; } catch (_) { return null; }
 }
 
+// <html lang>, the tab title and the home-screen install name (no manifest: iOS and Windows read these two metas;
+// index.html carries the Korean name as the static default)
+export const INSTALL_METAS = ['apple-mobile-web-app-title', 'application-name'];
 function applyDocument() {
   if (typeof document === 'undefined') return;
   document.documentElement.lang = lang;
   document.title = t('app.title');
+  if (typeof document.querySelector !== 'function') return;
+  for (const name of INSTALL_METAS) {
+    const m = document.querySelector(`meta[name="${name}"]`);
+    if (m) m.setAttribute('content', t('app.title'));
+  }
 }
 
 // browser start-up: decide before anything is drawn

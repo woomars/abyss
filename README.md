@@ -6,7 +6,7 @@
 
 가문 기록, 보관함, 설정은 쓰고 있는 브라우저에만 남습니다.
 
-개인 재미를 위한 비상업 프로젝트입니다. 효과음과 배경음악은 [Pixabay](https://pixabay.com/)에서 받아 다듬었고(Pixabay 콘텐츠 라이선스), 곡과 효과음마다 만든 사람과 원본 주소는 [assets/audio/CREDITS.md](assets/audio/CREDITS.md)에 있습니다. 나머지 소리는 Web Audio로 직접 합성했고, 그림은 코드로 그렸습니다.
+개인 재미를 위한 비상업 프로젝트입니다. 효과음과 배경음악은 [Pixabay](https://pixabay.com/)에서 받아 다듬었고(Pixabay 콘텐츠 라이선스), 곡과 효과음마다 만든 사람과 원본 주소는 [assets/audio/CREDITS.md](assets/audio/CREDITS.md)에 있습니다. 나머지 소리는 Web Audio로 직접 합성했고, 그림은 코드로 그렸습니다. 코드와 직접 만든 그림은 MIT 라이선스([LICENSE](LICENSE))이고, 그 밖의 자료는 위에 적은 각 라이선스와 권리를 따릅니다.
 
 ## English
 
@@ -14,7 +14,7 @@
 
 **Play:** https://woomars.github.io/abyss/
 
-Your house's records, stash and settings stay in your browser only. A personal, non-commercial project. Sound effects and music come from Pixabay (Pixabay Content License); see [assets/audio/CREDITS.md](assets/audio/CREDITS.md) for each creator and source.
+Your house's records, stash and settings stay in your browser only. A personal, non-commercial project. Sound effects and music come from Pixabay (Pixabay Content License); see [assets/audio/CREDITS.md](assets/audio/CREDITS.md) for each creator and source. Code and original artwork are under the MIT License ([LICENSE](LICENSE)); everything else follows the licenses and rights listed above.
 
 ## 日本語
 
@@ -22,4 +22,4 @@ Your house's records, stash and settings stay in your browser only. A personal, 
 
 **プレイ:** https://woomars.github.io/abyss/
 
-家の記録・保管庫・設定はお使いのブラウザにだけ残ります。個人の非商用プロジェクトです。効果音と音楽は Pixabay（Pixabay コンテンツライセンス）のもので、作者と出典は [assets/audio/CREDITS.md](assets/audio/CREDITS.md) にあります。
+家の記録・保管庫・設定はお使いのブラウザにだけ残ります。個人の非商用プロジェクトです。効果音と音楽は Pixabay（Pixabay コンテンツライセンス）のもので、作者と出典は [assets/audio/CREDITS.md](assets/audio/CREDITS.md) にあります。 コードと自作の画像は MIT License（[LICENSE](LICENSE)）、それ以外の素材は上記の各ライセンス・権利に従います。

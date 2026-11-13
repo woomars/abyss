@@ -94,9 +94,10 @@ export class SkillSystem {
     const p = this.player;
     const len = aimDir ? Math.hypot(aimDir.x, aimDir.y) : 0;
     const auto = def.directional && !(len > 1e-6) ? this.nearestDir() : null;
+    const hd = p.heading && Math.hypot(p.heading.x, p.heading.y) > 1e-6 ? p.heading : this.combat.inputDir;
     const dir = len > 1e-6 && def.directional
       ? { x: aimDir.x / len, y: aimDir.y / len }
-      : auto || { x: this.combat.inputDir.x, y: this.combat.inputDir.y };
+      : auto || (id === 'rushStrike' ? { x: hd.x, y: hd.y } : { x: this.combat.inputDir.x, y: this.combat.inputDir.y }); // the roll goes the way the hero is moving
     this.events.emit('skill', { id, pos: { x: p.pos.x, y: p.pos.y }, dir });
     if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
     else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, hit: new Set(), dist: def.distance * (1 + (this.bonus().rollRange || 0)) }; // 구르기

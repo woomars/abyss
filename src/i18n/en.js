@@ -276,5 +276,5 @@ export default {
   'title.quit': "Quit",
   'title.layout': "Buttons",
   'guide.7.title': "Roll",
-  'guide.7.body': "The Roll button tumbles a short way. You are untouchable only while rolling; it ends in a strong thrust and a brief stiffness (you can be hit then). Roll through boss attacks that cover the whole arena just as they reach you.",
+  'guide.7.body': "The Roll button tumbles a short way in the direction you are running. You are untouchable only while rolling; it ends in a strong thrust and a brief stiffness (you can be hit then). Roll through boss attacks that cover the whole arena just as they reach you.",
 };

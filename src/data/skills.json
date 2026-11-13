@@ -23,7 +23,6 @@
     },
     "rushStrike": {
       "name": "구르기",
-      "directional": true,
       "cooldown": 10,
       "distance": 107,
       "speed": 450,

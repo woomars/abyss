@@ -26,6 +26,7 @@ export class Loot {
     const g = this.game;
     if (g.mode !== 'dungeon' || !enemy || enemy.mods.minion) return;
     const d = this.cfg.drops;
+    if (this.game.dungeon && this.game.dungeon.rush) return; // debug boss rush: no drops
     if (enemy.isBoss) { this.dropAt(enemy.pos, { boss: true, minGrade: d.boss.minGrade, count: d.boss.count, bossName: enemy.tcfg.name }); return; }
     const kind = enemy.mods.enhanced ? 'enhanced' : enemy.isElite ? 'elite' : 'normal';
     if (g.rng() < d.chance[kind]) this.dropAt(enemy.pos);

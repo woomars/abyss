@@ -1,6 +1,7 @@
 import { floorInfo, pickWeighted, randInt } from './floorPlan.js';
 import { bossKey } from './Medals.js';
 import { pickBoss, bossLevel } from './bossPick.js';
+import { bossRoster } from './Medals.js';
 import { buildRoom } from './RoomBuilder.js';
 import { floorLabel } from '../core/floorLabel.js';
 
@@ -17,6 +18,8 @@ export class Dungeon {
   }
 
   reset() {
+    this.rush = null; // debug boss rush: every boss in turn, full hp after each
+    this.forceBoss = null;
     this.lastBoss = {}; // tier -> boss met last in this run (not twice in a row)
     this.floor = 0;
     this.gold = 0;
@@ -83,7 +86,7 @@ export class Dungeon {
     } else if (kind === 'boss') {
       // one of this tier's bosses unlocked by the loop, at random (not the one met last time)
       const b = info.boss, types = g.config.enemies.types;
-      const type = b.type || pickBoss(types, b.tier, info.cycle, g.rng, this.lastBoss[b.tier] || null);
+      const type = this.forceBoss || b.type || pickBoss(types, b.tier, info.cycle, g.rng, this.lastBoss[b.tier] || null);
       this.lastBoss[b.tier] = type;
       const tcfg = types[type];
       const level = bossLevel(b.tier || tcfg.tier, info.cycle, g.config.enemies);
@@ -99,7 +102,40 @@ export class Dungeon {
       music = 'rest';
     }
     this.lastAlive = this.remaining;
-    g.events.emit('floorStart', { floor: this.floor, kind, music, title, boss: bossName, variant: this.variant });
+    g.events.emit('floorStart', { floor: this.floor, kind, music, title, boss: bossName, variant: this.variant, rush: this.rush ? { n: this.rush.i + 1, total: this.rush.list.length, loop: this.rush.loop } : null });
+  }
+
+  // ---- debug: endless boss room ----
+  // every boss in codex order (mid, region, great), then around again one loop deeper; the hero is
+  // healed to full after each kill; no chest, exit or drops
+  startBossRush() {
+    const g = this.game;
+    this.reset();
+    this.rush = { list: bossRoster(this.cfg, g.config.enemies).map((b) => b.key), i: 0, loop: 0, wait: 0 };
+    this.spawnRushBoss();
+  }
+
+  spawnRushBoss() {
+    const g = this.game, r = this.rush;
+    const type = r.list[r.i], tier = g.config.enemies.types[type].tier;
+    const band = this.cfg.bands.find((b) => b.kind === 'boss' && b.boss && b.boss.tier === tier);
+    this.floor = band.from + r.loop * this.cfg.cycleLength;
+    this.startFloor = -1; // never a record
+    this.info = floorInfo(this.floor, this.cfg);
+    this.forceBoss = type;
+    this.enterRoom('boss');
+    this.forceBoss = null;
+  }
+
+  rushNext() {
+    const g = this.game, r = this.rush;
+    g.hazards.clear();
+    g.player.hp = g.player.maxHp; // this room only: a kill restores all hp
+    g.events.emit('bossRushHeal', { pos: { x: g.player.pos.x, y: g.player.pos.y }, n: r.i + 1 });
+    r.i += 1;
+    if (r.i >= r.list.length) { r.i = 0; r.loop += 1; }
+    r.wait = 1.4;
+    this.boss = null;
   }
 
   // spike tiles of a trap room: two groups rising in turn, away from the start
@@ -303,6 +339,11 @@ export class Dungeon {
       if (this.fade === 1) this.advance();
       return;
     }
+    if (this.rush && this.rush.wait > 0) { // between bosses
+      this.rush.wait -= dt;
+      if (this.rush.wait <= 0) this.spawnRushBoss();
+      return;
+    }
     const alive = this.remaining;
     if (this.cleared && !this.exit.open) {
       this.exitIn -= dt;
@@ -324,6 +365,7 @@ export class Dungeon {
           e.takeHit({ damage: e.hp + 1, knockDir: dir, knockback: 0, stagger: 0 });
           g.events.emit('kill', { enemy: e, pos: { x: e.pos.x, y: e.pos.y }, dir, crit: false });
         }
+        if (this.rush) { this.rushNext(); return; }
         this.clear(this.boss.pos);
       }
       // stuck guard: no kill for a while -> bring far enemies back

@@ -112,7 +112,7 @@ async function boot() {
   const banner = new Banner(ui);
   events.on('floorStart', (e) => {
     music.play(e.music);
-    if (e.kind === 'boss') banner.show(tr(e.boss), `${floorLabel(e.floor)} ${tr(game.dungeon.info.band.title)}`, { kind: 'boss', ms: 2400 });
+    if (e.kind === 'boss') banner.show(tr(e.boss), e.rush ? `보스 연전 ${e.rush.n}/${e.rush.total}${e.rush.loop ? ` · ${e.rush.loop + 1}바퀴` : ''} · ${floorLabel(e.floor)}` : `${floorLabel(e.floor)} ${tr(game.dungeon.info.band.title)}`, { kind: 'boss', ms: 2400 }); // the rush line is a debug screen (Korean only)
     else if (e.kind === 'treasure') { /* the card screen says it all */ }
     else if (e.variant) banner.show(`${floorLabel(e.floor)} · ${t(`room.${e.variant}`)}`, t(`room.${e.variant}Sub`), { kind: e.variant === 'elite' ? 'boss' : 'reward', ms: 2200 });
     else banner.show(e.kind === 'combat' ? floorLabel(e.floor) : tr(e.title));
@@ -260,6 +260,7 @@ async function boot() {
           if (!game.forge) { game.startRun(4); game.dungeon.enterForge(); }
           game.vault.tokens += 1; legacy.show(); return;
         }
+        if (floor === -4) { game.startRun(4); game.dungeon.startBossRush(); return; } // debug: every boss in turn, full hp after each
         if (floor > 0) game.startRun(floor);
         else if (floor === -1) { game.startRun(3); game.dungeon.enterTreasure(); }
         else { game.startPractice(); music.play(config.music.scenes.play); banner.show(t('hud.practice')); }

@@ -270,4 +270,7 @@ export default {
   'room.trap': "Trap Room",
   'room.eliteSub': "Only empowered foes · clear it for sure loot",
   'room.trapSub': "Spikes rise — they hurt enemies too",
+  // menu and quit
+  'go.menu': "Main menu",
+  'title.quit': "Quit",
 };

@@ -87,11 +87,20 @@ async function boot() {
   const hud = new HUD(ui, { onPause: () => menu.open() });
   let lastFate = null;
   const heirLabel = () => (game.hasGear() ? 'toForge' : () => t('toFloor', { floor: floorLabel(1) }));
+  // to the title screen (from the game over or the forge)
+  function toTitle() { heir.hide(); started = false; updatePaused(); title.open(); music.play('base'); }
+  // 종료: a window the browser lets us close closes; otherwise back to the woomars game list
+  function quitGame() {
+    try { window.close(); } catch (_) { /* not allowed */ }
+    setTimeout(() => { if (!window.closed) location.href = 'https://woomars.github.io/'; }, 250);
+  }
   const gameOver = new GameOver(ui, {
     onRetry: () => {
       if (lastFate) heir.show(lastFate, { label: heirLabel() });
       else game.restart();
     },
+    // back to the title: the fall is already recorded, the heir waits in the save (이어하기)
+    onMenu: () => { game.enterLimbo(); toTitle(); },
   });
   const records = new RecordStore(safeStorage());
   events.on('playerDown', (s) => {
@@ -169,7 +178,7 @@ async function boot() {
     game,
     onToken: () => legacy.show(),
     onDepart: () => { forge.hide(); game.departForge(); },
-    onTitle: () => { forge.hide(); started = false; updatePaused(); title.open(); music.play('base'); },
+    onTitle: () => { forge.hide(); toTitle(); },
   });
   events.on('forgeOpen', (e) => {
     music.play('base');
@@ -190,6 +199,7 @@ async function boot() {
   const title = new TitleMenu(ui, {
     store, names: config.names,
     onGuide: () => guide.show(),
+    onQuit: () => quitGame(),
     onStory: () => story.show(),
     onHall: (n) => { const v = store.load(n); if (v) hall.show(v); },
     onContinue: (n) => {

@@ -268,4 +268,7 @@ export default {
   'room.trap': "罠の部屋",
   'room.eliteSub': "強化された敵のみ・制圧で装備確定",
   'room.trapSub': "棘が突き出る—敵も傷つく",
+  // menu and quit
+  'go.menu': "メニュー画面",
+  'title.quit': "終了",
 };

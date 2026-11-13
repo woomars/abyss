@@ -4,7 +4,7 @@ import { t, fullName, trItemName } from '../i18n/index.js';
 
 // Game over overlay: shown when the player's HP reaches 0.
 export class GameOver {
-  constructor(root, { onRetry }) {
+  constructor(root, { onRetry, onMenu = () => {} }) {
     this.el = document.createElement('div');
     this.el.className = 'overlay game-over interactive hidden';
     this.el.innerHTML = `
@@ -18,11 +18,15 @@ export class GameOver {
         </div>
         <p class="go-best"></p>
         <div class="go-fate"></div>
-        <button class="primary" data-act="retry">${t('go.retry')}</button>
+        <div class="go-buttons">
+          <button class="primary" data-act="retry">${t('go.retry')}</button>
+          <button data-act="menu" data-i18n="go.menu">${t('go.menu')}</button>
+        </div>
       </div>`;
     root.appendChild(this.el);
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.el.querySelector('[data-act="retry"]').addEventListener('click', () => { this.hide(); onRetry(); });
+    this.el.querySelector('[data-act="menu"]').addEventListener('click', () => { this.hide(); onMenu(); }); // the heir waits in the save
   }
 
   // floor 0 = practice arena (no floor stats)
@@ -41,6 +45,7 @@ export class GameOver {
       <div class="${fate.survived.length ? 'up' : 'dim'}">${fate.survived.length ? t('go.survived', { list: fate.survived.map((i) => esc(trItemName(i.name))).join(', ') }) : t('go.noSurvived')}</div>
       <div class="dim">${t('go.lost', { n: fate.lost.length })}</div>` : '';
     this.el.querySelector('[data-act="retry"]').textContent = fate ? t('go.carryOn') : t('go.retry');
+    this.el.querySelector('[data-act="menu"]').textContent = t('go.menu');
     this.el.querySelector('.go-kills').textContent = String(kills);
     this.el.querySelector('.go-combo').textContent = String(bestCombo);
     this.el.querySelector('.go-floor').textContent = floorLabel(floor);

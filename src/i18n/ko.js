@@ -283,4 +283,7 @@ export default {
   'room.trap': "함정 방",
   'room.eliteSub': "강화된 적만 나온다 · 정리하면 장비 확정",
   'room.trapSub': "가시가 솟는다 — 적도 다친다",
+  // menu and quit
+  'go.menu': "메뉴 화면",
+  'title.quit': "종료",
 };

@@ -629,3 +629,8 @@ html:lang(ja), html:lang(ja) body { font-family: system-ui, -apple-system, "Hira
 .gd-dots { display: flex; gap: 6px; }
 .gd-dot { width: 9px; height: 9px; padding: 0; border-radius: 50%; border: none; background: #4a3d5c; }
 .gd-dot.on { background: #ffe08a; }
+
+/* game over: carry on the line / back to the menu */
+.game-over .go-buttons { display: flex; gap: 10px; justify-content: center; }
+.game-over .go-buttons button { flex: 1; max-width: 220px; }
+.game-over .go-buttons button { white-space: nowrap; max-width: none; padding-left: 16px; padding-right: 16px; }

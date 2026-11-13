@@ -5,7 +5,7 @@
 // release to fire; a plain tap fires in the current movement direction.
 import { tr, t } from '../i18n/index.js';
 
-const ICONS = { spin: '⟳', rushStrike: '➤', bladeWave: '≋' };
+const ICONS = { spin: '⟳', rushStrike: '↷', bladeWave: '≋' };
 const AIM_DEADZONE = 12; // px of drag before the aim counts
 
 export class SkillButtons {

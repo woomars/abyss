@@ -472,9 +472,8 @@ export class Game {
   }
 
   // returns true if the damage landed
-  // dashing (chain dash) or rushing (Rush Strike) the hero cannot be touched — except by a riposte,
-  // the counter of an angry enemy the hero dashed into (that is what the red ring warns about)
-  dashInvuln() { return this.combat.state === 'dash' || !!this.skills.rush; }
+  // rolling (구르기) the hero cannot be touched — except by a riposte
+  dashInvuln() { return !!this.skills.rush; }
 
   damagePlayer(amount, source, { riposte = false } = {}) {
     const p = this.player;

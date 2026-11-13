@@ -22,13 +22,16 @@
       "chainCritStep": 0.05
     },
     "rushStrike": {
-      "name": "돌진 일격",
+      "name": "구르기",
       "directional": true,
       "cooldown": 10,
-      "damage": 40,
-      "distance": 320,
-      "speed": 1200,
-      "width": 60
+      "distance": 107,
+      "speed": 700,
+      "damage": 45,
+      "thrust": {
+        "length": 140,
+        "width": 56
+      }
     },
     "bladeWave": {
       "name": "원거리 공격",

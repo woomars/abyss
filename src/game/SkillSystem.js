@@ -96,7 +96,7 @@ export class SkillSystem {
       : auto || { x: this.combat.inputDir.x, y: this.combat.inputDir.y };
     this.events.emit('skill', { id, pos: { x: p.pos.x, y: p.pos.y }, dir });
     if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
-    else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, hit: new Set() };
+    else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, hit: new Set(), dist: def.distance * (1 + (this.bonus().rollRange || 0)) }; // 구르기
     else if (id === 'bladeWave') {
       this.projectiles.push({ def, x: p.pos.x, y: p.pos.y, dir, traveled: 0, hit: new Set() });
       if (this.gear().has('waveFan')) { // 세 갈래 팔찌: two more waves at an angle
@@ -160,6 +160,19 @@ export class SkillSystem {
     if (s.swept >= TAU - 1e-9) this.spin = null;
   }
 
+  // the thrust that ends a roll: everything along a short lane ahead is hit hard; if anything was hit,
+  // an automatic chain dash carries on from there
+  thrust(r) {
+    const th = r.def.thrust, p = this.player.pos, dir = r.dir;
+    const hit = new Set();
+    this.events.emit('slash', { pos: { x: p.x, y: p.y }, dir: { x: dir.x, y: dir.y }, radius: th.length, arcDeg: 22, chainIndex: 0, strong: false, thrust: true });
+    const n = Math.ceil(th.length / 20);
+    for (let k = 1; k <= n; k++) this.sweep(p.x + dir.x * th.length * (k / n), p.y + dir.y * th.length * (k / n), th.width / 2, hit, dir, r.def.damage, 'rushStrike');
+    this.events.emit('thrust', { pos: { x: p.x, y: p.y }, dir: { x: dir.x, y: dir.y }, hits: hit.size });
+    if (hit.size) this.combat.chainFrom(dir, hit);
+    return hit.size;
+  }
+
   // hits targetable enemies whose center is within halfWidth (+radius) of point (x, y)
   sweep(x, y, halfWidth, hitSet, dir, damage, skill = null) {
     for (const e of this.enemies.targetable()) {
@@ -179,23 +192,16 @@ export class SkillSystem {
 
     if (this.rush) {
       const r = this.rush;
-      const stepLen = Math.min(r.def.speed * dt, r.def.distance - r.traveled);
-      const before = { x: this.player.pos.x, y: this.player.pos.y };
+      // 구르기: a short roll (the hero cannot be hit meanwhile), then a strong thrust straight ahead
+      const stepLen = Math.min(r.def.speed * dt, r.dist - r.traveled);
       const { blocked } = this.movement.step(r.dir, stepLen);
       this.player.visualAngle = Math.atan2(r.dir.y, r.dir.x);
-      const moved = Math.hypot(this.player.pos.x - before.x, this.player.pos.y - before.y);
       r.traveled += stepLen;
-      // sample along the segment so fast rushes don't skip enemies
-      const n = Math.max(1, Math.ceil(moved / 20));
-      for (let k = 1; k <= n; k++) {
-        const t = k / n;
-        this.sweep(before.x + (this.player.pos.x - before.x) * t, before.y + (this.player.pos.y - before.y) * t,
-          r.def.width / 2, r.hit, r.dir, r.def.damage, 'rushStrike');
-      }
-      if (blocked || r.traveled >= r.def.distance - 1e-6) {
+      if (blocked || r.traveled >= r.dist - 1e-6) {
         this.rush = null;
+        this.thrust(r);
         this.events.emit('rushEnd', { pos: { x: this.player.pos.x, y: this.player.pos.y }, dir: r.dir });
-        this.movement.setDirection(this.combat.inputDir, { burst: false });
+        if (!this.combat.inCombat) this.movement.setDirection(this.combat.inputDir, { burst: false });
       }
     }
 

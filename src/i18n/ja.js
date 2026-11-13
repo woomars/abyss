@@ -257,4 +257,10 @@ export default {
   'guide.5.body': "ボスは反撃しないが、リズムに合わせて攻撃してくる。予兆をかわし、攻撃が終わった隙に連続攻撃を叩き込め。",
   'guide.6.title': "スキル",
   'guide.6.body': "ボタンをドラッグして狙い、タップで一番近い敵へ。ボタンの位置は一時停止メニューで変えられる。",
+  // boss types
+  'btype.warrior': "戦士",
+  'btype.mage': "魔法使い",
+  'btype.ranged': "射手",
+  'btype.summoner': "召喚士",
+  'hall.fromCycle': "{n}周目から",
 };

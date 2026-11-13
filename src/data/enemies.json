@@ -85,7 +85,7 @@
     },
     "warchief": {
       "rank": "boss",
-      "ai": "boss",
+      "ai": "warrior",
       "knockbackResist": 1,
       "staggerResist": 0.9,
       "enrageAt": 0.3,
@@ -158,11 +158,15 @@
             "recover": 0.2
           }
         ]
-      }
+      },
+      "tier": "mid",
+      "minCycle": 0,
+      "shape": "horned",
+      "shieldMul": 0.4
     },
     "gatekeeper": {
       "rank": "boss",
-      "ai": "boss",
+      "ai": "warrior",
       "knockbackResist": 1,
       "staggerResist": 0.9,
       "enrageAt": 0.3,
@@ -247,7 +251,11 @@
             "recover": 0.25
           }
         ]
-      }
+      },
+      "tier": "great",
+      "minCycle": 0,
+      "shape": "horned",
+      "shieldMul": 0.4
     },
     "spearman": {
       "hp": 26,
@@ -268,6 +276,1520 @@
         "windup": 0.55,
         "recover": 0.3
       }
+    },
+    "boneButcher": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "뼈 도살자",
+      "ai": "warrior",
+      "tier": "mid",
+      "minCycle": 1,
+      "shape": "horned",
+      "color": "#a8a08a",
+      "hp": 700,
+      "attack": 22,
+      "speed": 88,
+      "radius": 40,
+      "patterns": {
+        "triple": {
+          "kind": "triple",
+          "radius": 210,
+          "arcDeg": 70,
+          "windup": 0.5,
+          "gap": 0.3,
+          "spread": 25,
+          "damage": 18,
+          "recover": 0.5
+        },
+        "charge": {
+          "kind": "charge",
+          "length": 420,
+          "width": 70,
+          "windup": 0.75,
+          "dashTime": 0.25,
+          "damage": 24,
+          "recover": 0.6
+        },
+        "sweep": {
+          "kind": "sweep",
+          "radius": 150,
+          "windup": 0.6,
+          "damage": 18,
+          "recover": 0.4
+        }
+      },
+      "basics": {
+        "every": 2.3,
+        "triggerRange": 220,
+        "list": [
+          {
+            "name": "sweep",
+            "kind": "circle",
+            "radius": 120,
+            "windup": 0.5,
+            "damage": 12,
+            "recover": 0.25
+          },
+          {
+            "name": "jab",
+            "kind": "cone",
+            "radius": 180,
+            "arcDeg": 70,
+            "windup": 0.4,
+            "damage": 14,
+            "recover": 0.2
+          }
+        ]
+      }
+    },
+    "hexWitch": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "저주 마녀",
+      "ai": "mage",
+      "tier": "mid",
+      "minCycle": 0,
+      "shape": "robed",
+      "color": "#6a3a8a",
+      "hp": 630,
+      "attack": 22,
+      "speed": 80,
+      "radius": 40,
+      "patterns": {
+        "fields": {
+          "kind": "fields",
+          "count": 3,
+          "radius": 85,
+          "spread": 170,
+          "windup": 0.9,
+          "stagger": 0.25,
+          "damage": 22,
+          "recover": 0.5
+        },
+        "seeker": {
+          "kind": "seeker",
+          "radius": 95,
+          "windup": 1.4,
+          "lock": 0.45,
+          "damage": 24,
+          "recover": 0.5
+        },
+        "blink": {
+          "kind": "blink",
+          "min": 260,
+          "max": 420,
+          "radius": 100,
+          "windup": 0.45,
+          "damage": 22,
+          "recover": 0.6
+        }
+      },
+      "keep": [
+        280,
+        460
+      ]
+    },
+    "emberAdept": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "불씨 술사",
+      "ai": "mage",
+      "tier": "mid",
+      "minCycle": 2,
+      "shape": "robed",
+      "color": "#c0582a",
+      "hp": 630,
+      "attack": 22,
+      "speed": 80,
+      "radius": 40,
+      "patterns": {
+        "spiral": {
+          "kind": "spiral",
+          "windup": 0.7,
+          "tellRadius": 70,
+          "duration": 1.4,
+          "every": 0.14,
+          "arms": 3,
+          "turn": 0.35,
+          "speed": 280,
+          "radius": 9,
+          "range": 700,
+          "damage": 11,
+          "recover": 0.5
+        },
+        "fields": {
+          "kind": "fields",
+          "count": 4,
+          "radius": 85,
+          "spread": 170,
+          "windup": 0.9,
+          "stagger": 0.25,
+          "damage": 22,
+          "recover": 0.5
+        }
+      },
+      "keep": [
+        280,
+        460
+      ]
+    },
+    "goblinChief": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "고블린 사냥대장",
+      "ai": "ranged",
+      "tier": "mid",
+      "minCycle": 0,
+      "shape": "hooded",
+      "color": "#5a7a3a",
+      "hp": 595,
+      "attack": 22,
+      "speed": 95,
+      "radius": 40,
+      "patterns": {
+        "volley": {
+          "kind": "volley",
+          "windup": 0.7,
+          "count": 4,
+          "every": 0.12,
+          "speed": 520,
+          "radius": 8,
+          "range": 820,
+          "damage": 13,
+          "recover": 0.5
+        },
+        "fan": {
+          "kind": "fan",
+          "windup": 0.8,
+          "count": 5,
+          "arcDeg": 60,
+          "speed": 460,
+          "radius": 8,
+          "range": 760,
+          "damage": 13,
+          "recover": 0.5
+        },
+        "snipe": {
+          "kind": "snipe",
+          "windup": 1.0,
+          "speed": 1200,
+          "radius": 10,
+          "range": 1100,
+          "damage": 29,
+          "recover": 0.6
+        }
+      },
+      "keep": [
+        260,
+        520
+      ]
+    },
+    "bogStalker": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "늪의 추적자",
+      "ai": "ranged",
+      "tier": "mid",
+      "minCycle": 2,
+      "shape": "hooded",
+      "color": "#3a6a5a",
+      "hp": 595,
+      "attack": 22,
+      "speed": 95,
+      "radius": 40,
+      "patterns": {
+        "snipe": {
+          "kind": "snipe",
+          "windup": 1.0,
+          "speed": 1200,
+          "radius": 10,
+          "range": 1100,
+          "damage": 29,
+          "recover": 0.6
+        },
+        "fan": {
+          "kind": "fan",
+          "windup": 0.8,
+          "count": 7,
+          "arcDeg": 80,
+          "speed": 460,
+          "radius": 8,
+          "range": 760,
+          "damage": 13,
+          "recover": 0.5
+        }
+      },
+      "keep": [
+        260,
+        520
+      ]
+    },
+    "graveKeeper": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "무덤지기",
+      "ai": "summoner",
+      "tier": "mid",
+      "minCycle": 1,
+      "shape": "crowned",
+      "color": "#6a6a5a",
+      "hp": 630,
+      "attack": 22,
+      "speed": 70,
+      "radius": 40,
+      "patterns": {
+        "summon": {
+          "kind": "summon",
+          "type": "soldier",
+          "count": 3,
+          "windup": 0.7,
+          "recover": 0.4,
+          "maxMinions": 8
+        },
+        "shield": {
+          "kind": "shield",
+          "windup": 0.6,
+          "duration": 6,
+          "recover": 0.4
+        },
+        "fields": {
+          "kind": "fields",
+          "count": 2,
+          "radius": 85,
+          "spread": 170,
+          "windup": 0.9,
+          "stagger": 0.25,
+          "damage": 22,
+          "recover": 0.5
+        }
+      },
+      "keep": [
+        380,
+        640
+      ]
+    },
+    "wraithcaller": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "망령 부르는 자",
+      "ai": "summoner",
+      "tier": "mid",
+      "minCycle": 3,
+      "shape": "crowned",
+      "color": "#7a6aa8",
+      "hp": 630,
+      "attack": 22,
+      "speed": 70,
+      "radius": 40,
+      "patterns": {
+        "summon": {
+          "kind": "summon",
+          "type": "wraith",
+          "count": 2,
+          "windup": 0.7,
+          "recover": 0.4,
+          "maxMinions": 8,
+          "extraType": "soldier",
+          "extraCount": 1
+        },
+        "empower": {
+          "kind": "empower",
+          "windup": 0.6,
+          "duration": 6,
+          "attack": 0.3,
+          "speed": 0.3,
+          "recover": 0.4
+        }
+      },
+      "keep": [
+        380,
+        640
+      ]
+    },
+    "ironJuggernaut": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "강철 거인",
+      "ai": "warrior",
+      "tier": "region",
+      "minCycle": 0,
+      "shape": "horned",
+      "color": "#7a7f88",
+      "hp": 1500,
+      "attack": 30,
+      "speed": 88,
+      "radius": 46,
+      "patterns": {
+        "charge": {
+          "kind": "charge",
+          "length": 480,
+          "width": 70,
+          "windup": 0.75,
+          "dashTime": 0.25,
+          "damage": 33,
+          "recover": 0.6
+        },
+        "slam": {
+          "kind": "slam",
+          "radius": 130,
+          "windup": 0.8,
+          "damage": 30,
+          "recover": 0.5
+        },
+        "triple": {
+          "kind": "triple",
+          "radius": 210,
+          "arcDeg": 70,
+          "windup": 0.5,
+          "gap": 0.3,
+          "spread": 25,
+          "damage": 24,
+          "recover": 0.5
+        },
+        "shockwave": {
+          "kind": "ring",
+          "windup": 0.7,
+          "speed": 420,
+          "maxRadius": 520,
+          "thickness": 34,
+          "damage": 24,
+          "recover": 0.5
+        }
+      },
+      "basics": {
+        "every": 2.3,
+        "triggerRange": 220,
+        "list": [
+          {
+            "name": "sweep",
+            "kind": "circle",
+            "radius": 120,
+            "windup": 0.5,
+            "damage": 16,
+            "recover": 0.25
+          },
+          {
+            "name": "jab",
+            "kind": "cone",
+            "radius": 180,
+            "arcDeg": 70,
+            "windup": 0.4,
+            "damage": 20,
+            "recover": 0.2
+          }
+        ]
+      }
+    },
+    "bloodReaver": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "피의 약탈자",
+      "ai": "warrior",
+      "tier": "region",
+      "minCycle": 2,
+      "shape": "horned",
+      "color": "#8a1f2a",
+      "hp": 1425,
+      "attack": 30,
+      "speed": 88,
+      "radius": 46,
+      "patterns": {
+        "triple": {
+          "kind": "triple",
+          "radius": 210,
+          "arcDeg": 70,
+          "windup": 0.5,
+          "gap": 0.25,
+          "spread": 25,
+          "damage": 24,
+          "recover": 0.5
+        },
+        "cleave": {
+          "kind": "cone",
+          "radius": 230,
+          "arcDeg": 120,
+          "windup": 0.8,
+          "damage": 30,
+          "recover": 0.6
+        },
+        "charge": {
+          "kind": "charge",
+          "length": 420,
+          "width": 70,
+          "windup": 0.75,
+          "dashTime": 0.25,
+          "damage": 33,
+          "recover": 0.6
+        }
+      },
+      "basics": {
+        "every": 2.3,
+        "triggerRange": 220,
+        "list": [
+          {
+            "name": "sweep",
+            "kind": "circle",
+            "radius": 120,
+            "windup": 0.5,
+            "damage": 16,
+            "recover": 0.25
+          },
+          {
+            "name": "jab",
+            "kind": "cone",
+            "radius": 180,
+            "arcDeg": 70,
+            "windup": 0.4,
+            "damage": 20,
+            "recover": 0.2
+          }
+        ]
+      }
+    },
+    "frostSeer": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "서리 예언자",
+      "ai": "mage",
+      "tier": "region",
+      "minCycle": 1,
+      "shape": "robed",
+      "color": "#5aa0c8",
+      "hp": 1350,
+      "attack": 30,
+      "speed": 80,
+      "radius": 46,
+      "patterns": {
+        "fields": {
+          "kind": "fields",
+          "count": 4,
+          "radius": 85,
+          "spread": 170,
+          "windup": 0.9,
+          "stagger": 0.25,
+          "damage": 30,
+          "recover": 0.5
+        },
+        "seeker": {
+          "kind": "seeker",
+          "radius": 95,
+          "windup": 1.4,
+          "lock": 0.45,
+          "damage": 33,
+          "recover": 0.5
+        },
+        "spiral": {
+          "kind": "spiral",
+          "windup": 0.7,
+          "tellRadius": 70,
+          "duration": 1.4,
+          "every": 0.14,
+          "arms": 3,
+          "turn": 0.35,
+          "speed": 280,
+          "radius": 9,
+          "range": 700,
+          "damage": 15,
+          "recover": 0.5
+        }
+      },
+      "keep": [
+        280,
+        460
+      ]
+    },
+    "voidMagus": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "공허의 마도사",
+      "ai": "mage",
+      "tier": "region",
+      "minCycle": 3,
+      "shape": "robed",
+      "color": "#3a2a5a",
+      "hp": 1350,
+      "attack": 30,
+      "speed": 80,
+      "radius": 46,
+      "patterns": {
+        "blink": {
+          "kind": "blink",
+          "min": 260,
+          "max": 420,
+          "radius": 100,
+          "windup": 0.45,
+          "damage": 30,
+          "recover": 0.6
+        },
+        "spiral": {
+          "kind": "spiral",
+          "windup": 0.7,
+          "tellRadius": 70,
+          "duration": 1.4,
+          "every": 0.14,
+          "arms": 4,
+          "turn": 0.35,
+          "speed": 280,
+          "radius": 9,
+          "range": 700,
+          "damage": 15,
+          "recover": 0.5
+        },
+        "seeker": {
+          "kind": "seeker",
+          "radius": 95,
+          "windup": 1.4,
+          "lock": 0.45,
+          "damage": 33,
+          "recover": 0.5
+        }
+      },
+      "keep": [
+        280,
+        460
+      ]
+    },
+    "deadeye": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "해골 저격수",
+      "ai": "ranged",
+      "tier": "region",
+      "minCycle": 0,
+      "shape": "hooded",
+      "color": "#c8c0a8",
+      "hp": 1275,
+      "attack": 30,
+      "speed": 95,
+      "radius": 46,
+      "patterns": {
+        "snipe": {
+          "kind": "snipe",
+          "windup": 1.0,
+          "speed": 1200,
+          "radius": 10,
+          "range": 1100,
+          "damage": 39,
+          "recover": 0.6
+        },
+        "volley": {
+          "kind": "volley",
+          "windup": 0.7,
+          "count": 5,
+          "every": 0.12,
+          "speed": 520,
+          "radius": 8,
+          "range": 820,
+          "damage": 18,
+          "recover": 0.5
+        }
+      },
+      "keep": [
+        260,
+        520
+      ]
+    },
+    "thornArcher": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "가시 궁수",
+      "ai": "ranged",
+      "tier": "region",
+      "minCycle": 2,
+      "shape": "hooded",
+      "color": "#4a7a2a",
+      "hp": 1275,
+      "attack": 30,
+      "speed": 95,
+      "radius": 46,
+      "patterns": {
+        "fan": {
+          "kind": "fan",
+          "windup": 0.8,
+          "count": 6,
+          "arcDeg": 60,
+          "speed": 460,
+          "radius": 8,
+          "range": 760,
+          "damage": 18,
+          "recover": 0.5
+        },
+        "volley": {
+          "kind": "volley",
+          "windup": 0.7,
+          "count": 4,
+          "every": 0.12,
+          "speed": 520,
+          "radius": 8,
+          "range": 820,
+          "damage": 18,
+          "recover": 0.5
+        },
+        "fields": {
+          "kind": "fields",
+          "count": 3,
+          "radius": 70,
+          "spread": 170,
+          "windup": 0.9,
+          "stagger": 0.25,
+          "damage": 30,
+          "recover": 0.5
+        }
+      },
+      "keep": [
+        260,
+        520
+      ]
+    },
+    "boneLich": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "뼈의 리치",
+      "ai": "summoner",
+      "tier": "region",
+      "minCycle": 0,
+      "shape": "crowned",
+      "color": "#8a9aa8",
+      "hp": 1350,
+      "attack": 30,
+      "speed": 70,
+      "radius": 46,
+      "patterns": {
+        "summon": {
+          "kind": "summon",
+          "type": "soldier",
+          "count": 2,
+          "windup": 0.7,
+          "recover": 0.4,
+          "maxMinions": 8,
+          "extraType": "spearman",
+          "extraCount": 2
+        },
+        "shield": {
+          "kind": "shield",
+          "windup": 0.6,
+          "duration": 6,
+          "recover": 0.4
+        },
+        "empower": {
+          "kind": "empower",
+          "windup": 0.6,
+          "duration": 6,
+          "attack": 0.3,
+          "speed": 0.3,
+          "recover": 0.4
+        }
+      },
+      "keep": [
+        380,
+        640
+      ]
+    },
+    "broodMother": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "망령의 어미",
+      "ai": "summoner",
+      "tier": "region",
+      "minCycle": 1,
+      "shape": "crowned",
+      "color": "#9a7ab8",
+      "hp": 1350,
+      "attack": 30,
+      "speed": 70,
+      "radius": 46,
+      "patterns": {
+        "summon": {
+          "kind": "summon",
+          "type": "wraith",
+          "count": 3,
+          "windup": 0.7,
+          "recover": 0.4,
+          "maxMinions": 8
+        },
+        "empower": {
+          "kind": "empower",
+          "windup": 0.6,
+          "duration": 6,
+          "attack": 0.3,
+          "speed": 0.3,
+          "recover": 0.4
+        },
+        "seeker": {
+          "kind": "seeker",
+          "radius": 95,
+          "windup": 1.4,
+          "lock": 0.45,
+          "damage": 33,
+          "recover": 0.5
+        }
+      },
+      "keep": [
+        380,
+        640
+      ]
+    },
+    "abyssKnight": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "타락한 심연 기사",
+      "ai": "warrior",
+      "tier": "great",
+      "minCycle": 1,
+      "shape": "horned",
+      "color": "#2a2a3a",
+      "hp": 1900,
+      "attack": 30,
+      "speed": 88,
+      "radius": 52,
+      "patterns": {
+        "triple": {
+          "kind": "triple",
+          "radius": 210,
+          "arcDeg": 70,
+          "windup": 0.5,
+          "gap": 0.3,
+          "spread": 25,
+          "damage": 24,
+          "recover": 0.5
+        },
+        "charge": {
+          "kind": "charge",
+          "length": 500,
+          "width": 70,
+          "windup": 0.75,
+          "dashTime": 0.25,
+          "damage": 33,
+          "recover": 0.6
+        },
+        "slam": {
+          "kind": "slam",
+          "radius": 140,
+          "windup": 0.8,
+          "damage": 30,
+          "recover": 0.5
+        },
+        "shockwave": {
+          "kind": "ring",
+          "windup": 0.7,
+          "speed": 420,
+          "maxRadius": 520,
+          "thickness": 34,
+          "damage": 24,
+          "recover": 0.5
+        }
+      },
+      "basics": {
+        "every": 2.3,
+        "triggerRange": 220,
+        "list": [
+          {
+            "name": "sweep",
+            "kind": "circle",
+            "radius": 120,
+            "windup": 0.5,
+            "damage": 16,
+            "recover": 0.25
+          },
+          {
+            "name": "jab",
+            "kind": "cone",
+            "radius": 180,
+            "arcDeg": 70,
+            "windup": 0.4,
+            "damage": 20,
+            "recover": 0.2
+          }
+        ]
+      }
+    },
+    "starEater": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "별을 삼킨 자",
+      "ai": "mage",
+      "tier": "great",
+      "minCycle": 0,
+      "shape": "robed",
+      "color": "#2a3a7a",
+      "hp": 1805,
+      "attack": 30,
+      "speed": 80,
+      "radius": 52,
+      "patterns": {
+        "spiral": {
+          "kind": "spiral",
+          "windup": 0.7,
+          "tellRadius": 70,
+          "duration": 1.4,
+          "every": 0.14,
+          "arms": 4,
+          "turn": 0.35,
+          "speed": 280,
+          "radius": 9,
+          "range": 700,
+          "damage": 15,
+          "recover": 0.5
+        },
+        "fields": {
+          "kind": "fields",
+          "count": 4,
+          "radius": 85,
+          "spread": 170,
+          "windup": 0.9,
+          "stagger": 0.25,
+          "damage": 30,
+          "recover": 0.5
+        },
+        "blink": {
+          "kind": "blink",
+          "min": 260,
+          "max": 420,
+          "radius": 100,
+          "windup": 0.45,
+          "damage": 30,
+          "recover": 0.6
+        }
+      },
+      "keep": [
+        280,
+        460
+      ]
+    },
+    "dreamWeaver": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "악몽 직조자",
+      "ai": "mage",
+      "tier": "great",
+      "minCycle": 2,
+      "shape": "robed",
+      "color": "#5a2a6a",
+      "hp": 1805,
+      "attack": 30,
+      "speed": 80,
+      "radius": 52,
+      "patterns": {
+        "seeker": {
+          "kind": "seeker",
+          "radius": 95,
+          "windup": 1.4,
+          "lock": 0.45,
+          "damage": 33,
+          "recover": 0.5
+        },
+        "fields": {
+          "kind": "fields",
+          "count": 5,
+          "radius": 85,
+          "spread": 170,
+          "windup": 0.9,
+          "stagger": 0.2,
+          "damage": 30,
+          "recover": 0.5
+        },
+        "spiral": {
+          "kind": "spiral",
+          "windup": 0.7,
+          "tellRadius": 70,
+          "duration": 1.4,
+          "every": 0.14,
+          "arms": 3,
+          "turn": 0.35,
+          "speed": 280,
+          "radius": 9,
+          "range": 700,
+          "damage": 15,
+          "recover": 0.5
+        }
+      },
+      "keep": [
+        280,
+        460
+      ]
+    },
+    "stormMarksman": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "폭풍 사수",
+      "ai": "ranged",
+      "tier": "great",
+      "minCycle": 2,
+      "shape": "hooded",
+      "color": "#4a6a9a",
+      "hp": 1710,
+      "attack": 30,
+      "speed": 95,
+      "radius": 52,
+      "patterns": {
+        "volley": {
+          "kind": "volley",
+          "windup": 0.7,
+          "count": 6,
+          "every": 0.12,
+          "speed": 520,
+          "radius": 8,
+          "range": 820,
+          "damage": 18,
+          "recover": 0.5
+        },
+        "fan": {
+          "kind": "fan",
+          "windup": 0.8,
+          "count": 7,
+          "arcDeg": 60,
+          "speed": 460,
+          "radius": 8,
+          "range": 760,
+          "damage": 18,
+          "recover": 0.5
+        },
+        "snipe": {
+          "kind": "snipe",
+          "windup": 1.0,
+          "speed": 1200,
+          "radius": 10,
+          "range": 1100,
+          "damage": 39,
+          "recover": 0.6
+        }
+      },
+      "keep": [
+        260,
+        520
+      ]
+    },
+    "shadeHunter": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "그림자 사냥꾼",
+      "ai": "ranged",
+      "tier": "great",
+      "minCycle": 3,
+      "shape": "hooded",
+      "color": "#1f1f2a",
+      "hp": 1710,
+      "attack": 30,
+      "speed": 95,
+      "radius": 52,
+      "patterns": {
+        "snipe": {
+          "kind": "snipe",
+          "windup": 0.85,
+          "speed": 1200,
+          "radius": 10,
+          "range": 1100,
+          "damage": 39,
+          "recover": 0.6
+        },
+        "fan": {
+          "kind": "fan",
+          "windup": 0.8,
+          "count": 5,
+          "arcDeg": 60,
+          "speed": 460,
+          "radius": 8,
+          "range": 760,
+          "damage": 18,
+          "recover": 0.5
+        },
+        "volley": {
+          "kind": "volley",
+          "windup": 0.7,
+          "count": 4,
+          "every": 0.12,
+          "speed": 520,
+          "radius": 8,
+          "range": 820,
+          "damage": 18,
+          "recover": 0.5
+        }
+      },
+      "keep": [
+        260,
+        520
+      ]
+    },
+    "deathPriest": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "죽음의 사제",
+      "ai": "summoner",
+      "tier": "great",
+      "minCycle": 0,
+      "shape": "crowned",
+      "color": "#4a4a4a",
+      "hp": 1805,
+      "attack": 30,
+      "speed": 70,
+      "radius": 52,
+      "patterns": {
+        "summon": {
+          "kind": "summon",
+          "type": "soldier",
+          "count": 2,
+          "windup": 0.7,
+          "recover": 0.4,
+          "maxMinions": 8,
+          "extraType": "archer",
+          "extraCount": 2
+        },
+        "shield": {
+          "kind": "shield",
+          "windup": 0.6,
+          "duration": 6,
+          "recover": 0.4
+        },
+        "empower": {
+          "kind": "empower",
+          "windup": 0.6,
+          "duration": 6,
+          "attack": 0.3,
+          "speed": 0.3,
+          "recover": 0.4
+        },
+        "fields": {
+          "kind": "fields",
+          "count": 3,
+          "radius": 85,
+          "spread": 170,
+          "windup": 0.9,
+          "stagger": 0.25,
+          "damage": 30,
+          "recover": 0.5
+        }
+      },
+      "keep": [
+        380,
+        640
+      ]
+    },
+    "abyssMother": {
+      "rank": "boss",
+      "knockbackResist": 1,
+      "staggerResist": 0.9,
+      "enrageAt": 0.3,
+      "enrage": {
+        "speed": 1.3,
+        "windup": 0.75,
+        "cooldown": 0.7
+      },
+      "cooldown": [
+        1.1,
+        1.9
+      ],
+      "openingDelay": 1.2,
+      "retryDelay": 0.5,
+      "stopDistance": 30,
+      "summonRing": 50,
+      "attackRange": 36,
+      "shieldMul": 0.4,
+      "name": "심연의 어머니",
+      "ai": "summoner",
+      "tier": "great",
+      "minCycle": 1,
+      "shape": "crowned",
+      "color": "#4a1f3a",
+      "hp": 1805,
+      "attack": 30,
+      "speed": 70,
+      "radius": 52,
+      "patterns": {
+        "summon": {
+          "kind": "summon",
+          "type": "elite",
+          "count": 1,
+          "windup": 0.7,
+          "recover": 0.4,
+          "maxMinions": 8,
+          "extraType": "wraith",
+          "extraCount": 2
+        },
+        "empower": {
+          "kind": "empower",
+          "windup": 0.6,
+          "duration": 6,
+          "attack": 0.3,
+          "speed": 0.3,
+          "recover": 0.4
+        },
+        "shield": {
+          "kind": "shield",
+          "windup": 0.6,
+          "duration": 6,
+          "recover": 0.4
+        },
+        "shockwave": {
+          "kind": "ring",
+          "windup": 0.7,
+          "speed": 420,
+          "maxRadius": 520,
+          "thickness": 34,
+          "damage": 24,
+          "recover": 0.5
+        }
+      },
+      "keep": [
+        380,
+        640
+      ]
     }
   },
   "counterWindow": 1,
@@ -406,5 +1928,16 @@
         ]
       }
     ]
+  },
+  "bossTiers": {
+    "mid": {
+      "level": 1
+    },
+    "region": {
+      "level": 2
+    },
+    "great": {
+      "level": 3
+    }
   }
 }

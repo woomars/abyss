@@ -87,6 +87,7 @@ export class Enemy {
   }
 
   takeHit({ damage, knockDir, knockback, stagger }) {
+    if (this.shieldOn) damage *= this.tcfg.shieldMul != null ? this.tcfg.shieldMul : 0.4; // a summoner shielded by its minions
     if (!this.targetable) return { killed: false };
     this.hp -= damage;
     this.flashTime = 0.08;

@@ -1,5 +1,6 @@
 import { floorInfo, pickWeighted, randInt } from './floorPlan.js';
 import { bossKey } from './Medals.js';
+import { pickBoss, bossLevel } from './bossPick.js';
 import { buildRoom } from './RoomBuilder.js';
 import { floorLabel } from '../core/floorLabel.js';
 
@@ -16,6 +17,7 @@ export class Dungeon {
   }
 
   reset() {
+    this.lastBoss = {}; // tier -> boss met last in this run (not twice in a row)
     this.floor = 0;
     this.gold = 0;
     this.room = null;
@@ -70,13 +72,17 @@ export class Dungeon {
       this.waveCount = info.band.waves.count;
       this.spawnWave();
     } else if (kind === 'boss') {
-      const b = info.boss;
-      const tcfg = g.config.enemies.types[b.type];
+      // one of this tier's bosses unlocked by the loop, at random (not the one met last time)
+      const b = info.boss, types = g.config.enemies.types;
+      const type = b.type || pickBoss(types, b.tier, info.cycle, g.rng, this.lastBoss[b.tier] || null);
+      this.lastBoss[b.tier] = type;
+      const tcfg = types[type];
+      const level = bossLevel(b.tier || tcfg.tier, info.cycle, g.config.enemies);
       const pos = { x: room.center.x + room.arena.width * 0.18, y: room.center.y };
-      this.boss = g.enemies.spawnAt(b.type, pos, { hp: info.mods.hp * b.hp, attack: info.mods.attack * b.attack, speed: info.mods.speed });
-      this.boss.patterns = b.patterns.slice();
+      this.boss = g.enemies.spawnAt(type, pos, { hp: info.mods.hp * b.hp, attack: info.mods.attack * b.attack, speed: info.mods.speed, level });
+      if (b.patterns) this.boss.patterns = b.patterns.slice();
       bossName = tcfg.name;
-      this.boss.bossInfo = { key: bossKey(b.type, info.band), name: tcfg.name, title: info.band.title }; // for the family's bestiary
+      this.boss.bossInfo = { key: bossKey(type), name: tcfg.name, title: info.band.title }; // for the family's bestiary
       title = `${floorLabel(this.floor)} ${info.band.title} — ${bossName}`;
     } else if (kind === 'treasure') {
       this.chest = { x: room.center.x, y: room.center.y, r: c.chestRadius, opened: false, big: false };

@@ -490,26 +490,56 @@ export class Renderer {
       ctx.fillStyle = `rgba(255,50,30,${pulse})`;
       ctx.fill();
     }
-    ctx.beginPath();
-    for (let i = 0; i < 8; i++) {
-      const a = Math.PI / 8 + (i * Math.PI) / 4;
-      ctx[i ? 'lineTo' : 'moveTo'](x + Math.cos(a) * r, y + Math.sin(a) * r);
+    if (e.shieldOn) { // summoner shield while minions live
+      ctx.beginPath();
+      ctx.arc(x, y, r * 1.35, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(150,200,255,${0.55 + Math.sin(performance.now() / 150) * 0.2})`;
+      ctx.lineWidth = 4;
+      ctx.stroke();
     }
-    ctx.closePath();
+    const shape = e.tcfg.shape || 'horned';
+    ctx.beginPath();
+    if (shape === 'robed') { // mage: tall robe with a hood point
+      ctx.moveTo(x, y - r * 1.25); ctx.lineTo(x + r * 0.95, y + r); ctx.lineTo(x - r * 0.95, y + r); ctx.closePath();
+    } else if (shape === 'hooded') { // ranged: round cloak
+      ctx.arc(x, y, r * 0.95, 0, Math.PI * 2);
+    } else { // warrior / summoner: armoured octagon
+      for (let i = 0; i < 8; i++) {
+        const a = Math.PI / 8 + (i * Math.PI) / 4;
+        ctx[i ? 'lineTo' : 'moveTo'](x + Math.cos(a) * r, y + Math.sin(a) * r);
+      }
+      ctx.closePath();
+    }
     ctx.fillStyle = fill;
     ctx.fill();
     ctx.strokeStyle = '#ffcf5a';
     ctx.lineWidth = 4;
     ctx.stroke();
-    // horns
     ctx.fillStyle = '#e8dcc0';
-    for (const sgn of [-1, 1]) {
-      ctx.beginPath();
-      ctx.moveTo(x + sgn * r * 0.45, y - r * 0.8);
-      ctx.lineTo(x + sgn * r * 0.95, y - r * 1.45);
-      ctx.lineTo(x + sgn * r * 0.75, y - r * 0.7);
-      ctx.closePath();
-      ctx.fill();
+    if (shape === 'horned') { // horns
+      for (const sgn of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(x + sgn * r * 0.45, y - r * 0.8);
+        ctx.lineTo(x + sgn * r * 0.95, y - r * 1.45);
+        ctx.lineTo(x + sgn * r * 0.75, y - r * 0.7);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else if (shape === 'robed') { // a floating orb
+      ctx.fillStyle = '#b8a0ff';
+      ctx.beginPath(); ctx.arc(x + r * 1.1, y - r * 0.5, r * 0.22, 0, Math.PI * 2); ctx.fill();
+    } else if (shape === 'hooded') { // bow arc
+      ctx.strokeStyle = '#d8c8a0'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(x, y, r * 1.25, -0.9, 0.9); ctx.stroke();
+    } else if (shape === 'crowned') { // bone crown
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath();
+        ctx.moveTo(x + i * r * 0.22 - r * 0.09, y - r * 0.85);
+        ctx.lineTo(x + i * r * 0.22, y - r * (1.25 + (i % 2 ? 0 : 0.15)));
+        ctx.lineTo(x + i * r * 0.22 + r * 0.09, y - r * 0.85);
+        ctx.closePath();
+        ctx.fill();
+      }
     }
     // eyes
     ctx.fillStyle = e.ai && e.ai.enraged ? '#ff4030' : '#ffd060';
@@ -522,6 +552,19 @@ export class Renderer {
     const ctx = this.ctx;
     for (const h of hz.list) {
       if (!this.isVisible(h, (h.radius || h.maxRadius || 20) + 20)) continue;
+      if (h.kind === 'arrow' && h.style === 'bolt') { // boss shot: glowing orb with a short tail
+        ctx.strokeStyle = 'rgba(255,140,90,0.5)';
+        ctx.lineWidth = h.radius * 1.2;
+        ctx.beginPath();
+        ctx.moveTo(h.x - h.dir.x * 18, h.y - h.dir.y * 18);
+        ctx.lineTo(h.x, h.y);
+        ctx.stroke();
+        ctx.fillStyle = '#ffd0a0';
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2);
+        ctx.fill();
+        continue;
+      }
       if (h.kind === 'arrow') {
         ctx.strokeStyle = '#f2e3c0';
         ctx.lineWidth = 3;
@@ -539,7 +582,23 @@ export class Renderer {
       const flash = h.kind !== 'ring' && h.done;
       ctx.save();
       ctx.translate(h.x, h.y);
-      if (h.kind === 'circle' || h.kind === 'cone') {
+      if (h.kind === 'line') { // a lane: the charge path or the sniper's line
+        ctx.rotate(Math.atan2(h.dir.y, h.dir.x));
+        if (h.tell) { // aim only: dashed line that brightens
+          ctx.setLineDash([12, 8]);
+          ctx.strokeStyle = `rgba(255,90,60,${0.35 + 0.5 * k})`;
+          ctx.lineWidth = Math.max(2, h.width * 0.35);
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(h.length, 0); ctx.stroke();
+          ctx.setLineDash([]);
+        } else {
+          ctx.fillStyle = flash ? 'rgba(255,120,80,0.55)' : 'rgba(255,50,40,0.10)';
+          ctx.fillRect(0, -h.width / 2, h.length, h.width);
+          ctx.strokeStyle = flash ? 'rgba(255,200,150,0.9)' : 'rgba(255,70,60,0.7)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(0, -h.width / 2, h.length, h.width);
+          if (!flash) { ctx.fillStyle = `rgba(255,60,50,${0.12 + 0.2 * k})`; ctx.fillRect(0, -h.width / 2, h.length * k, h.width); }
+        }
+      } else if (h.kind === 'circle' || h.kind === 'cone') {
         const path = () => {
           ctx.beginPath();
           if (h.kind === 'circle') ctx.arc(0, 0, h.radius, 0, Math.PI * 2);
@@ -550,6 +609,18 @@ export class Renderer {
             ctx.closePath();
           }
         };
+        if (h.tell) { // a warning shape that does no harm itself (spiral glow, fan arc)
+          if (!flash) {
+            path();
+            ctx.setLineDash([8, 6]);
+            ctx.strokeStyle = `rgba(255,150,90,${0.4 + 0.5 * k})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+          ctx.restore();
+          continue;
+        }
         path();
         ctx.fillStyle = flash ? 'rgba(255,120,80,0.55)' : 'rgba(255,50,40,0.10)';
         ctx.fill();

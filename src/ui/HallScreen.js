@@ -10,6 +10,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 const nameOf = (p) => `${t('gen', { n: p.generation })} ${esc(fullName(p.family, p.given))}`;
 const genName = (p) => t('hall.genName', { gen: t('gen', { n: p.generation }), given: esc(trPerson(p.given, 'given')) });
 const day = (ms) => formatDate(ms, false);
+const TYPE_ICON = { warrior: 'sword', mage: 'flame', ranged: 'eye', summoner: 'fang' };
 
 // "칼날의 정수 ×2 (공격력 +30%)" for an essence record { count, total }
 export function essenceLine(relicsCfg, id, e, withStat = true) {
@@ -200,9 +201,9 @@ export class HallScreen {
       const cur = this.people()[0];
       if (cur.bosses[b.key]) slayers.push(`${genName(cur)} ×${cur.bosses[b.key].count} <small>${t('hall.living')}</small>`);
       return `<div class="hl-boss${r ? '' : ' locked'}">
-        <div class="hl-bicon">${relicIcon(b.type === 'gatekeeper' ? 'flame' : 'fang', 30)}</div>
+        <div class="hl-bicon">${relicIcon(TYPE_ICON[b.type] || 'fang', 30)}</div>
         <div class="hl-btext">
-          <div class="hl-bname">${r ? esc(tr(b.name)) : '???'} <small>${esc(tr(b.title))} · ${t('hall.bossFrom', { floor: floorLabel(b.floor), n: this.config.dungeon.cycleLength })}</small></div>
+          <div class="hl-bname">${r ? esc(tr(b.name)) : '???'} <small>${t(`btype.${b.type}`)} · ${esc(tr(b.title))} · ${floorLabel(b.floor)} · ${t('hall.fromCycle', { n: b.minCycle + 1 })}</small></div>
           ${r ? `<div>${t('hall.killsBy', { n: r.kills, floor: floorLabel(r.deepest) })}</div>
           <div class="hl-mfirst">${t('hall.firstSlayer', { who: nameOf(r.first), floor: floorLabel(r.first.floor) })}</div>
           ${slayers.length ? `<div class="hl-slayers">${slayers.join(' · ')}</div>` : ''}` : `<div class="dim">${t('hall.notYet')}</div>`}

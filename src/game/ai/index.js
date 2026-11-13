@@ -4,5 +4,10 @@ import { archerAI } from './archer.js';
 import { wraithAI } from './wraith.js';
 import { bossAI } from './boss.js';
 import { spearmanAI } from './spearman.js';
+import { warriorAI } from './warrior.js';
+import { mageAI } from './mage.js';
+import { rangedAI } from './ranged.js';
+import { summonerAI } from './summoner.js';
 
-export const AI = { archer: archerAI, wraith: wraithAI, boss: bossAI, spearman: spearmanAI };
+export const AI = { archer: archerAI, wraith: wraithAI, boss: bossAI, spearman: spearmanAI, warrior: warriorAI, mage: mageAI, ranged: rangedAI, summoner: summonerAI };
+export const BOSS_TYPES = ['warrior', 'mage', 'ranged', 'summoner'];

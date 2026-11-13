@@ -6,15 +6,20 @@ export const who = (l) => ({ given: l.given, family: l.family, generation: l.gen
 
 export const emptyRunStats = () => ({ kills: 0, bestCombo: 0, medals: [], bosses: {}, killer: null, essences: {} });
 
-// a boss is known by its type and the band it guards (중간보스 오크 대장 ≠ 지역 보스 오크 대장)
-export const bossKey = (type, band) => `${type}@${band.from}`;
+// a boss is known by its type id
+export const bossKey = (type) => type;
 
-// every boss of the dungeon in floor order (for the codex)
+// saves from before Phase 5 keyed bosses by type@band; they map onto the boss ids
+export const OLD_BOSS_KEYS = { 'warchief@4': 'warchief', 'warchief@10': 'warchief', 'gatekeeper@20': 'gatekeeper' };
+
+const TIERS = ['mid', 'region', 'great'];
+// every boss of the dungeon, tier by tier, then by the loop it appears from (for the codex)
 export function bossRoster(dungeonCfg, enemiesCfg) {
-  return dungeonCfg.bands.filter((b) => b.kind === 'boss' && b.boss).map((b) => ({
-    key: bossKey(b.boss.type, b), type: b.boss.type, title: b.title, floor: b.from,
-    name: (enemiesCfg.types[b.boss.type] || {}).name || b.boss.type,
-  }));
+  const band = (tier) => dungeonCfg.bands.find((b) => b.kind === 'boss' && b.boss && b.boss.tier === tier) || {};
+  return Object.entries(enemiesCfg.types)
+    .filter(([, t]) => t.rank === 'boss' && t.tier)
+    .map(([key, t]) => ({ key, type: t.ai, tier: t.tier, minCycle: t.minCycle || 0, title: band(t.tier).title || '', floor: band(t.tier).from || 0, name: t.name }))
+    .sort((a, b) => TIERS.indexOf(a.tier) - TIERS.indexOf(b.tier) || a.minCycle - b.minCycle);
 }
 
 // give a medal to the hero in play; null when he already has it

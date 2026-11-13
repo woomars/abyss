@@ -1,7 +1,34 @@
 // One save slot: the family (name, generation, history), its level, the stash, powder, set records,
 // gear worn between runs and the run state (idle / run / rest at a forge). Pure data + (de)serialise.
+import { OLD_BOSS_KEYS } from '../Medals.js';
+
 export const VAULT_VERSION = 1;
 const PARTS = ['weapon', 'helm', 'armor', 'gloves', 'boots', 'amulet', 'ring'];
+
+function migrateBestiary(b) {
+  const out = {};
+  for (const [k, r] of Object.entries(b)) {
+    const id = OLD_BOSS_KEYS[k] || k;
+    const o = out[id];
+    if (!o) { out[id] = { ...r }; continue; }
+    o.kills = (o.kills || 0) + (r.kills || 0);
+    o.deepest = Math.max(o.deepest || 0, r.deepest || 0);
+    if (r.first && (!o.first || (r.first.at || 0) < (o.first.at || 0))) o.first = r.first;
+  }
+  return out;
+}
+
+function migrateTally(t) {
+  const out = {};
+  for (const [k, r] of Object.entries(t || {})) {
+    const id = OLD_BOSS_KEYS[k] || k;
+    const o = out[id];
+    if (!o) { out[id] = { ...r }; continue; }
+    o.count = (o.count || 0) + (r.count || 0);
+    o.deepest = Math.max(o.deepest || 0, r.deepest || 0);
+  }
+  return out;
+}
 
 export class Vault {
   constructor({ family = '', given = '' } = {}) {
@@ -81,8 +108,10 @@ export class Vault {
     v.tokens = Number.isFinite(data.tokens) ? Math.max(0, data.tokens) : 0;
     const obj = (o) => (o && typeof o === 'object' && !Array.isArray(o) ? o : {});
     v.medals = obj(data.medals);
-    v.bestiary = obj(data.bestiary);
+    v.bestiary = migrateBestiary(obj(data.bestiary));
+    for (const h of v.lineage.history) if (h && h.bosses) h.bosses = migrateTally(h.bosses);
     v.runStats = data.state === 'run' && data.runStats && typeof data.runStats === 'object' ? data.runStats : null;
+    if (v.runStats && v.runStats.bosses) v.runStats.bosses = migrateTally(v.runStats.bosses);
     v.medalsFilled = data.medalsFilled === true;
     const nums = (o) => Object.fromEntries(Object.entries(obj(o)).filter(([, n]) => Number.isFinite(n)));
     v.essence = { stats: nums(data.essence && data.essence.stats), owned: nums(data.essence && data.essence.owned) };

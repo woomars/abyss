@@ -61,13 +61,9 @@
       "music": "miniboss",
       "title": "중간보스",
       "boss": {
-        "type": "warchief",
+        "tier": "mid",
         "hp": 1,
-        "attack": 1,
-        "patterns": [
-          "smash",
-          "summon"
-        ]
+        "attack": 1
       }
     },
     {
@@ -99,14 +95,9 @@
       "music": "miniboss",
       "title": "지역 보스",
       "boss": {
-        "type": "warchief",
-        "hp": 2.2,
-        "attack": 1.4,
-        "patterns": [
-          "smash",
-          "summon",
-          "shockwave"
-        ]
+        "tier": "region",
+        "hp": 1,
+        "attack": 1
       }
     },
     {
@@ -138,14 +129,9 @@
       "music": "boss",
       "title": "대형 보스",
       "boss": {
-        "type": "gatekeeper",
+        "tier": "great",
         "hp": 1,
-        "attack": 1,
-        "patterns": [
-          "cone",
-          "shockwave",
-          "summon"
-        ]
+        "attack": 1
       }
     }
   ],

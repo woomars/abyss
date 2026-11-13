@@ -259,4 +259,10 @@ export default {
   'guide.5.body': "Bosses don't counter, but they attack in rhythm. Dodge the warnings, then pour your chain into the gap after each attack.",
   'guide.6.title': "Skills",
   'guide.6.body': "Drag a button to aim; a quick tap fires at the nearest enemy. Move the buttons from the pause menu.",
+  // boss types
+  'btype.warrior': "Warrior",
+  'btype.mage': "Mage",
+  'btype.ranged': "Ranged",
+  'btype.summoner': "Summoner",
+  'hall.fromCycle': "from loop {n}",
 };

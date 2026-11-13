@@ -272,4 +272,10 @@ export default {
   'guide.5.body': "보스는 반격하지 않지만 박자에 맞춰 공격합니다. 경고를 피하고, 공격이 끝난 틈에 연속 공격을 몰아넣으세요.",
   'guide.6.title': "특수기",
   'guide.6.body': "버튼을 끌어 조준하고, 눌렀다 떼면 가장 가까운 적에게 나갑니다. 버튼 위치는 일시 정지 메뉴에서 바꿀 수 있어요.",
+  // boss types
+  'btype.warrior': "전사",
+  'btype.mage': "마법사",
+  'btype.ranged': "원거리",
+  'btype.summoner': "소환사",
+  'hall.fromCycle': "{n}주기부터",
 };

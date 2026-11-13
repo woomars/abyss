@@ -68,6 +68,7 @@ export class Renderer {
     const fx = game.effects;
     if (game.mode === 'dungeon') { this.drawRoomObjects(game.dungeon); this.drawLoot(game); }
     this.drawHazards(game.hazards);
+    this.drawGear(game);
     this.drawLinks(fx);
     this.drawEnemies(game, alpha);
     this.drawAfterimages(fx, game.player);
@@ -207,6 +208,32 @@ export class Renderer {
     ctx.lineWidth = s.pause > 0 ? 7 : 5;
     ctx.lineCap = 'round';
     ctx.stroke();
+  }
+
+  // burning ash (재의 인장) and allied wraiths (망령 군주의 왕관)
+  drawGear(game) {
+    const ctx = this.ctx, now = performance.now();
+    for (const f of game.fields || []) {
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,120,40,${0.12 + 0.1 * Math.sin(now / 90 + f.x)})`;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,170,80,0.5)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    for (const a of game.allies || []) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, a.t) * 0.8;
+      ctx.beginPath();
+      ctx.arc(a.x, a.y - 4 + Math.sin(now / 200 + a.x) * 3, 13, Math.PI, 0);
+      ctx.lineTo(a.x + 13, a.y + 10); ctx.lineTo(a.x - 13, a.y + 10); ctx.closePath();
+      ctx.fillStyle = '#9fd8ff';
+      ctx.fill();
+      ctx.strokeStyle = '#e0f4ff';
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   // no enemy on screen: a small arrow around the player toward the nearest one

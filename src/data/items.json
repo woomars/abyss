@@ -349,6 +349,41 @@
       "name": "심연의 반지",
       "slot": "ring",
       "effect": "abyssRing"
+    },
+    "ashenSigil": {
+      "name": "재의 인장",
+      "slot": "amulet",
+      "effect": "chainField"
+    },
+    "tridentBracers": {
+      "name": "세 갈래 팔찌",
+      "slot": "gloves",
+      "effect": "waveFan"
+    },
+    "wraithCrown": {
+      "name": "망령 군주의 왕관",
+      "slot": "helm",
+      "effect": "thrall"
+    },
+    "quakestride": {
+      "name": "지진의 장화",
+      "slot": "boots",
+      "effect": "rushSlam"
+    },
+    "thunderMaul": {
+      "name": "천둥 망치",
+      "slot": "weapon",
+      "effect": "stunUp"
+    },
+    "frenzyPendant": {
+      "name": "광란의 목걸이",
+      "slot": "amulet",
+      "effect": "comboRise"
+    },
+    "shadowMail": {
+      "name": "그림자 갑주",
+      "slot": "armor",
+      "effect": "dashEvade"
     }
   },
   "effects": {
@@ -381,6 +416,44 @@
       "label": "연쇄 마지막 타격에서 폭발",
       "radius": 110,
       "damage": 2
+    },
+    "chainField": {
+      "label": "연쇄 타격 자리에 1.5초 동안 타오르는 재가 남아 적을 태운다",
+      "radius": 60,
+      "life": 1.5,
+      "every": 0.25,
+      "damage": 0.15
+    },
+    "waveFan": {
+      "label": "원거리 공격이 세 갈래로 나간다",
+      "angle": 15
+    },
+    "thrall": {
+      "label": "쓰러뜨린 적이 6초 동안 아군 망령이 되어 싸운다 (최대 3)",
+      "life": 6,
+      "max": 3,
+      "every": 0.8,
+      "range": 160,
+      "damage": 0.6,
+      "speed": 230
+    },
+    "rushSlam": {
+      "label": "돌진 일격 끝에 땅을 내려찍는다",
+      "radius": 140,
+      "damage": 30
+    },
+    "stunUp": {
+      "label": "특수기 기절 시간 +50%",
+      "mult": 1.5
+    },
+    "comboRise": {
+      "label": "콤보 5마다 공격력이 2% 더 오른다",
+      "comboStep": 0.02
+    },
+    "dashEvade": {
+      "label": "돌진을 시작할 때 0.25초 무적 (2초마다)",
+      "invuln": 0.25,
+      "cooldown": 2
     }
   },
   "sets": {
@@ -412,6 +485,96 @@
         "3": "연쇄 횟수 +1",
         "4": "연쇄 피해 +25%",
         "5": "연쇄 마지막 타격에서 폭발"
+      }
+    },
+    "arcaneVeil": {
+      "name": "비전의 장막",
+      "pieces": {
+        "weapon": "비전의 장막의 검",
+        "helm": "비전의 장막의 투구",
+        "armor": "비전의 장막의 갑옷",
+        "gloves": "비전의 장막의 장갑",
+        "boots": "비전의 장막의 장화"
+      },
+      "bonuses": {
+        "2": {
+          "skillDamage": 0.15
+        },
+        "3": {
+          "cooldown": 0.1
+        },
+        "4": {
+          "chainRange": 0.2
+        },
+        "5": {
+          "effect": "chainField"
+        }
+      },
+      "labels": {
+        "2": "특수기 피해 +15%",
+        "3": "특수기 재사용 대기 -10%",
+        "4": "연쇄 거리 +20%",
+        "5": "연쇄 타격 자리에 1.5초 동안 타오르는 재가 남아 적을 태운다"
+      }
+    },
+    "galeHunter": {
+      "name": "질풍의 사냥꾼",
+      "pieces": {
+        "weapon": "질풍의 사냥꾼의 검",
+        "helm": "질풍의 사냥꾼의 투구",
+        "armor": "질풍의 사냥꾼의 갑옷",
+        "gloves": "질풍의 사냥꾼의 장갑",
+        "boots": "질풍의 사냥꾼의 장화"
+      },
+      "bonuses": {
+        "2": {
+          "speed": 0.08
+        },
+        "3": {
+          "crit": 0.08
+        },
+        "4": {
+          "critDamage": 0.3
+        },
+        "5": {
+          "effect": "waveFan"
+        }
+      },
+      "labels": {
+        "2": "이동 속도 +8%",
+        "3": "치명타 확률 +8%",
+        "4": "치명타 피해 +30%",
+        "5": "원거리 공격이 세 갈래로 나간다"
+      }
+    },
+    "gravecall": {
+      "name": "무덤의 부름",
+      "pieces": {
+        "weapon": "무덤의 부름의 검",
+        "helm": "무덤의 부름의 투구",
+        "armor": "무덤의 부름의 갑옷",
+        "gloves": "무덤의 부름의 장갑",
+        "boots": "무덤의 부름의 장화"
+      },
+      "bonuses": {
+        "2": {
+          "maxHp": 20
+        },
+        "3": {
+          "attackFlat": 3
+        },
+        "4": {
+          "damage": 0.1
+        },
+        "5": {
+          "effect": "thrall"
+        }
+      },
+      "labels": {
+        "2": "최대 체력 +20",
+        "3": "공격력 +3",
+        "4": "공격력 +10%",
+        "5": "쓰러뜨린 적이 6초 동안 아군 망령이 되어 싸운다 (최대 3)"
       }
     }
   },

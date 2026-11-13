@@ -51,6 +51,81 @@ export function installGearEffects(game) {
     }
   });
 
+  // 재의 인장 / 비전의 장막 5세트: chain hits leave burning ash
+  ev.on('hit', (h) => {
+    if (!on('chainField') || h.skill || !(h.chainIndex > 0)) return;
+    const c = cfg().chainField;
+    game.fields = game.fields || [];
+    game.fields.push({ x: h.pos.x, y: h.pos.y, r: c.radius, t: c.life, tick: 0 });
+  });
+
+  // 망령 군주의 왕관 / 무덤의 부름 5세트: a slain foe rises as an allied wraith for a while
+  ev.on('kill', (k) => {
+    if (!on('thrall') || game.over || !k.enemy || k.enemy.isBoss) return;
+    const c = cfg().thrall;
+    game.allies = game.allies || [];
+    if (game.allies.length >= c.max) return;
+    game.allies.push({ x: k.pos.x, y: k.pos.y, t: c.life, cd: 0.3 });
+    ev.emit('thrallRise', { pos: { x: k.pos.x, y: k.pos.y } });
+  });
+
+  // 지진의 장화 / 강철 맹세 5세트: Rush Strike ends with a ground slam
+  ev.on('rushEnd', (r) => {
+    if (!on('rushSlam')) return;
+    const c = cfg().rushSlam, b = game.bonusStats;
+    ev.emit('setBlast', { pos: { x: r.pos.x, y: r.pos.y }, radius: c.radius });
+    for (const e of game.enemies.targetable()) {
+      if (Math.hypot(e.pos.x - r.pos.x, e.pos.y - r.pos.y) <= c.radius + e.radius) strike(e, c.damage * (1 + b.damage + b.skillDamage), r.pos, 'slam');
+    }
+  });
+
+  // 그림자 갑주: a moment of invulnerability as a dash starts (with a cooldown)
+  let evadeAt = -99;
+  ev.on('dashStart', () => {
+    if (!on('dashEvade')) return;
+    const c = cfg().dashEvade;
+    if (game.time - evadeAt < c.cooldown) return;
+    evadeAt = game.time;
+    game.player.invuln = Math.max(game.player.invuln, c.invuln);
+    ev.emit('dashEvade', { pos: { x: game.player.pos.x, y: game.player.pos.y } });
+  });
+
+  // per step: ash burns, allied wraiths hunt
+  game.gearTick = (dt) => {
+    const fields = game.fields || [], allies = game.allies || [];
+    if (fields.length) {
+      const c = cfg().chainField;
+      for (let i = fields.length - 1; i >= 0; i--) {
+        const f = fields[i];
+        f.t -= dt; f.tick -= dt;
+        if (f.tick <= 0) {
+          f.tick = c.every;
+          for (const e of game.enemies.targetable()) if (Math.hypot(e.pos.x - f.x, e.pos.y - f.y) <= f.r + e.radius) strike(e, base() * c.damage, f, 'ash');
+        }
+        if (f.t <= 0) fields.splice(i, 1);
+      }
+    }
+    if (allies.length) {
+      const c = cfg().thrall;
+      for (let i = allies.length - 1; i >= 0; i--) {
+        const a = allies[i];
+        a.t -= dt; a.cd -= dt;
+        let best = null, bd = Infinity;
+        for (const e of game.enemies.targetable()) { const d = Math.hypot(e.pos.x - a.x, e.pos.y - a.y); if (d < bd) { bd = d; best = e; } }
+        if (best && bd > c.range * 0.5) { // drift toward the prey
+          const step = Math.min(bd - c.range * 0.5, c.speed * dt);
+          a.x += ((best.pos.x - a.x) / bd) * step; a.y += ((best.pos.y - a.y) / bd) * step;
+        }
+        if (best && bd <= c.range && a.cd <= 0) {
+          a.cd = c.every;
+          ev.emit('thrallHit', { from: { x: a.x, y: a.y }, to: { x: best.pos.x, y: best.pos.y } });
+          strike(best, base() * c.damage, a, 'thrall');
+        }
+        if (a.t <= 0) allies.splice(i, 1);
+      }
+    }
+  };
+
   // 심연의 군주 5세트: the last chain strike explodes
   ev.on('slash', (s) => {
     if (!on('setBlast') || !s.strong) return;

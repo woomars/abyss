@@ -52,6 +52,7 @@ export class Game {
       player: this.player, movement: this.movement, enemies: this.enemies, combat: this.combat,
       combatCfg: config.combat, events, rng, arena: this.arena, bonus,
       ups: () => this.skillGrowth || {},
+      gear: () => this.gearEffects, gearCfg: () => this.config.items.effects,
     });
     this.hitStop = new HitStop(config.feedback);
     this.effects = new EffectManager(config, events, rng);
@@ -133,6 +134,8 @@ export class Game {
 
   // place the player at a new room's start (called by Dungeon behind the fade)
   loadRoom(room) {
+    this.allies = [];
+    this.fields = [];
     this.enemies.clear();
     this.loot.clearGround();
     this.hazards.clear();
@@ -164,6 +167,7 @@ export class Game {
     addStats(s, levelStats(this.config.progress, this.vault.progress.level));
     this.gearEffects = sum.effects;
     this.gearSets = sum.sets;
+    if (sum.effects.has('comboRise')) s.comboStep += this.config.items.effects.comboRise.comboStep; // 광란의 목걸이
     this.bonusStats = s;
   }
 
@@ -596,6 +600,7 @@ export class Game {
     // input that arrives during hit stop is applied once it ends
     if (!this.hitStop.active) this.applyPendingStroke();
     this.skills.update(dt);
+    if (this.gearTick) this.gearTick(dt); // burning ash, allied wraiths
     if (this.skills.spinning) {
       this.movement.update(dt); // keep moving while the blade spins
     } else if (!this.skills.busy) {

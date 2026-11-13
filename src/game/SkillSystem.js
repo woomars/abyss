@@ -4,7 +4,9 @@ import { NO_BONUS } from './Relics.js';
 import { grownDef } from './SkillGrowth.js';
 
 export class SkillSystem {
-  constructor(cfg, { player, movement, enemies, combat, combatCfg, events, rng, arena, bonus = null, ups = null }) {
+  constructor(cfg, { player, movement, enemies, combat, combatCfg, events, rng, arena, bonus = null, ups = null, gear = null, gearCfg = null }) {
+    this.gear = gear || (() => new Set()); // () => worn legendary/set effects
+    this.gearCfg = gearCfg || (() => ({})); // () => config.items.effects
     this.ups = ups || (() => ({})); // () => growth per skill (SkillGrowth.skillUps)
     this.cfg = cfg; // config.skills (live)
     this.bonus = bonus || (() => NO_BONUS); // () => relic stat bonuses (damage, crit, cooldown)
@@ -95,7 +97,13 @@ export class SkillSystem {
     this.events.emit('skill', { id, pos: { x: p.pos.x, y: p.pos.y }, dir });
     if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
     else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, hit: new Set() };
-    else if (id === 'bladeWave') this.projectiles.push({ def, x: p.pos.x, y: p.pos.y, dir, traveled: 0, hit: new Set() });
+    else if (id === 'bladeWave') {
+      this.projectiles.push({ def, x: p.pos.x, y: p.pos.y, dir, traveled: 0, hit: new Set() });
+      if (this.gear().has('waveFan')) { // 세 갈래 팔찌: two more waves at an angle
+        const a = ((this.gearCfg().waveFan || {}).angle || 15) * Math.PI / 180;
+        for (const s of [-a, a]) this.projectiles.push({ def, x: p.pos.x, y: p.pos.y, dir: { x: dir.x * Math.cos(s) - dir.y * Math.sin(s), y: dir.x * Math.sin(s) + dir.y * Math.cos(s) }, traveled: 0, hit: new Set() });
+      }
+    }
     this.remaining[slot] = this.cooldownOf(def);
     return true;
   }
@@ -113,7 +121,8 @@ export class SkillSystem {
     // special attacks usually stun, and a stunned enemy forgets the attack it was building up
     const st = this.cfg.stun;
     if (st && this.rng() < (e.isBoss ? st.bossChance : st.chance)) {
-      e.stun(e.isBoss ? st.bossDuration : st.duration);
+      const k = this.gear().has('stunUp') ? ((this.gearCfg().stunUp || {}).mult || 1) : 1; // 천둥 망치
+      e.stun((e.isBoss ? st.bossDuration : st.duration) * k);
       this.events.emit('stun', { enemy: e, pos });
     }
   }
@@ -185,6 +194,7 @@ export class SkillSystem {
       }
       if (blocked || r.traveled >= r.def.distance - 1e-6) {
         this.rush = null;
+        this.events.emit('rushEnd', { pos: { x: this.player.pos.x, y: this.player.pos.y }, dir: r.dir });
         this.movement.setDirection(this.combat.inputDir, { burst: false });
       }
     }

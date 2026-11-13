@@ -7,7 +7,7 @@ import { tr, t } from '../i18n/index.js';
 
 const ICONS = {
   spin: '⟳', rushStrike: '⇧',
-  bladeWave: '<svg class="wv-ic" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 16 L28 4.5 A 25 25 0 0 1 28 27.5 Z" fill="rgba(159,216,255,0.22)" stroke="#9fd8ff" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 9.5 A 14 14 0 0 1 14 22.5" fill="none" stroke="rgba(220,240,255,0.7)" stroke-width="1.4" stroke-dasharray="2 2.5"/><g class="wv-blade"><path d="M5 16 L25 16" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/><path d="M5 13.6 L5 18.4" stroke="#c9a86a" stroke-width="2.4" stroke-linecap="round"/></g></svg>', // 질풍 베기: a cone with a swinging blade
+  bladeWave: '<svg class="wv-ic" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#9fd8ff" stroke-width="1.6" stroke-linejoin="round"><path d="M2.0 25.0 L10.0 25.0 Q9.6 18.6 3.2 16.2 Q4.8 21.0 2.0 25.0 Z"/><path d="M8.0 25.0 L20.0 25.0 Q19.4 15.4 9.8 11.8 Q12.2 19.0 8.0 25.0 Z"/><path d="M14.0 25.0 L31.0 25.0 Q30.1 11.4 16.6 6.3 Q19.9 16.5 14.0 25.0 Z"/></g></svg>', // 질풍 베기: three shark-fin outlines, small to large — a gale in flight (still image)
 };
 const AIM_DEADZONE = 30; // px of drag before the aim counts (a plain press-and-release never aims)
 

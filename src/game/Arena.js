@@ -1,4 +1,4 @@
-// Rectangular room with axis-aligned pillar obstacles.
+// Rectangular (or circular: cfg.circle) room with axis-aligned pillar obstacles.
 export class Arena {
   constructor(cfg) {
     this.cfg = cfg;
@@ -12,10 +12,21 @@ export class Arena {
     let x = pos.x, y = pos.y;
     let hitWall = false;
     let nx = 0, ny = 0;
-    if (x < radius) { x = radius; hitWall = true; nx += 1; }
-    if (x > this.width - radius) { x = this.width - radius; hitWall = true; nx -= 1; }
-    if (y < radius) { y = radius; hitWall = true; ny += 1; }
-    if (y > this.height - radius) { y = this.height - radius; hitWall = true; ny -= 1; }
+    if (this.cfg.circle) { // round arena: keep inside the circle that fits the room
+      const cx = this.width / 2, cy = this.height / 2, R = Math.min(this.width, this.height) / 2;
+      const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
+      if (d > R - radius) {
+        const k = d > 1e-9 ? (R - radius) / d : 0;
+        x = cx + dx * k; y = cy + dy * k;
+        hitWall = true;
+        if (d > 1e-9) { nx -= dx / d; ny -= dy / d; }
+      }
+    } else {
+      if (x < radius) { x = radius; hitWall = true; nx += 1; }
+      if (x > this.width - radius) { x = this.width - radius; hitWall = true; nx -= 1; }
+      if (y < radius) { y = radius; hitWall = true; ny += 1; }
+      if (y > this.height - radius) { y = this.height - radius; hitWall = true; ny -= 1; }
+    }
 
     const pillars = this.pillars;
     for (let i = 0; i < pillars.length; i++) {

@@ -106,6 +106,7 @@ async function boot() {
     music.play(e.music);
     if (e.kind === 'boss') banner.show(tr(e.boss), `${floorLabel(e.floor)} ${tr(game.dungeon.info.band.title)}`, { kind: 'boss', ms: 2400 });
     else if (e.kind === 'treasure') { /* the card screen says it all */ }
+    else if (e.variant) banner.show(`${floorLabel(e.floor)} · ${t(`room.${e.variant}`)}`, t(`room.${e.variant}Sub`), { kind: e.variant === 'elite' ? 'boss' : 'reward', ms: 2200 });
     else banner.show(e.kind === 'combat' ? floorLabel(e.floor) : tr(e.title));
   });
   events.on('roomCleared', (e) => {

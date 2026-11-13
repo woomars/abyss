@@ -263,4 +263,9 @@ export default {
   'btype.ranged': "射手",
   'btype.summoner': "召喚士",
   'hall.fromCycle': "{n}周目から",
+  // elite and trap rooms
+  'room.elite': "精鋭の部屋",
+  'room.trap': "罠の部屋",
+  'room.eliteSub': "強化された敵のみ・制圧で装備確定",
+  'room.trapSub': "棘が突き出る—敵も傷つく",
 };

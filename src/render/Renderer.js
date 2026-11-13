@@ -744,8 +744,24 @@ export class Renderer {
 
   drawRoomObjects(d) {
     const ctx = this.ctx, t = performance.now() / 1000;
+    for (const s of d.spikes || []) { // trap tiles: faint when idle, pulsing red as they warn, spikes when up
+      if (!this.isVisible({ x: s.x + s.w / 2, y: s.y + s.h / 2 }, s.w)) continue;
+      ctx.fillStyle = s.phase === 'warn' ? `rgba(255,60,40,${0.25 + 0.2 * Math.sin(t * 20)})` : s.phase === 'up' ? 'rgba(90,80,100,0.9)' : 'rgba(120,100,130,0.18)';
+      ctx.fillRect(s.x, s.y, s.w, s.h);
+      ctx.strokeStyle = s.phase === 'warn' ? 'rgba(255,90,60,0.9)' : 'rgba(150,130,160,0.5)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(s.x, s.y, s.w, s.h);
+      if (s.phase === 'up') {
+        ctx.fillStyle = '#d8d0e0';
+        const n = 4, step = s.w / n;
+        for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+          const cx = s.x + step * (i + 0.5), cy = s.y + step * (j + 0.5);
+          ctx.beginPath(); ctx.moveTo(cx, cy - step * 0.38); ctx.lineTo(cx + step * 0.25, cy + step * 0.3); ctx.lineTo(cx - step * 0.25, cy + step * 0.3); ctx.closePath(); ctx.fill();
+        }
+      }
+    }
     const ex = d.exit;
-    if (ex.r > 0 && this.isVisible(ex, ex.r * 2)) {
+    if (ex.r > 0 && ex.open && this.isVisible(ex, ex.r * 2)) { // the portal only shows once it is there
       ctx.save();
       ctx.translate(ex.x, ex.y);
       if (ex.open) {
@@ -924,7 +940,16 @@ export class Renderer {
     ctx.fillStyle = COLORS.wall;
     ctx.fillRect(cam.x - v.w, cam.y - v.h, v.w * 2, v.h * 2);
     ctx.fillStyle = COLORS.floor;
-    ctx.fillRect(0, 0, arena.width, arena.height);
+    if (arena.cfg.circle) { // round arena: the floor is a disc
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(arena.width / 2, arena.height / 2, Math.min(arena.width, arena.height) / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = COLORS.pillarEdge;
+      ctx.lineWidth = 6;
+      ctx.stroke();
+      ctx.clip();
+    } else ctx.fillRect(0, 0, arena.width, arena.height);
     // grid gives a sense of motion
     const g = 80;
     const x0 = Math.max(0, Math.floor((cam.x - v.w / 2) / g) * g), x1 = Math.min(arena.width, cam.x + v.w / 2);
@@ -935,6 +960,7 @@ export class Renderer {
     for (let x = x0; x <= x1; x += g) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); }
     for (let y = y0; y <= y1; y += g) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }
     ctx.stroke();
+    if (arena.cfg.circle) ctx.restore();
     for (const p of arena.pillars) {
       if (!this.isVisible({ x: p.x + p.w / 2, y: p.y + p.h / 2 }, Math.max(p.w, p.h))) continue;
       ctx.fillStyle = COLORS.pillar;

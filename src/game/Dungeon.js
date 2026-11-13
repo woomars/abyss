@@ -58,6 +58,8 @@ export class Dungeon {
     g.loadRoom(room);
     this.exit = { x: room.exit.x, y: room.exit.y, r: c.exitRadius, open: false, armIn: 0, armed: false };
     this.cleared = false;
+    this.spikes = [];
+    this.variant = null; // elite | trap on some combat floors
     this.exitIn = Infinity; // seconds until the exit appears after the room is won
     this.chest = null;
     this.boss = null;
@@ -69,6 +71,13 @@ export class Dungeon {
     const info = this.info;
     let title = floorLabel(this.floor), music = info.music, bossName = null;
     if (kind === 'combat') {
+      // from floor 5 on, some combat floors are an elite room or a trap room
+      const v = c.variants;
+      if (v && (info.base >= v.from || info.cycle > 0)) {
+        const r = g.rng();
+        this.variant = r < v.elite ? 'elite' : r < v.elite + v.trap ? 'trap' : null;
+      }
+      if (this.variant === 'trap') this.layTraps();
       this.waveCount = info.band.waves.count;
       this.spawnWave();
     } else if (kind === 'boss') {
@@ -90,7 +99,42 @@ export class Dungeon {
       music = 'rest';
     }
     this.lastAlive = this.remaining;
-    g.events.emit('floorStart', { floor: this.floor, kind, music, title, boss: bossName });
+    g.events.emit('floorStart', { floor: this.floor, kind, music, title, boss: bossName, variant: this.variant });
+  }
+
+  // spike tiles of a trap room: two groups rising in turn, away from the start
+  layTraps() {
+    const t = this.cfg.trap, g = this.game, a = g.arena, rng = g.rng, start = this.room.start;
+    this.spikes = [];
+    for (let tries = 0; tries < 200 && this.spikes.length < t.tiles; tries++) {
+      const x = 60 + rng() * (a.width - 120 - t.size), y = 60 + rng() * (a.height - 120 - t.size);
+      const c = { x: x + t.size / 2, y: y + t.size / 2 };
+      if (Math.hypot(c.x - start.x, c.y - start.y) < 260) continue;
+      if (a.resolveCircle(c, t.size * 0.75).hitWall) continue;
+      if (this.spikes.some((s) => Math.abs(s.x - x) < t.size * 1.2 && Math.abs(s.y - y) < t.size * 1.2)) continue;
+      this.spikes.push({ x, y, w: t.size, h: t.size, offset: (this.spikes.length % 2) * t.period / 2, phase: 'idle', clock: 0 });
+    }
+  }
+
+  updateTraps(dt) {
+    const t = this.cfg.trap, g = this.game;
+    for (const s of this.spikes) {
+      s.clock = (s.clock + dt) % t.period;
+      const k = (s.clock + s.offset) % t.period;
+      const phase = k < t.period - t.warn - t.up ? 'idle' : k < t.period - t.up ? 'warn' : 'up';
+      if (phase === 'up' && s.phase !== 'up') { // the spikes rise: whoever stands there is hurt once
+        const inside = (p, r) => p.x + r > s.x && p.x - r < s.x + s.w && p.y + r > s.y && p.y - r < s.y + s.h;
+        if (inside(g.player.pos, g.player.radius * 0.6)) g.damagePlayer(t.damage * this.info.mods.attack, { pos: { x: s.x + s.w / 2, y: s.y + s.h / 2 } });
+        for (const e of g.enemies.targetable()) {
+          if (!inside(e.pos, e.radius * 0.6)) continue;
+          const { killed } = e.takeHit({ damage: t.enemyDamage, knockDir: { x: 0, y: -1 }, knockback: 0, stagger: 0.2 });
+          g.events.emit('hit', { enemy: e, damage: t.enemyDamage, crit: false, strong: false, chainIndex: 0, pos: { x: e.pos.x, y: e.pos.y }, dir: { x: 0, y: -1 }, skill: 'spikes' });
+          if (killed) g.events.emit('kill', { enemy: e, pos: { x: e.pos.x, y: e.pos.y }, dir: { x: 0, y: -1 }, crit: false });
+        }
+        g.events.emit('spikes', { x: s.x + s.w / 2, y: s.y + s.h / 2 });
+      }
+      s.phase = phase;
+    }
   }
 
   // next room after the exit: a treasure room after some floors, else the next floor
@@ -142,13 +186,14 @@ export class Dungeon {
     this.waveIndex += 1;
     const room = Math.max(0, c.maxAlive - this.remaining);
     let n = Math.min(randInt(band.waves.size, rng), room);
+    if (this.variant === 'elite') n = Math.max(2, Math.round(n * c.variants.eliteSize)); // fewer, all empowered
     while (n > 0) {
       const group = Math.min(n, randInt(c.spawn.groupSize, rng));
       const center = this.spawnPoint();
       for (let i = 0; i < group; i++) {
         const type = pickWeighted(band.mix, rng);
         const mods = { ...this.info.mods };
-        if (band.enhancedChance && rng() < band.enhancedChance) {
+        if (this.variant === 'elite' || (band.enhancedChance && rng() < band.enhancedChance)) {
           mods.hp *= c.enhanced.hp; mods.attack *= c.enhanced.attack; mods.size = c.enhanced.size; mods.enhanced = true; mods.riposte = !!c.enhanced.riposte;
         }
         const s = c.spawn.groupSpread;
@@ -199,7 +244,9 @@ export class Dungeon {
       const pos = g.arena.resolveCircle(bossPos, c.chestRadius + 10).pos;
       this.chest = { x: pos.x, y: pos.y, r: c.chestRadius * 1.3, opened: false, big: true };
     }
-    g.events.emit('roomCleared', { floor: this.floor, kind: this.roomKind, gold });
+    if (this.variant === 'elite') g.loot.dropAt(bossPos || g.player.pos, { minGrade: c.variants.eliteDrop, count: 1 }); // the elite room's prize
+    this.spikes = []; // the traps fall silent
+    g.events.emit('roomCleared', { floor: this.floor, kind: this.roomKind, gold, variant: this.variant });
     // the way down appears in the middle of the room a moment later (moved off a pillar if needed)
     this.cleared = true;
     const ctr = this.room ? this.room.center : { x: this.exit.x, y: this.exit.y };
@@ -261,6 +308,7 @@ export class Dungeon {
       this.exitIn -= dt;
       if (this.exitIn <= 0) { this.exitIn = Infinity; this.openExit(); }
     }
+    if (this.spikes.length && !this.cleared) this.updateTraps(dt);
     if (!this.exit.open && !this.cleared) {
       if (this.roomKind === 'combat') {
         if (this.waveIndex < this.waveCount && alive <= this.info.band.waves.nextAt) this.spawnWave();

@@ -278,4 +278,9 @@ export default {
   'btype.ranged': "원거리",
   'btype.summoner': "소환사",
   'hall.fromCycle': "{n}주기부터",
+  // elite and trap rooms
+  'room.elite': "정예의 방",
+  'room.trap': "함정 방",
+  'room.eliteSub': "강화된 적만 나온다 · 정리하면 장비 확정",
+  'room.trapSub': "가시가 솟는다 — 적도 다친다",
 };

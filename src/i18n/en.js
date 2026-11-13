@@ -265,4 +265,9 @@ export default {
   'btype.ranged': "Ranged",
   'btype.summoner': "Summoner",
   'hall.fromCycle': "from loop {n}",
+  // elite and trap rooms
+  'room.elite': "Elite Room",
+  'room.trap': "Trap Room",
+  'room.eliteSub': "Only empowered foes · clear it for sure loot",
+  'room.trapSub': "Spikes rise — they hurt enemies too",
 };

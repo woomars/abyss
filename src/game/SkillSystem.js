@@ -207,11 +207,12 @@ export class SkillSystem {
         pr.x += pr.dir.x * stepLen / n;
         pr.y += pr.dir.y * stepLen / n;
         pr.traveled += stepLen / n;
+        if (this.arena.resolveCircle({ x: pr.x, y: pr.y }, 4).hitWall) { pr.blocked = true; break; } // pillars and walls stop it
         this.sweep(pr.x, pr.y, pr.def.width / 2, pr.hit, pr.dir, pr.def.damage, 'bladeWave');
         if (pr.traveled >= pr.def.range) break;
       }
       const out = pr.x < 0 || pr.y < 0 || pr.x > this.arena.width || pr.y > this.arena.height;
-      if (pr.traveled >= pr.def.range || out) this.projectiles.splice(i, 1);
+      if (pr.traveled >= pr.def.range || out || pr.blocked) this.projectiles.splice(i, 1);
     }
   }
 }

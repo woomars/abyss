@@ -93,11 +93,11 @@ export class SkillSystem {
     this.combat.cancel();
     const p = this.player;
     const len = aimDir ? Math.hypot(aimDir.x, aimDir.y) : 0;
-    const auto = def.directional && !(len > 1e-6) && id !== 'rushStrike' ? this.nearestDir() : null; // a plain tap of the jump goes the way the hero runs
+    const auto = def.directional && !(len > 1e-6) ? this.nearestDir() : null; // a plain tap goes at the nearest enemy (the jump too)
     const hd = p.heading && Math.hypot(p.heading.x, p.heading.y) > 1e-6 ? p.heading : this.combat.inputDir;
     const dir = len > 1e-6 && def.directional
       ? { x: aimDir.x / len, y: aimDir.y / len }
-      : auto || (id === 'rushStrike' ? { x: hd.x, y: hd.y } : { x: this.combat.inputDir.x, y: this.combat.inputDir.y }); // the jump goes the way the hero is moving
+      : auto || (id === 'rushStrike' ? { x: hd.x, y: hd.y } : { x: this.combat.inputDir.x, y: this.combat.inputDir.y }); // no enemy: the jump goes the way the hero is moving
     this.events.emit('skill', { id, pos: { x: p.pos.x, y: p.pos.y }, dir });
     if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
     else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, dist: def.distance }; // 점프 (the distance grows with the skill's growth cards)

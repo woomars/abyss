@@ -2,7 +2,7 @@
 // them: positions are fractions of the stage, edited by dragging in the layout mode). Kept out of the
 // stroke input area.
 // Non-directional skills fire on press. Directional skills (rush, blade wave): press, drag to aim,
-// release to fire; a plain tap fires in the current movement direction.
+// release to fire; a plain tap goes at the nearest enemy (the way the hero runs when there is none).
 import { tr, t } from '../i18n/index.js';
 
 const ICONS = {

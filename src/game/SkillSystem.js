@@ -102,7 +102,9 @@ export class SkillSystem {
     if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
     else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, dist: def.distance }; // 점프 (the distance grows with the skill's growth cards)
     else if (id === 'bladeWave') {
-      this.projectiles.push({ def, x: p.pos.x, y: p.pos.y, dir, traveled: 0, hit: new Set() }); // 질풍 베기
+      const angle = this.waveAngle(def); // 질풍 베기: the blade sweeps the cone, the gale flies on
+      this.events.emit('slash', { pos: { x: p.pos.x, y: p.pos.y }, dir: { x: dir.x, y: dir.y }, radius: 70, arcDeg: angle, chainIndex: 0, strong: true, wave: true });
+      this.projectiles.push({ def, x: p.pos.x, y: p.pos.y, ox: p.pos.x, oy: p.pos.y, angle, dir, traveled: 0, hit: new Set() });
     }
     this.remaining[slot] = this.cooldownOf(def);
     return true;

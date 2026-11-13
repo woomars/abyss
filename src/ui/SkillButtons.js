@@ -5,8 +5,11 @@
 // release to fire; a plain tap fires in the current movement direction.
 import { tr, t } from '../i18n/index.js';
 
-const ICONS = { spin: '⟳', rushStrike: '⇧', bladeWave: '≋' };
-const AIM_DEADZONE = 12; // px of drag before the aim counts
+const ICONS = {
+  spin: '⟳', rushStrike: '⇧',
+  bladeWave: '<svg class="wv-ic" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 16 L28 4.5 A 25 25 0 0 1 28 27.5 Z" fill="rgba(159,216,255,0.22)" stroke="#9fd8ff" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 9.5 A 14 14 0 0 1 14 22.5" fill="none" stroke="rgba(220,240,255,0.7)" stroke-width="1.4" stroke-dasharray="2 2.5"/><g class="wv-blade"><path d="M5 16 L25 16" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/><path d="M5 13.6 L5 18.4" stroke="#c9a86a" stroke-width="2.4" stroke-linecap="round"/></g></svg>', // 질풍 베기: a cone with a swinging blade
+};
+const AIM_DEADZONE = 30; // px of drag before the aim counts (a plain press-and-release never aims)
 
 export class SkillButtons {
   constructor(root, skills, { toLocal = (x, y) => ({ x, y }) } = {}) {

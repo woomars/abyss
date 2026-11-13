@@ -120,7 +120,7 @@ export function installGearEffects(game) {
 
   // 심연의 군주 5세트: the last chain strike explodes
   ev.on('slash', (s) => {
-    if (!on('setBlast') || !s.strong) return;
+    if (!on('setBlast') || !s.strong || s.wave) return; // the chain's last blow only, not 질풍 베기's swing
     const c = cfg().setBlast;
     ev.emit('setBlast', { pos: { x: s.pos.x, y: s.pos.y }, radius: c.radius });
     for (const e of game.enemies.targetable()) {

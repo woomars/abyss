@@ -15,7 +15,7 @@ export class EffectManager {
     this.particles = new Pool(() => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: '#fff', dust: false, a0: 1 }), f.particles.max);
     this.numbers = new Pool(() => ({ x: 0, y: 0, value: 0, crit: false, hurt: false, life: 0, max: 1 }), 64);
     this.rings = new Pool(() => ({ x: 0, y: 0, r0: 0, r1: 0, life: 0, max: 1, color: '#fff' }), 32);
-    this.slashes = new Pool(() => ({ x: 0, y: 0, angle: 0, radius: 0, arc: 0, life: 0, max: 1, strong: false, sweep: 1 }), 32);
+    this.slashes = new Pool(() => ({ x: 0, y: 0, angle: 0, radius: 0, arc: 0, life: 0, max: 1, strong: false, sweep: 1, wave: false }), 32);
     this.nextSweep = 1; // blade swings alternate clockwise / counter-clockwise
     this.links = new Pool(() => ({ x0: 0, y0: 0, x1: 0, y1: 0, life: 0, max: 1, index: 0 }), 32);
     this.winds = new Pool(() => ({ x: 0, y: 0, angle: 0, life: 0, max: 1 }), 16);
@@ -121,8 +121,9 @@ export class EffectManager {
     r.life = r.max = RING_LIFE;
   }
 
-  onSlash({ pos, dir, radius, arcDeg, strong }) {
+  onSlash({ pos, dir, radius, arcDeg, strong, wave = false }) {
     const s = this.slashes.acquire();
+    s.wave = wave; // 질풍 베기's swing: wind-blue
     s.x = pos.x; s.y = pos.y; s.angle = Math.atan2(dir.y, dir.x);
     s.radius = radius; s.arc = arcDeg * Math.PI / 180; s.strong = strong;
     s.sweep = this.nextSweep;

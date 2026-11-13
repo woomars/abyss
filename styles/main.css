@@ -150,6 +150,12 @@ html, body {
 .skill.fired { transform: scale(0.88); }
 .skill.cooling .icon { opacity: 0.2; }
 .skill .icon { font-size: 26px; line-height: 64px; }
+.skill .wv-ic { width: 34px; height: 34px; vertical-align: middle; overflow: visible; }
+.skill .wv-blade { transform-box: view-box; transform-origin: 5px 16px; animation: wv-sway 2.4s ease-in-out infinite; }
+.skill.cooling .wv-blade { animation: none; transform: rotate(0deg); }
+.skill.fired .wv-blade { animation: wv-swing 0.15s ease-out; }
+@keyframes wv-sway { 0%, 55%, 100% { transform: rotate(-24deg); } 70% { transform: rotate(24deg); } 85% { transform: rotate(24deg); } }
+@keyframes wv-swing { from { transform: rotate(-30deg); } to { transform: rotate(30deg); } }
 .skill .cd {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-size: 20px; font-weight: 700; color: #fff; text-shadow: 0 0 4px #000;

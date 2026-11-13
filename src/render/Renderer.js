@@ -162,14 +162,14 @@ export class Renderer {
         ctx.moveTo(0, 0);
         ctx.arc(0, 0, r, Math.min(a0, a1), Math.max(a0, a1));
         ctx.closePath();
-        const base = s.strong ? 'rgba(255,214,150,' : 'rgba(240,235,220,';
+        const base = s.wave ? 'rgba(170,225,255,' : s.strong ? 'rgba(255,214,150,' : 'rgba(240,235,220,';
         ctx.fillStyle = `${base}${(s.strong ? 0.4 : 0.28) * (1 - i / steps) * fade})`;
         ctx.fill();
       }
       // bright edge along the swept part
       ctx.beginPath();
       ctx.arc(0, 0, r, Math.min(from, cur), Math.max(from, cur));
-      ctx.strokeStyle = s.strong ? `rgba(255,210,138,${0.9 * fade})` : `rgba(255,255,255,${0.75 * fade})`;
+      ctx.strokeStyle = s.wave ? `rgba(200,238,255,${0.95 * fade})` : s.strong ? `rgba(255,210,138,${0.9 * fade})` : `rgba(255,255,255,${0.75 * fade})`;
       ctx.lineWidth = s.strong ? 4 : 3;
       ctx.stroke();
       // the blade itself while swinging
@@ -177,7 +177,7 @@ export class Renderer {
         ctx.beginPath();
         ctx.moveTo(Math.cos(cur) * 14, Math.sin(cur) * 14);
         ctx.lineTo(Math.cos(cur) * r, Math.sin(cur) * r);
-        ctx.strokeStyle = s.strong ? `rgba(255,210,138,${fade})` : `rgba(255,248,230,${fade})`;
+        ctx.strokeStyle = s.wave ? `rgba(255,255,255,${fade})` : s.strong ? `rgba(255,210,138,${fade})` : `rgba(255,248,230,${fade})`;
         ctx.lineWidth = s.strong ? 6 : 4;
         ctx.lineCap = 'round';
         ctx.stroke();
@@ -376,24 +376,42 @@ export class Renderer {
     ctx.restore();
   }
 
-  // blade wave: glowing crescent flying forward
+  // 질풍 베기 in flight: the front of the cone as a bright arc (a blade edge in a glow of wind), wind
+  // streaks trailing back toward the hero, fading as it nears the end of its reach
   drawProjectiles(skills) {
     const ctx = this.ctx;
     for (const p of skills.projectiles) {
-      const w = skills.waveWidth ? skills.waveWidth(p.def, p.traveled) : p.def.width; // the crescent widens as it flies
-      const k = 1 - p.traveled / p.def.range;
+      const k = Math.max(0, 1 - p.traveled / p.def.range);
+      const a0 = Math.atan2(p.dir.y, p.dir.x);
+      const ox = p.ox != null ? p.ox : p.x - p.dir.x * p.traveled, oy = p.oy != null ? p.oy : p.y - p.dir.y * p.traveled;
+      const minHalf = skills.waveWidth ? Math.atan2(p.def.width / 2, Math.max(20, p.traveled)) : 0.5;
+      const half = Math.max(minHalf, ((p.angle || 60) * Math.PI / 180) / 2);
+      const R = Math.max(20, p.traveled);
       ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(Math.atan2(p.dir.y, p.dir.x));
-      ctx.globalAlpha = 0.4 + 0.6 * k;
-      ctx.beginPath();
-      ctx.arc(-w * 0.35, 0, w * 0.6, -1.1, 1.1);
-      ctx.arc(-w * 0.6, 0, w * 0.6, 1.0, -1.0, true);
-      ctx.closePath();
-      ctx.fillStyle = '#9fd8ff';
+      ctx.lineCap = 'round';
+      // wind streaks behind the front
+      for (let i = -2; i <= 2; i++) {
+        const a = a0 + (i / 2.5) * half;
+        ctx.strokeStyle = `rgba(170,225,255,${0.35 * k})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(ox + Math.cos(a) * Math.max(0, R - 46 - Math.abs(i) * 6), oy + Math.sin(a) * Math.max(0, R - 46 - Math.abs(i) * 6));
+        ctx.lineTo(ox + Math.cos(a) * (R - 8), oy + Math.sin(a) * (R - 8));
+        ctx.stroke();
+      }
+      // glow band, then the blade edge
       ctx.shadowColor = '#6cc4ff';
       ctx.shadowBlur = 16;
-      ctx.fill();
+      ctx.strokeStyle = `rgba(120,200,255,${0.25 + 0.4 * k})`;
+      ctx.lineWidth = 16;
+      ctx.beginPath(); ctx.arc(ox, oy, R, a0 - half, a0 + half); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = `rgba(235,248,255,${0.55 + 0.45 * k})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(ox, oy, R + 3, a0 - half * 0.92, a0 + half * 0.92); ctx.stroke();
+      ctx.strokeStyle = `rgba(255,255,255,${0.9 * k})`; // the gleam at the middle of the edge
+      ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(ox, oy, R + 3, a0 - half * 0.25, a0 + half * 0.25); ctx.stroke();
       ctx.restore();
     }
     ctx.globalAlpha = 1;

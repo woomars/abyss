@@ -4,6 +4,8 @@ import { relicIcon } from './relicIcons.js';
 import { t, tr, trItemName, trPerson, fullName } from '../i18n/index.js';
 import { essenceLine } from './HallScreen.js';
 
+// a full name with the house part emphasised (family first in Korean and Japanese, last in English)
+const houseName = (family, given) => t('person', { family: `<span class="hs-fam">${esc(trPerson(family, 'family'))}</span>`, given: esc(trPerson(given, 'given')) });
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export class HeirScreen {
@@ -49,7 +51,7 @@ export class HeirScreen {
         ${note ? `<p class="hs-note">${esc(t(note))}</p>` : ''}
         <div class="hs-father">
           <div class="hs-label">${t('gen', { n: r.generation })}</div>
-          <div class="hs-name">${esc(fullName(r.family, r.given))}</div>
+          <div class="hs-name">${houseName(r.family, r.given)}</div>
           <div class="hs-fell">${t('heir.fell', { floor: floorLabel(r.floor) })}</div>
           <div class="hs-stats">
             <span>${t('stat.level')}<b>${r.level}</b></span><span>${t('stat.kills')}<b>${r.kills}</b></span><span>${t('stat.bestCombo')}<b>${r.bestCombo}</b></span><span>${t('stat.lost')}<b>${r.lost}</b></span>
@@ -59,7 +61,7 @@ export class HeirScreen {
         </div>
         ${(fate.trophies || []).length ? `<div class="hs-trophy">${relicIcon('trophy', 16)} ${t('heir.trophies', { list: fate.trophies.map((x) => esc(tr(x.name))).join(', ') })}</div>` : ''}
         <div class="hs-arrow">▼</div>
-        <div class="hs-heir">${t('heir.son', { name: esc(trPerson(h.given, 'given')) })} <small>${t('gen', { n: h.generation })} ${esc(fullName(h.family, h.given))}</small></div>
+        <div class="hs-heir">${t('heir.line', { family: `<b class="hs-house">${esc(trPerson(h.family, 'family'))}</b>`, father: esc(trPerson(r.given, 'given')), child: t(`heir.child.${h.sex === 'daughter' ? 'daughter' : 'son'}`), name: esc(trPerson(h.given, 'given')) })} <small>${t('gen', { n: h.generation })} ${houseName(h.family, h.given)}</small></div>
         <button class="tm-btn primary" data-act="go">${typeof label === 'function' ? label() : t(label)}</button>
       </div>`;
     this.el.classList.remove('hidden');

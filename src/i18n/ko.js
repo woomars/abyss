@@ -50,7 +50,7 @@ export default {
   'pause.music': '배경음악',
   'pause.toggle': '{name}: {state}',
   'pause.confirm': '이번 판을 포기할까요?',
-  'pause.confirmNote': '쓰러진 것으로 처리되고 아들이 대를 잇습니다.',
+  'pause.confirmNote': '쓰러진 것으로 처리되고 자식이 대를 잇습니다.',
 
   // hud
   'hud.practice': '연습장',
@@ -102,8 +102,10 @@ export default {
   'heir.slain': '쓰러뜨린 보스: {list}',
   'heir.kept': '물려받은 장비: {list}',
   'heir.noKept': '물려받은 장비는 없습니다',
+  'heir.line': (p) => `<span class="hs-q">"</span>${p.family}<span class="hs-q">"</span> 가문의 ${p.father}의 ${p.child} <b>${josa(p.name, '이', '가')}</b> 잇는다`,
+  'heir.child.son': '아들',
+  'heir.child.daughter': '딸',
   'heir.fell': '{floor}에서 쓰러졌습니다',
-  'heir.son': (p) => `그의 아들 <b>${josa(p.name, '이', '가')}</b> 뜻을 잇습니다`,
 
   // hall of ancestors
   'hall.title': '선조의 전당',

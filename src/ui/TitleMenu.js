@@ -120,8 +120,8 @@ export class TitleMenu {
     const where = whereText(s);
     this.el.innerHTML = `
       <div class="tm-panel tm-family">
-        <h2>${t('title.house', { family: esc(trPerson(s.family, 'family')) })}</h2>
-        <p><b>${t('gen', { n: s.generation })} ${esc(fullName(s.family, s.given))}</b> · Lv ${s.level} · ${where}</p>
+        <h2>${t('title.house', { family: `<span class="hs-house">${esc(trPerson(s.family, 'family'))}</span>` })}</h2>
+        <p><b>${t('gen', { n: s.generation })} ${t('person', { family: `<span class="hs-fam">${esc(trPerson(s.family, 'family'))}</span>`, given: esc(trPerson(s.given, 'given')) })}</b> · Lv ${s.level} · ${where}</p>
         <p class="dim">${fallen ? t('title.fallen', { n: fallen }) : t('title.noFallen')}</p>
         <div class="tm-row">
           <button class="tm-btn primary" data-act="dungeon">${t('title.dungeon')}</button>

@@ -40,7 +40,7 @@ export class Vault {
     this.state = 'idle';  // idle | run (left a forge, fighting) | rest (sitting in a forge mid-run)
     this.run = null;      // run snapshot while resting
     this.nextId = 1;
-    this.lineage = { family, given, generation: 1, history: [] };
+    this.lineage = { family, given, generation: 1, history: [], sex: null }; // sex: son | daughter (the first knight: null)
     this.progress = { level: 1, xp: 0 };
     this.savedAt = 0;
     this.lastFloor = 0; // floor of the run in progress (for a run cut short by closing the game)
@@ -99,6 +99,7 @@ export class Vault {
       family: data.lineage.family, given: String(data.lineage.given || ''),
       generation: Number.isFinite(data.lineage.generation) ? data.lineage.generation : 1,
       history: Array.isArray(data.lineage.history) ? data.lineage.history : [],
+      sex: data.lineage.sex === 'son' || data.lineage.sex === 'daughter' ? data.lineage.sex : null,
     };
     const pr = data.progress || {};
     v.progress = { level: Number.isFinite(pr.level) ? pr.level : 1, xp: Number.isFinite(pr.xp) ? pr.xp : 0 };

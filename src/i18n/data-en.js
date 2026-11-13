@@ -190,6 +190,15 @@ export default {
     '몰아붙이는': 'Relentless',
   },
   names: {
+    // daughters (index-aligned with names.json givenF)
+    givenF: [
+      'Aria', 'Elara', 'Lyra', 'Seren', 'Mira', 'Isolde', 'Freya', 'Rowena', 'Celeste', 'Ivy',
+      'Nora', 'Elena', 'Sylvie', 'Thea', 'Maren', 'Liora', 'Ysolde', 'Brenna', 'Cora', 'Dahlia',
+      'Eira', 'Fiona', 'Gwen', 'Helena', 'Iris', 'Juna', 'Kaia', 'Lena', 'Maeve', 'Nyla',
+      'Ophelia', 'Petra', 'Quinn', 'Rhea', 'Sabine', 'Talia', 'Una', 'Vera', 'Wren', 'Xenia',
+      'Yara', 'Zara', 'Adela', 'Bianca', 'Cassia', 'Delia', 'Elise', 'Fenna', 'Greta', 'Hilde',
+      'Ines', 'Jessa', 'Kira', 'Lucia', 'Milla', 'Nessa', 'Odette', 'Perrine', 'Rosalind', 'Selene',
+    ],
     given: [
       'Arden', 'Kael', 'Rowen', 'Cedric', 'Elion', 'Darius', 'Lucian', 'Garrett', 'Vale', 'Orin',
       'Theoran', 'Marcus', 'Leon', 'Idric', 'Halbard', 'Bran', 'Kaelen', 'Aslan', 'Rokan', 'Edric',

@@ -2,7 +2,7 @@
 export default {
   'app.title': '深淵の騎士',
   'lang.label': '言語',
-  person: '{given}・{family}',
+  person: '{family}・{given}',
   gen: '{n}代目',
   back: '戻る',
   yes: 'はい',
@@ -46,7 +46,7 @@ export default {
   'pause.music': 'BGM',
   'pause.toggle': '{name}：{state}',
   'pause.confirm': 'この挑戦を諦めますか？',
-  'pause.confirmNote': '倒れたものとして扱われ、息子が跡を継ぐ。',
+  'pause.confirmNote': '倒れたものとして扱われ、子が跡を継ぐ。',
 
   'hud.practice': '練習場',
   'hud.treasure': '{floor} · 宝物庫',
@@ -93,8 +93,10 @@ export default {
   'heir.slain': '倒したボス: {list}',
   'heir.kept': '受け継いだ装備: {list}',
   'heir.noKept': '受け継いだ装備はない',
+  'heir.line': (p) => `「${p.family}」家の${p.father}の${p.child}、<b>${p.name}</b>が継ぐ`,
+  'heir.child.son': '息子',
+  'heir.child.daughter': '娘',
   'heir.fell': '{floor}で倒れた',
-  'heir.son': (p) => `息子の<b>${p.name}</b>が遺志を継ぐ`,
 
   'hall.title': '祖先の殿堂',
   'hall.tabAncestors': '祖先 {n}',

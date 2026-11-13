@@ -335,7 +335,7 @@ export class Game {
   endRunByDeath(floor = this.dungeon.floor) {
     const l = this.vault.lineage;
     const record = {
-      given: l.given, family: l.family, generation: l.generation, level: this.vault.progress.level,
+      given: l.given, family: l.family, generation: l.generation, sex: l.sex || null, level: this.vault.progress.level,
       floor: floor || this.vault.lastFloor || 1, kills: this.stats.kills, bestCombo: this.stats.bestCombo,
       medals: (this.stats.medals || []).slice(), bosses: JSON.parse(JSON.stringify(this.stats.bosses || {})),
       killer: this.stats.killer || null, at: Date.now(), essences: JSON.parse(JSON.stringify(this.stats.essences || {})),

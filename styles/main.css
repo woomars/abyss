@@ -634,3 +634,9 @@ html:lang(ja), html:lang(ja) body { font-family: system-ui, -apple-system, "Hira
 .game-over .go-buttons { display: flex; gap: 10px; justify-content: center; }
 .game-over .go-buttons button { flex: 1; max-width: 220px; }
 .game-over .go-buttons button { white-space: nowrap; max-width: none; padding-left: 16px; padding-right: 16px; }
+
+/* the house name stands out on the heir screen */
+.hs-fam { color: #ffd166; text-shadow: 0 0 10px rgba(255, 200, 90, 0.45); }
+.hs-house { font-size: 22px; color: #ffd166; text-shadow: 0 0 12px rgba(255, 200, 90, 0.55); letter-spacing: 1px; }
+.hs-q { color: #c9a86a; }
+.hs-heir small .hs-fam { text-shadow: none; }

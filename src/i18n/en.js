@@ -48,7 +48,7 @@ export default {
   'pause.music': 'Music',
   'pause.toggle': '{name}: {state}',
   'pause.confirm': 'Give up this run?',
-  'pause.confirmNote': 'It counts as a death, and your son takes up the line.',
+  'pause.confirmNote': 'It counts as a death, and your heir takes up the line.',
 
   'hud.practice': 'Practice',
   'hud.treasure': '{floor} · Treasure Room',
@@ -95,8 +95,10 @@ export default {
   'heir.slain': 'Bosses slain: {list}',
   'heir.kept': 'Gear inherited: {list}',
   'heir.noKept': 'No gear was passed down',
+  'heir.line': (p) => `<b>${p.name}</b>, ${p.child} of ${p.father}, carries on House ${p.family}`,
+  'heir.child.son': 'son',
+  'heir.child.daughter': 'daughter',
   'heir.fell': 'Fell at {floor}',
-  'heir.son': (p) => `His son <b>${p.name}</b> takes up the sword`,
 
   'hall.title': 'Hall of Ancestors',
   'hall.tabAncestors': 'Ancestors {n}',

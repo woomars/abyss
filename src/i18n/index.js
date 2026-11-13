@@ -112,8 +112,8 @@ export function trItemName(name) {
 // of the three languages is shown in the current one. Names typed by the player stay as typed.
 let nameIndex = null;
 export function registerNames(koNames) {
-  nameIndex = { given: new Map(), family: new Map() };
-  for (const kind of ['given', 'family']) {
+  nameIndex = { given: new Map(), givenF: new Map(), family: new Map() };
+  for (const kind of ['given', 'givenF', 'family']) {
     const lists = [koNames && koNames[kind], DATA_EN.names[kind], DATA_JA.names[kind]];
     for (const list of lists) (list || []).forEach((n, i) => { if (!nameIndex[kind].has(n)) nameIndex[kind].set(n, i); });
     nameIndex[kind].ko = (koNames && koNames[kind]) || [];
@@ -121,6 +121,7 @@ export function registerNames(koNames) {
 }
 export function trPerson(name, kind = 'given') {
   if (!nameIndex || name == null) return name;
+  if (kind === 'given' && !nameIndex.given.has(name) && nameIndex.givenF.has(name)) kind = 'givenF'; // a daughter
   const i = nameIndex[kind].get(name);
   if (i == null) return name;
   const list = lang === 'ko' ? nameIndex[kind].ko : DATA[lang].names[kind];
@@ -130,7 +131,7 @@ export function trPerson(name, kind = 'given') {
 export function nameList(koNames, kind) {
   if (lang === 'ko') return koNames[kind];
   const l = DATA[lang].names[kind];
-  return l && l.length ? l : koNames[kind];
+  return l && l.length ? l : koNames[kind] || [];
 }
 
 // "블랙우드 아르덴" / "Arden Blackwood" / "アルデン・ブラックウッド" (already escaped by the caller if needed)

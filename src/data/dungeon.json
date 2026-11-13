@@ -84,10 +84,11 @@
         "nextAt": 3
       },
       "mix": {
-        "soldier": 0.45,
-        "archer": 0.25,
+        "soldier": 0.38,
+        "archer": 0.22,
         "elite": 0.15,
-        "wraith": 0.15
+        "wraith": 0.13,
+        "spearman": 0.12
       },
       "enhancedChance": 0.12
     },
@@ -122,10 +123,11 @@
         "nextAt": 3
       },
       "mix": {
-        "soldier": 0.35,
-        "archer": 0.25,
-        "elite": 0.2,
-        "wraith": 0.2
+        "soldier": 0.27,
+        "archer": 0.22,
+        "elite": 0.18,
+        "wraith": 0.18,
+        "spearman": 0.15
       },
       "enhancedChance": 0.22
     },

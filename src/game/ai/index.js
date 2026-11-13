@@ -3,5 +3,6 @@
 import { archerAI } from './archer.js';
 import { wraithAI } from './wraith.js';
 import { bossAI } from './boss.js';
+import { spearmanAI } from './spearman.js';
 
-export const AI = { archer: archerAI, wraith: wraithAI, boss: bossAI };
+export const AI = { archer: archerAI, wraith: wraithAI, boss: bossAI, spearman: spearmanAI };

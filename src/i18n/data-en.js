@@ -37,7 +37,7 @@ export default {
     '유산의 증표 — 분해하지 않는 한 영원히 대를 잇는다': 'Mark of Legacy — passes down forever unless salvaged',
     // enemies and bosses
     '해골 전사': 'Skeleton Warrior', '오크 전사': 'Orc Warrior', '고블린 궁수': 'Goblin Archer', '망령': 'Wraith',
-    '오크 대장': 'Orc Warchief', '심연의 수문장': 'Gatekeeper of the Abyss',
+    '오크 대장': 'Orc Warchief', '해골 창병': 'Skeleton Spearman', '심연의 수문장': 'Gatekeeper of the Abyss',
     '중간보스': 'Mid-Boss', '지역 보스': 'Area Boss', '대형 보스': 'Great Boss',
     // skills
     '회전 베기': 'Spin Slash', '돌진 일격': 'Rush Strike', '원거리 공격': 'Ranged Strike',

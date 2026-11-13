@@ -21,7 +21,8 @@
       "attackRange": 22,
       "attackWindup": 0.25,
       "name": "해골 전사",
-      "rank": "normal"
+      "rank": "normal",
+      "rhythm": "melee"
     },
     "elite": {
       "hp": 90,
@@ -34,7 +35,8 @@
       "attackWindup": 0.4,
       "name": "오크 전사",
       "rank": "elite",
-      "riposte": true
+      "riposte": true,
+      "rhythm": "melee"
     },
     "archer": {
       "name": "고블린 궁수",
@@ -246,6 +248,26 @@
           }
         ]
       }
+    },
+    "spearman": {
+      "hp": 26,
+      "attack": 7,
+      "speed": 90,
+      "radius": 14,
+      "knockbackResist": 0,
+      "color": "#b8b09a",
+      "attackRange": 22,
+      "attackWindup": 0.3,
+      "name": "해골 창병",
+      "rank": "normal",
+      "ai": "spearman",
+      "keep": 120,
+      "thrust": {
+        "radius": 190,
+        "arcDeg": 22,
+        "windup": 0.55,
+        "recover": 0.3
+      }
     }
   },
   "counterWindow": 1,
@@ -291,5 +313,98 @@
     ],
     "perFloor": 0.05,
     "capPerFloor": 0.25
+  },
+  "teleScale": {
+    "short": 0.6,
+    "mid": 1,
+    "long": 1.5
+  },
+  "rhythms": {
+    "boss": [
+      {
+        "beats": [
+          2.4
+        ],
+        "tele": [
+          "mid"
+        ]
+      },
+      {
+        "beats": [
+          1.0,
+          2.2
+        ],
+        "tele": [
+          "short",
+          "mid"
+        ]
+      },
+      {
+        "beats": [
+          0.8,
+          0.8,
+          2.0
+        ],
+        "tele": [
+          "short",
+          "mid",
+          "long"
+        ]
+      },
+      {
+        "beats": [
+          0.6,
+          1.2,
+          0.6,
+          1.8
+        ],
+        "tele": [
+          "short",
+          "long",
+          "short",
+          "mid"
+        ]
+      }
+    ],
+    "melee": [
+      {
+        "beats": [
+          9
+        ],
+        "tele": [
+          "mid"
+        ]
+      },
+      {
+        "beats": [
+          0.5,
+          9
+        ],
+        "tele": [
+          "short",
+          "long"
+        ]
+      }
+    ],
+    "spear": [
+      {
+        "beats": [
+          2.2
+        ],
+        "tele": [
+          "mid"
+        ]
+      },
+      {
+        "beats": [
+          1.0,
+          2.4
+        ],
+        "tele": [
+          "short",
+          "long"
+        ]
+      }
+    ]
   }
 }

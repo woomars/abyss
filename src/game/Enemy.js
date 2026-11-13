@@ -1,3 +1,4 @@
+import { rhythmFor, teleTime } from './Rhythm.js';
 import { AI } from './ai/index.js';
 
 // Single enemy: reacts to hits (stagger, knockback, flash), plays a death fade. Movement and attacks
@@ -25,6 +26,7 @@ export class Enemy {
     // counterattack: a hit opens a short window in which the enemy strikes back once if the player is in reach
     this.counterTime = 0;
     this.canCounter = false;
+    this.rearm = 0;
     this.windupTime = 0;
     this.strikeTime = 0; // visual flash after a strike
     this.hidden = false; // untargetable while faded out (wraith)
@@ -36,6 +38,10 @@ export class Enemy {
     this.wasInReach = false;
     this.minionCd = this.mods.minion ? this.root.minion.attackEvery[0] * 0.5 : 0;
     this.brain = AI[this.tcfg.ai] || null;
+    // melee types with a rhythm mix the beats of their counters (stage from the floor)
+    this.rhythm = this.tcfg.rhythm && !this.brain ? rhythmFor(root, this.tcfg.rhythm, this.mods.rhythmStage || 1) : null;
+    this.beat = null;
+    this.rearm = 0;
     if (this.brain) this.brain.init(this);
   }
 
@@ -105,6 +111,7 @@ export class Enemy {
     }
     this.counterTime = this.stunTime > 0 ? 0 : this.root.counterWindow || 0;
     this.canCounter = this.counterTime > 0;
+    if (this.rhythm) { this.rhythm.reset(); this.beat = this.rhythm.next(); this.rearm = 0; } // a fresh hit starts the beat over
     return { killed: false };
   }
 
@@ -130,6 +137,7 @@ export class Enemy {
     if (this.flashTime > 0) this.flashTime -= dt;
     if (this.strikeTime > 0) this.strikeTime -= dt;
     if (this.counterTime > 0) this.counterTime -= dt;
+    if (this.rearm > 0) { this.rearm -= dt; if (this.rearm <= 0 && this.counterTime > 0) this.canCounter = true; } // next beat of a mixed counter
     if (this.riposteCd > 0) this.riposteCd -= dt;
     if (this.stunTime > 0) this.stunTime = Math.max(0, this.stunTime - dt);
     if (this.angerTime > 0) this.angerTime -= dt;
@@ -157,12 +165,15 @@ export class Enemy {
           if (d > 1e-6 && step > 0) this.pos = arena.resolveCircle({ x: this.pos.x + (dx / d) * step, y: this.pos.y + (dy / d) * step }, this.radius).pos;
           this.lunge = 0;
         }
+        // mixed beats: after a quick strike it may swing again once the beat's wait is over
+        if (this.rhythm && this.beat) { const w = this.beat.wait; this.beat = this.rhythm.next(); if (w < this.counterTime) this.rearm = w; }
         const hit = this.inReach(playerPos, playerRadius);
         if (onStrike) onStrike(this, hit);
         if (hit && onAttack) onAttack(this);
       }
     } else if (this.canCounter && this.counterTime > 0 && this.inReach(playerPos, playerRadius)) {
-      this.startWindup(this.tcfg.attackWindup || 0.2);
+      const base = this.tcfg.attackWindup || 0.2;
+      this.startWindup(this.rhythm && this.beat ? teleTime(this.root, base, this.beat.tele) : base);
     } else {
       const dx = playerPos.x - this.pos.x, dy = playerPos.y - this.pos.y;
       const d = Math.hypot(dx, dy);

@@ -9,6 +9,8 @@ export function floorInfo(n, cfg) {
     attack: (1 + cfg.perFloor.attack * (base - 1)) * (1 + cfg.perLoop.attack * cycle),
     speed: 1 + cfg.perLoop.speed * cycle,
   };
+  // melee counters mix beats from floor 11 on (and on every later loop)
+  mods.rhythmStage = cycle > 0 || base > 10 ? 2 : 1;
   // how long a hit enemy stays ready to strike back: grows over the cycle, full on later loops
   if (cfg.riposteWindow) {
     const [a, b] = cfg.riposteWindow;

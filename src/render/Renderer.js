@@ -396,6 +396,20 @@ export class Renderer {
         ctx.fill();
         ctx.strokeStyle = e.mods.enhanced ? '#ffcf5a' : '#cdb8ff';
         ctx.stroke();
+      } else if (ai === 'spearman') { // square body with a long spear toward the player
+        const ang = Math.atan2(pp.y - y, pp.x - x);
+        ctx.fillRect(x - size / 2 + wob, y - size / 2, size, size);
+        ctx.strokeRect(x - size / 2 + wob, y - size / 2, size, size);
+        ctx.save();
+        ctx.translate(x + wob, y);
+        ctx.rotate(ang);
+        const jab = e.ai && e.ai.hold > 0 ? 10 : 0;
+        ctx.strokeStyle = '#d8cfb4';
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(-r * 0.4, 0); ctx.lineTo(r * 2.6 + jab, 0); ctx.stroke();
+        ctx.fillStyle = '#e8e3d6';
+        ctx.beginPath(); ctx.moveTo(r * 2.6 + jab + 9, 0); ctx.lineTo(r * 2.6 + jab, -4); ctx.lineTo(r * 2.6 + jab, 4); ctx.closePath(); ctx.fill();
+        ctx.restore();
       } else if (e.isBoss) {
         this.drawBossBody(e, x + wob, y, fill);
       } else {

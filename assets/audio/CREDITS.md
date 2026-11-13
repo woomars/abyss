@@ -24,6 +24,7 @@
 
 | 파일 | 쓰는 곳 | 원본 | 다듬은 것 |
 |---|---|---|---|
+| bgm/story.mp3 | 시작 스토리 | "Dark" by leberch — https://pixabay.com/music/ambient-dark-628701/ | 80kbps 스테레오 MP3로 다시 압축 |
 | bgm/base_1.mp3 | 시작 화면·거점 | "Shadows Beneath the Keep" by MenielDM — https://pixabay.com/music/fantasy-dreamy-childrens-shadows-beneath-the-keep-495833/ | 80kbps 스테레오 MP3로 다시 압축 |
 | bgm/explore_1.mp3 | 일반 전투 | "Battle" by PaulYudin — https://pixabay.com/music/main-title-battle-198395/ | 80kbps 스테레오 MP3로 다시 압축 |
 | bgm/hard_6.mp3 | 고난도 전투 | "Intense - Intense Music" by The_Mountain — https://pixabay.com/music/classical-string-quartet-intense-intense-music-508028/ | 80kbps 스테레오 MP3로 다시 압축 |

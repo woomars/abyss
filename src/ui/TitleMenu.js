@@ -1,5 +1,5 @@
 // Title inside the (landscape) stage: 이어하기 / 새로하기, the save-slot list, and naming a new family.
-// store: VaultStore; names: config.names; onContinue(slot); onHall(slot); onNew(slot, family, given)
+// store: VaultStore; names: config.names; onContinue(slot); onHall(slot); onNew(slot, family, given); onGuide(); onStory()
 import { floorLabel } from '../core/floorLabel.js';
 import { t, getLang, setLang, LANGS, LANG_NAMES, fullName, trPerson, nameList, formatDate } from '../i18n/index.js';
 import { LANG_FLAGS } from './langFlags.js';
@@ -25,7 +25,9 @@ export function langSwitch(cls = '') {
 }
 
 export class TitleMenu {
-  constructor(root, { store, names, rng = Math.random, onContinue, onHall = () => {}, onNew }) {
+  constructor(root, { store, names, rng = Math.random, onContinue, onHall = () => {}, onNew, onGuide = () => {}, onStory = () => {} }) {
+    this.onGuide = onGuide;
+    this.onStory = onStory;
     this.onHall = onHall;
     this.store = store;
     this.names = names;
@@ -73,6 +75,10 @@ export class TitleMenu {
           <button class="tm-btn primary" data-act="continue" ${any ? '' : 'disabled'}>${t('title.continue')}</button>
           <button class="tm-btn" data-act="new">${t('title.new')}</button>
         </div>
+      </div>
+      <div class="tm-icons">
+        <button class="tm-icon" data-act="guide" aria-label="${t('title.guide')}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v5V4a1.5 1.5 0 0 1 3 0v6V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2.5-4a1.5 1.5 0 0 1 2.5-1.5L9 13"/></svg><span>${t('title.guide')}</span></button>
+        <button class="tm-icon" data-act="story" aria-label="${t('title.story')}"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M8 7h6M8 11h6"/></svg><span>${t('title.story')}</span></button>
       </div>
       ${flagSwitch()}`;
   }
@@ -153,6 +159,8 @@ export class TitleMenu {
 
   act(a, data) {
     if (a === 'lang') { setLang(data.lang); return; } // main.js re-renders every open screen
+    if (a === 'guide') { this.onGuide(); return; }
+    if (a === 'story') { this.onStory(); return; }
     if (a === 'continue') this.showSlots('continue');
     else if (a === 'new') this.showSlots('new');
     else if (a === 'back') this.showMain();

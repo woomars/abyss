@@ -22,6 +22,8 @@ import { HeirScreen } from './ui/HeirScreen.js';
 import { ForgeScreen } from './ui/ForgeScreen.js';
 import { LegacyScene } from './ui/LegacyScene.js';
 import { HallScreen } from './ui/HallScreen.js';
+import { StoryScreen, autoStory } from './ui/StoryScreen.js';
+import { ControlsGuide } from './ui/ControlsGuide.js';
 import { VaultStore } from './systems/VaultStore.js';
 import { Vault } from './game/items/Vault.js';
 import { chooseRotation, stageSize, stageTransform, toStage } from './systems/orientation.js';
@@ -181,8 +183,13 @@ async function boot() {
   };
   // 선조의 전당 (from 이어하기 -> a family)
   const hall = new HallScreen(ui, { config, onBack: () => {} });
+  // opening story (plays by itself only when there is nothing to continue) and the controls guide
+  const story = new StoryScreen(ui, { music, onDone: () => music.play('base') });
+  const guide = new ControlsGuide(ui);
   const title = new TitleMenu(ui, {
     store, names: config.names,
+    onGuide: () => guide.show(),
+    onStory: () => story.show(),
     onHall: (n) => { const v = store.load(n); if (v) hall.show(v); },
     onContinue: (n) => {
       const v = store.load(n);
@@ -204,6 +211,8 @@ async function boot() {
       game.beginRun();
     },
   });
+
+  if (autoStory(store.list())) story.show();
 
   // --- forced landscape: rotate the whole stage when the viewport is portrait ---
   let rot = 0;
@@ -238,7 +247,7 @@ async function boot() {
       // jump straight to a floor (or the practice arena) to test bosses
       onFloor: (floor) => {
         gameOver.hide();
-        title.hide(); forge.hide(); heir.hide(); hall.hide();
+        title.hide(); forge.hide(); heir.hide(); hall.hide(); story.hide(); guide.hide();
         if (slot != null || !started) enterSlot(null, new Vault({ family: '시험', given: '기사' })); // debug runs use a throwaway family
         if (floor === -2) { game.startRun(4); game.dungeon.enterForge(); return; }
         if (floor === -3) { // debug: a legacy token right now
@@ -255,7 +264,7 @@ async function boot() {
   onLangChange(() => {
     applyI18n(ui);
     hud.relabel(); skillButtons.relabel(); menu.renderToggles(); gameOver.relabel(); picker.relabel();
-    title.relabel(); forge.relabel(); hall.relabel(); heir.relabel(); legacy.relabel();
+    title.relabel(); forge.relabel(); hall.relabel(); heir.relabel(); legacy.relabel(); story.relabel(); guide.relabel();
     layout(); // button sizes may change: refresh the stroke exclusion zones
   });
   window.addEventListener('resize', layout);
@@ -304,7 +313,7 @@ async function boot() {
   const tick = (t) => { loop.frame(t / 1000); requestAnimationFrame(tick); };
   requestAnimationFrame(tick);
 
-  window.__abyss = { game, config, renderer, loop, events, audio, music, menu, store, forge, title, heir, legacy, hall };
+  window.__abyss = { game, config, renderer, loop, events, audio, music, menu, store, forge, title, heir, legacy, hall, story, guide };
 }
 
 boot().catch((err) => {

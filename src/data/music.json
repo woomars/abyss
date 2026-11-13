@@ -25,6 +25,9 @@
     ],
     "rest": [
       "assets/audio/bgm/rest_1.mp3"
+    ],
+    "story": [
+      "assets/audio/bgm/story.mp3"
     ]
   },
   "scenes": {

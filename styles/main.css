@@ -596,3 +596,36 @@ html:lang(ja), html:lang(ja) body { font-family: system-ui, -apple-system, "Hira
 /* special-attack growth cards */
 .relic-picker.skill-mode .rp-reroll, .relic-picker.skill-mode .rp-gold { display: none; }
 .sk-card .rp-icon { color: #ffd166; }
+
+/* title icons: how to play, story */
+.tm-icons { position: absolute; right: calc(12px + env(safe-area-inset-right)); bottom: calc(10px + env(safe-area-inset-bottom)); display: flex; gap: 6px; }
+.tm-icon { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 52px; padding: 5px 6px; border-radius: 9px; border: 1px solid #4a3d5c; background: rgba(27, 21, 34, 0.85); color: #e8d9a8; font: inherit; font-size: 11px; touch-action: manipulation; }
+.tm-icon span { white-space: nowrap; }
+
+/* opening story */
+.story-screen { z-index: 36; background: #000; overflow: hidden; }
+.st-bg { position: absolute; inset: -4%; background-size: cover; background-position: center; opacity: 0; transition: opacity 2.4s ease; transform: scale(1); }
+.st-bg.on { opacity: 1; animation: st-burns 24s ease-out forwards; }
+@keyframes st-burns { from { transform: scale(1); } to { transform: scale(1.08) translate(-1%, -1%); } }
+.st-shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.55) 60%, rgba(0, 0, 0, 0.85) 100%), linear-gradient(90deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.1) 30%, rgba(0, 0, 0, 0.1) 70%, rgba(0, 0, 0, 0.55)); }
+.st-embers i { position: absolute; bottom: -10px; left: var(--x); width: 3px; height: 3px; border-radius: 50%; background: #ffb46a; box-shadow: 0 0 6px #ff8a3a; opacity: 0; animation: st-ember var(--d) linear infinite; animation-delay: var(--w); }
+@keyframes st-ember { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: 0.8; } 100% { transform: translate(30px, -110vh); opacity: 0; } }
+.st-view { position: absolute; left: 50%; top: 0; bottom: 0; width: min(640px, 86%); transform: translateX(-50%); overflow: hidden; -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent); mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent); }
+.st-text { position: absolute; left: 0; right: 0; top: 0; text-align: center; will-change: transform; }
+.st-text p { margin: 0 0 56px; font-size: 18px; line-height: 1.75; color: #f0e6cf; text-shadow: 0 2px 6px #000, 0 0 18px rgba(0, 0, 0, 0.9); font-family: "Noto Serif KR", "Nanum Myeongjo", "Hiragino Mincho ProN", "Yu Mincho", serif; letter-spacing: 0.5px; }
+.st-skip { position: absolute; right: calc(14px + env(safe-area-inset-right)); top: calc(12px + env(safe-area-inset-top)); padding: 6px 14px; border-radius: 16px; border: 1px solid rgba(232, 217, 168, 0.5); background: rgba(0, 0, 0, 0.45); color: #e8d9a8; font: inherit; font-size: 13px; z-index: 2; }
+.st-start { position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 2; animation: banner-in 0.6s ease-out; }
+
+/* controls guide */
+.guide-screen { z-index: 37; background: rgba(4, 3, 8, 0.82); }
+.gd-panel { width: min(620px, 92%); padding: 12px 16px; border-radius: 12px; border: 1px solid #3b2f4f; background: rgba(21, 17, 28, 0.96); display: flex; flex-direction: column; gap: 8px; }
+.gd-head { display: flex; justify-content: space-between; align-items: center; color: #e8d9a8; font-size: 17px; }
+.gd-card { display: flex; gap: 14px; align-items: center; min-height: 150px; }
+.gd-art { width: 46%; flex: none; background: #120e17; border-radius: 10px; border: 1px solid #2c2438; }
+.gd-text { flex: 1; min-width: 0; }
+.gd-title { font-size: 17px; font-weight: 800; color: #ffe08a; margin-bottom: 6px; }
+.gd-text p { margin: 0; font-size: 14px; line-height: 1.55; color: #e8e3d6; }
+.gd-nav { display: flex; justify-content: space-between; align-items: center; }
+.gd-dots { display: flex; gap: 6px; }
+.gd-dot { width: 9px; height: 9px; padding: 0; border-radius: 50%; border: none; background: #4a3d5c; }
+.gd-dot.on { background: #ffe08a; }

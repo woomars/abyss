@@ -100,7 +100,10 @@ export class SkillSystem {
       : auto || (id === 'rushStrike' ? { x: hd.x, y: hd.y } : { x: this.combat.inputDir.x, y: this.combat.inputDir.y }); // no enemy: the jump goes the way the hero is moving
     this.events.emit('skill', { id, pos: { x: p.pos.x, y: p.pos.y }, dir });
     if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
-    else if (id === 'rushStrike') this.rush = { def, dir, traveled: 0, dist: def.distance }; // 점프 (the distance grows with the skill's growth cards)
+    else if (id === 'rushStrike') { // 점프: the distance grows with the growth cards, the airtime never does (a longer leap flies faster)
+      const base = this.cfg.defs.rushStrike;
+      this.rush = { def, dir, traveled: 0, dist: def.distance, speed: def.speed * (def.distance / (base.distance || def.distance)) };
+    }
     else if (id === 'bladeWave') {
       const angle = this.waveAngle(def); // 질풍 베기: the blade sweeps the cone, the gale flies on
       this.events.emit('slash', { pos: { x: p.pos.x, y: p.pos.y }, dir: { x: dir.x, y: dir.y }, radius: 70, arcDeg: angle, chainIndex: 0, strong: true, wave: true });
@@ -246,7 +249,7 @@ export class SkillSystem {
     if (this.rush) {
       const r = this.rush;
       // 점프: a leap (the hero cannot be hit while airborne), then a slam all around the landing spot
-      const stepLen = Math.min(r.def.speed * dt, r.dist - r.traveled);
+      const stepLen = Math.min((r.speed || r.def.speed) * dt, r.dist - r.traveled);
       const { blocked } = this.movement.step(r.dir, stepLen);
       this.player.visualAngle = Math.atan2(r.dir.y, r.dir.x);
       r.traveled += stepLen;

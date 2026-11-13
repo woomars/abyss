@@ -18,6 +18,10 @@ export class Dungeon {
   }
 
   reset() {
+    this.spikes = [];
+    this.cleared = false;
+    this.exitIn = Infinity;
+    this.variant = null;
     this.rush = null; // debug boss rush: every boss in turn, full hp after each
     this.forceBoss = null;
     this.lastBoss = {}; // tier -> boss met last in this run (not twice in a row)
@@ -329,6 +333,7 @@ export class Dungeon {
 
   update(dt) {
     const c = this.cfg, g = this.game;
+    if (this.state === 'idle' || !this.room) return; // between runs (limbo): nothing to run
     if (this.state === 'fadeIn') {
       this.fade = Math.max(0, this.fade - dt / c.fadeTime);
       if (this.fade === 0) this.state = 'play';

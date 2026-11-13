@@ -301,10 +301,12 @@ async function boot() {
   document.addEventListener('pointerdown', () => audio.unlock(), true);
 
   let lastRender = performance.now();
+  let loopErr = false;
   const loop = new GameLoop({
     step: 1 / 60,
     maxFrame: 0.25,
-    update: (dt) => game.update(dt),
+    // one bad step must never stop the loop (a thrown error used to freeze the screen on black)
+    update: (dt) => { try { game.update(dt); } catch (err) { if (!loopErr) { loopErr = true; console.error(err); } } },
     render: (alpha) => {
       const now = performance.now();
       music.setDuck((menu && menu.isOpen) || game.over);

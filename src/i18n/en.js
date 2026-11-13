@@ -259,7 +259,7 @@ export default {
   'guide.5.title': "Bosses",
   'guide.5.body': "Bosses don't counter, but they attack in rhythm. Dodge the warnings, then pour your chain into the gap after each attack.",
   'guide.6.title': "Skills",
-  'guide.6.body': "Drag a button to aim; a quick tap fires at the nearest enemy. Move the buttons from the title screen. Roll: untouchable while rolling, then a strong thrust; if it lands, a chain follows.",
+  'guide.6.body': "Drag a button to aim; a quick tap fires at the nearest enemy. Move the buttons from the title screen.",
   // boss types
   'btype.warrior': "Warrior",
   'btype.mage': "Mage",
@@ -275,4 +275,6 @@ export default {
   'go.menu': "Main menu",
   'title.quit': "Quit",
   'title.layout': "Buttons",
+  'guide.7.title': "Roll",
+  'guide.7.body': "The Roll button tumbles a short way. You are untouchable only while rolling; it ends in a strong thrust and a brief stiffness (you can be hit then). Roll through boss attacks that cover the whole arena just as they reach you.",
 };

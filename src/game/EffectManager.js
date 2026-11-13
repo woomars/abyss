@@ -37,6 +37,7 @@ export class EffectManager {
       const n = Math.max(2, Math.ceil(Math.hypot(e.to.x - e.from.x, e.to.y - e.from.y) / 50));
       for (let i = 0; i <= n; i++) this.ring(e.from.x + ((e.to.x - e.from.x) * i) / n, e.from.y + ((e.to.y - e.from.y) * i) / n, 6, 40, '#d9a35b');
     });
+    events.on('bomberBlast', (e) => { this.ring(e.pos.x, e.pos.y, 10, e.radius, '#ff8a3a'); this.ring(e.pos.x, e.pos.y, 6, e.radius * 0.55, '#ffe08a'); for (const d of [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) this.spark(e.pos.x, e.pos.y, d, 4, 320, '#ffb060', 4, 0.45); });
     events.on('setBlast', (e) => { this.ring(e.pos.x, e.pos.y, 12, e.radius, '#c27cff'); this.ring(e.pos.x, e.pos.y, 6, e.radius * 0.6, '#ffffff'); });
     events.on('enemyStrike', (e) => {
       if (!e.riposte) return; // riposte: a red burst on the angry enemy

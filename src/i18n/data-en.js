@@ -87,7 +87,7 @@ export default {
     '유산의 증표 — 분해하지 않는 한 영원히 대를 잇는다': 'Mark of Legacy — passes down forever unless salvaged',
     // enemies and bosses
     '해골 전사': 'Skeleton Warrior', '오크 전사': 'Orc Warrior', '고블린 궁수': 'Goblin Archer', '망령': 'Wraith',
-    '오크 대장': 'Orc Warchief', '해골 창병': 'Skeleton Spearman', '심연의 수문장': 'Gatekeeper of the Abyss',
+    '오크 대장': 'Orc Warchief', '폭탄병': 'Bomber', '해골 창병': 'Skeleton Spearman', '심연의 수문장': 'Gatekeeper of the Abyss',
     // bosses (Phase 5)
     "뼈 도살자": "Bone Butcher",
     "저주 마녀": "Hex Witch",

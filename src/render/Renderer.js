@@ -73,6 +73,7 @@ export class Renderer {
     this.drawEnemies(game, alpha);
     this.drawAfterimages(fx, game.player);
     this.drawWinds(fx);
+    this.drawRoll(game, alpha);
     this.drawPlayer(game.player, alpha);
     this.drawSpin(game.skills, game.player, alpha);
     this.drawAim(game.skills, game.player, alpha);
@@ -208,6 +209,28 @@ export class Renderer {
     ctx.lineWidth = s.pause > 0 ? 7 : 5;
     ctx.lineCap = 'round';
     ctx.stroke();
+  }
+
+  // the roll: a motion streak, a spinning ring and dust; the stiffness after it: a dim pulse
+  drawRoll(game, alpha) {
+    const sk = game.skills, p = game.player, ctx = this.ctx;
+    const { x, y } = lerpPos(p.prevPos, p.pos, alpha);
+    if (sk.rush) {
+      const d = sk.rush.dir, k = sk.rush.traveled / Math.max(1, sk.rush.dist), r = p.radius;
+      const g = ctx.createLinearGradient(x, y, x - d.x * 90, y - d.y * 90);
+      g.addColorStop(0, 'rgba(200,230,255,0.55)'); g.addColorStop(1, 'rgba(200,230,255,0)');
+      ctx.strokeStyle = g; ctx.lineWidth = r * 2.2; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - d.x * 90, y - d.y * 90); ctx.stroke();
+      ctx.save(); ctx.translate(x, y); ctx.rotate(k * Math.PI * 4);
+      ctx.strokeStyle = 'rgba(235,245,255,0.9)'; ctx.lineWidth = 3;
+      for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(0, 0, r * 1.55, i * 2.1, i * 2.1 + 1.3); ctx.stroke(); }
+      ctx.restore();
+      ctx.fillStyle = 'rgba(180,170,190,0.35)';
+      for (let i = 1; i <= 3; i++) { ctx.beginPath(); ctx.arc(x - d.x * 28 * i + Math.sin(i * 7 + k * 9) * 6, y - d.y * 28 * i + Math.cos(i * 5) * 6, 5 + i * 2, 0, Math.PI * 2); ctx.fill(); }
+    } else if (sk.stiff > 0) {
+      ctx.strokeStyle = `rgba(255,120,90,${0.35 + 0.3 * Math.sin(performance.now() / 50)})`; ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(x, y, p.radius * 1.6, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    }
   }
 
   // burning ash (재의 인장) and allied wraiths (망령 군주의 왕관)
@@ -423,6 +446,11 @@ export class Renderer {
         ctx.fill();
         ctx.strokeStyle = e.mods.enhanced ? '#ffcf5a' : '#cdb8ff';
         ctx.stroke();
+      } else if (ai === 'bomber') { // round powder keg with a fuse that blinks faster near the end
+        const blink = e.ai && e.ai.fuse < 1.2 && Math.floor(performance.now() / (e.ai.fuse < 0.6 ? 60 : 130)) % 2 === 0;
+        ctx.beginPath(); ctx.arc(x + wob, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = blink ? '#ff5a3a' : fill; ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#ffe08a'; ctx.beginPath(); ctx.arc(x + wob + r * 0.6, y - r * 0.9, 3, 0, Math.PI * 2); ctx.fill();
       } else if (ai === 'spearman') { // square body with a long spear toward the player
         const ang = Math.atan2(pp.y - y, pp.x - x);
         ctx.fillRect(x - size / 2 + wob, y - size / 2, size, size);
@@ -609,7 +637,15 @@ export class Renderer {
       const flash = h.kind !== 'ring' && h.done;
       ctx.save();
       ctx.translate(h.x, h.y);
-      if (h.kind === 'line') { // a lane: the charge path or the sniper's line
+      if (h.kind === 'annulus') { // one ring of a sequential zone attack
+        const ring = () => { ctx.beginPath(); ctx.arc(0, 0, h.r1, 0, Math.PI * 2); if (h.r0 > 0) ctx.arc(0, 0, h.r0, 0, Math.PI * 2, true); };
+        ring();
+        ctx.fillStyle = flash ? 'rgba(255,120,80,0.5)' : `rgba(255,50,40,${0.06 + 0.16 * k})`;
+        ctx.fill('evenodd');
+        ctx.strokeStyle = flash ? 'rgba(255,200,150,0.9)' : `rgba(255,70,60,${0.35 + 0.45 * k})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      } else if (h.kind === 'line') { // a lane: the charge path or the sniper's line
         ctx.rotate(Math.atan2(h.dir.y, h.dir.x));
         if (h.tell) { // aim only: dashed line that brightens
           ctx.setLineDash([12, 8]);

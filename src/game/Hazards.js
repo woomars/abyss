@@ -23,6 +23,11 @@ export class Hazards {
     this.list.push({ kind: 'circle', x, y, radius, delay, damage, t: 0, done: false, follow, lockAt, tell: !(damage > 0) });
   }
 
+  // a ring-shaped zone between r0 and r1 around (x, y) (sequential area attacks)
+  annulus({ x, y, r0, r1, delay, damage }) {
+    this.list.push({ kind: 'annulus', x, y, r0, r1, radius: r1, delay, damage, t: 0, done: false, tell: !(damage > 0) });
+  }
+
   // a straight band from (x, y) along dir (charge paths, sniper lines); damage 0 = warning only
   line({ x, y, dir, length, width, delay, damage = 0 }) {
     this.list.push({ kind: 'line', x, y, dir, length, width, radius: length, delay, damage, t: 0, done: false, tell: !(damage > 0) });
@@ -54,7 +59,7 @@ export class Hazards {
         h.traveled += step;
         if (Math.hypot(player.pos.x - h.x, player.pos.y - h.y) <= pr + h.radius) { this.hit(h, player); remove = true; }
         else if (h.traveled >= h.range || this.arena.resolveCircle({ x: h.x, y: h.y }, h.radius).hitWall) remove = true;
-      } else if (h.kind === 'circle' || h.kind === 'cone' || h.kind === 'line') {
+      } else if (h.kind === 'circle' || h.kind === 'cone' || h.kind === 'line' || h.kind === 'annulus') {
         if (h.follow && h.t < h.lockAt) { h.x = player.pos.x; h.y = player.pos.y; }
         if (!h.done && h.t >= h.delay) {
           h.done = true;
@@ -76,6 +81,7 @@ export class Hazards {
   // is a circle of radius pr at p inside the area (counting the player's size)
   inside(h, p, pr) {
     const dx = p.x - h.x, dy = p.y - h.y, d = Math.hypot(dx, dy);
+    if (h.kind === 'annulus') return d >= h.r0 - pr && d <= h.r1 + pr;
     if (h.kind === 'line') { // distance from the segment
       const along = dx * h.dir.x + dy * h.dir.y;
       if (along < -pr || along > h.length + pr) return false;

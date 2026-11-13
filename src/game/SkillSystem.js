@@ -23,6 +23,7 @@ export class SkillSystem {
     this.spin = null;
     this.projectiles = [];
     this.aim = null;
+    this.stiff = 0; // stiffness after the roll's thrust: no moving, and no longer untouchable
   }
 
   get slots() {
@@ -49,11 +50,12 @@ export class SkillSystem {
 
   cooldownOf(def) { return def.cooldown * Math.max(0.2, 1 - this.bonus().cooldown); }
 
-  get busy() { return this.rush !== null; } // blocks movement and auto attacks
+  get busy() { return this.rush !== null || this.stiff > 0; } // blocks movement and auto attacks (roll, then its stiffness)
   get spinning() { return this.spin !== null; } // blocks auto attacks, player keeps moving
 
   // stop skills in flight (room change) but keep cooldowns
   cancelActive() {
+    this.stiff = 0;
     this.rush = null;
     this.spin = null;
     this.projectiles.length = 0;
@@ -62,6 +64,7 @@ export class SkillSystem {
 
   reset() {
     this.remaining = this.cfg.slots.map(() => 0);
+    this.stiff = 0;
     this.rush = null;
     this.spin = null;
     this.projectiles.length = 0;
@@ -189,6 +192,7 @@ export class SkillSystem {
     }
 
     if (this.spin) this.updateSpin(dt);
+    if (this.stiff > 0) this.stiff = Math.max(0, this.stiff - dt);
 
     if (this.rush) {
       const r = this.rush;
@@ -199,6 +203,7 @@ export class SkillSystem {
       r.traveled += stepLen;
       if (blocked || r.traveled >= r.dist - 1e-6) {
         this.rush = null;
+        this.stiff = r.def.recover || 0;
         this.thrust(r);
         this.events.emit('rushEnd', { pos: { x: this.player.pos.x, y: this.player.pos.y }, dir: r.dir });
         if (!this.combat.inCombat) this.movement.setDirection(this.combat.inputDir, { burst: false });

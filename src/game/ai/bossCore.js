@@ -122,6 +122,68 @@ const EXEC = {
     fire(e, g, p, dir) { shoot(e, g, dir, p); },
   },
   summon: { cast() {}, fire(e, g, p) { bossCore.summon(e, g, p); } },
+  // a thick band sweeps out across the whole room: too fast to outrun — roll through it
+  band: {
+    cast(e, g, p, w) {
+      const R = Math.hypot(g.arena.width, g.arena.height);
+      g.hazards.ring({ x: e.pos.x, y: e.pos.y, delay: w, speed: p.speed, maxRadius: R, thickness: p.thickness, damage: p.damage * e.mods.attack });
+    },
+  },
+  // the whole room in rings around the boss, struck one after another (outward or inward)
+  zones: {
+    hold: (p, e) => (p.count + e.ai.extra - 1) * p.stagger,
+    cast(e, g, p, w) {
+      const n = p.count + e.ai.extra, R = Math.hypot(g.arena.width, g.arena.height) / 2 + 80, step = R / n;
+      const inward = g.rng() < 0.5;
+      for (let k = 0; k < n; k++) {
+        const order = inward ? n - 1 - k : k;
+        g.hazards.annulus({ x: e.pos.x, y: e.pos.y, r0: order * step, r1: (order + 1) * step, delay: w + k * p.stagger, damage: p.damage * e.mods.attack });
+      }
+    },
+  },
+  // barrage time: bursts, spirals, aimed fans and a rain of circles all over the room, then a long rest
+  barrage: {
+    cast(e, g, p, w) { g.hazards.circle({ x: e.pos.x, y: e.pos.y, radius: p.tellRadius + e.radius, delay: w, damage: 0 }); },
+    fire(e, g, p) {
+      let t = p.duration, next = 0, wave = 0, spin = g.rng() * TAU;
+      const ar = g.arena;
+      return {
+        update(dt) {
+          t -= dt; next -= dt;
+          if (next <= 0 && t > 0.3) {
+            next = p.wave;
+            const kind = wave++ % 4;
+            if (kind === 0) { const n = 14 + e.ai.extra * 2; for (let k = 0; k < n; k++) { const a = spin + (k * TAU) / n; shoot(e, g, { x: Math.cos(a), y: Math.sin(a) }, p); } spin += 0.25; }
+            else if (kind === 1) { for (let k = 0; k < 4; k++) { const a = spin + (k * TAU) / 4; for (let j = 0; j < 3; j++) shoot(e, g, { x: Math.cos(a + j * 0.12), y: Math.sin(a + j * 0.12) }, p); } spin += 0.6; }
+            else if (kind === 2) { const v = toward(e, g.player.pos); for (let k = -3; k <= 3; k++) shoot(e, g, rot(v, k * 0.16), p); }
+            else { for (let k = 0; k < 6 + e.ai.extra; k++) { const q = freeSpot(g, { x: ar.width / 2, y: ar.height / 2 }, 0, Math.max(ar.width, ar.height) / 2, 10) || g.player.pos; g.hazards.circle({ x: q.x, y: q.y, radius: p.rainRadius, delay: 0.7, damage: p.damage * e.mods.attack }); } }
+          }
+          return t > 0 ? { x: 0, y: 0 } : null;
+        },
+      };
+    },
+  },
+  // a tight ring of bombers around the player: marks first, then they appear and rush in
+  bombers: {
+    cast(e, g, p, w) {
+      const n = p.count + e.ai.extra * 2, c = g.player.pos, spots = [];
+      for (let k = 0; k < n; k++) {
+        const a = (k * TAU) / n + g.rng() * 0.3;
+        const q = g.arena.resolveCircle({ x: c.x + Math.cos(a) * p.ring, y: c.y + Math.sin(a) * p.ring }, 12).pos;
+        spots.push(q);
+        g.hazards.circle({ x: q.x, y: q.y, radius: 18, delay: w, damage: 0 });
+      }
+      e.ai.spots = spots;
+    },
+    fire(e, g) {
+      const info = g.dungeon && g.dungeon.info;
+      for (const q of e.ai.spots || []) {
+        g.enemies.spawnAt('bomber', q, { ...(info ? info.mods : {}), hp: 1, minion: true });
+        g.events.emit('minionSpawn', { pos: q, zone: 'near' });
+      }
+      e.ai.spots = null;
+    },
+  },
   // minions hit harder and move faster for a while
   empower: {
     cast() {},
@@ -279,6 +341,10 @@ export const bossCore = {
   update(e, dt, game, brain) {
     const t = e.tcfg, s = e.ai;
     this.upkeep(e, dt, game);
+    if (!s.opened) { // summoners arrive with their minions already attacking
+      s.opened = true;
+      if (t.ai === 'summoner') { const p = Object.values(t.patterns).find((x) => x.kind === 'summon'); if (p) this.summon(e, game, p); }
+    }
     if (s.state === 'basic') { // the pattern clock waits while a basic attack plays out
       s.bw -= dt;
       if (s.bw <= 0) s.state = 'chase';

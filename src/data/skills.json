@@ -26,12 +26,13 @@
       "directional": true,
       "cooldown": 10,
       "distance": 107,
-      "speed": 700,
+      "speed": 450,
       "damage": 45,
       "thrust": {
         "length": 140,
         "width": 56
-      }
+      },
+      "recover": 0.3
     },
     "bladeWave": {
       "name": "원거리 공격",

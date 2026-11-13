@@ -19,6 +19,8 @@ const ART = [
   `<path d="M120 55 L40 15 A 90 90 0 0 0 40 95 Z" fill="rgba(255,80,60,0.22)" stroke="#ff5a4a" stroke-width="2"/>${foe(130, 55, 24)}${knight(70, 102, -20)}<path d="M60 92 L70 70" stroke="#ffe08a" stroke-width="3" stroke-dasharray="5 4"/><text x="175" y="25" fill="#ffe08a" font-size="13" font-weight="700" text-anchor="middle">GAP!</text>`,
   // 6 skills: drag to aim, tap for the nearest
   `<circle cx="40" cy="78" r="20" fill="#221a2c" stroke="#c9a86a" stroke-width="3"/><circle cx="92" cy="86" r="20" fill="#221a2c" stroke="#c9a86a" stroke-width="3"/><circle cx="52" cy="30" r="20" fill="#221a2c" stroke="#c9a86a" stroke-width="3"/><path d="M92 86 L150 52" stroke="#9fd8ff" stroke-width="3" stroke-dasharray="7 5"/>${finger(150, 52)}${foe(182, 34)}<path d="M150 52 L176 38" stroke="#9fd8ff" stroke-width="2"/>`,
+  // 7 roll: a band sweeps out from the boss; tumble through it at the right moment
+  `${foe(36, 55, 22)}<circle cx="36" cy="55" r="78" fill="none" stroke="rgba(255,90,60,0.55)" stroke-width="16"/><path d="M128 30 q 14 -10 24 4" fill="none" stroke="#9fd8ff" stroke-width="3"/><circle cx="104" cy="48" r="12" fill="none" stroke="#e8f4ff" stroke-width="3" stroke-dasharray="10 6"/><path d="M150 40 L182 30" stroke="#ffe08a" stroke-width="4" stroke-linecap="round"/>${knight(150, 40, -18)}<text x="150" y="92" fill="#ffe08a" font-size="13" font-weight="700" text-anchor="middle">ROLL!</text>`,
 ];
 
 export class ControlsGuide {

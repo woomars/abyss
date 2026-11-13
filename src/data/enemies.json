@@ -129,6 +129,14 @@
           "thickness": 34,
           "damage": 18,
           "recover": 0.5
+        },
+        "band": {
+          "kind": "band",
+          "windup": 1.0,
+          "speed": 450,
+          "thickness": 56,
+          "damage": 22,
+          "recover": 0.6
         }
       },
       "openingDelay": 1.2,
@@ -212,6 +220,14 @@
           "windup": 0.7,
           "recover": 0.4,
           "maxMinions": 8
+        },
+        "band": {
+          "kind": "band",
+          "windup": 1.0,
+          "speed": 450,
+          "thickness": 56,
+          "damage": 28,
+          "recover": 0.6
         }
       },
       "openingDelay": 1.2,
@@ -333,6 +349,14 @@
           "windup": 0.6,
           "damage": 18,
           "recover": 0.4
+        },
+        "band": {
+          "kind": "band",
+          "windup": 1.0,
+          "speed": 450,
+          "thickness": 56,
+          "damage": 22,
+          "recover": 0.6
         }
       },
       "basics": {
@@ -416,6 +440,19 @@
           "windup": 0.45,
           "damage": 22,
           "recover": 0.6
+        },
+        "barrage": {
+          "kind": "barrage",
+          "windup": 0.9,
+          "tellRadius": 80,
+          "duration": 4.0,
+          "wave": 0.7,
+          "speed": 260,
+          "radius": 9,
+          "range": 950,
+          "rainRadius": 60,
+          "damage": 11,
+          "recover": 2.6
         }
       },
       "keep": [
@@ -477,6 +514,19 @@
           "stagger": 0.25,
           "damage": 22,
           "recover": 0.5
+        },
+        "barrage": {
+          "kind": "barrage",
+          "windup": 0.9,
+          "tellRadius": 80,
+          "duration": 4.0,
+          "wave": 0.7,
+          "speed": 260,
+          "radius": 9,
+          "range": 950,
+          "rainRadius": 60,
+          "damage": 11,
+          "recover": 2.6
         }
       },
       "keep": [
@@ -545,6 +595,14 @@
           "range": 1100,
           "damage": 29,
           "recover": 0.6
+        },
+        "zones": {
+          "kind": "zones",
+          "count": 5,
+          "windup": 0.9,
+          "stagger": 0.35,
+          "damage": 20,
+          "recover": 0.6
         }
       },
       "keep": [
@@ -602,6 +660,14 @@
           "range": 760,
           "damage": 13,
           "recover": 0.5
+        },
+        "zones": {
+          "kind": "zones",
+          "count": 5,
+          "windup": 0.9,
+          "stagger": 0.35,
+          "damage": 20,
+          "recover": 0.6
         }
       },
       "keep": [
@@ -663,6 +729,13 @@
           "stagger": 0.25,
           "damage": 22,
           "recover": 0.5
+        },
+        "bombers": {
+          "kind": "bombers",
+          "windup": 0.55,
+          "count": 8,
+          "ring": 190,
+          "recover": 0.6
         }
       },
       "keep": [
@@ -718,6 +791,13 @@
           "attack": 0.3,
           "speed": 0.3,
           "recover": 0.4
+        },
+        "bombers": {
+          "kind": "bombers",
+          "windup": 0.55,
+          "count": 8,
+          "ring": 190,
+          "recover": 0.6
         }
       },
       "keep": [
@@ -790,6 +870,14 @@
           "thickness": 34,
           "damage": 24,
           "recover": 0.5
+        },
+        "band": {
+          "kind": "band",
+          "windup": 1.0,
+          "speed": 450,
+          "thickness": 56,
+          "damage": 30,
+          "recover": 0.6
         }
       },
       "basics": {
@@ -872,6 +960,14 @@
           "windup": 0.75,
           "dashTime": 0.25,
           "damage": 33,
+          "recover": 0.6
+        },
+        "band": {
+          "kind": "band",
+          "windup": 1.0,
+          "speed": 450,
+          "thickness": 56,
+          "damage": 30,
           "recover": 0.6
         }
       },
@@ -961,6 +1057,19 @@
           "range": 700,
           "damage": 15,
           "recover": 0.5
+        },
+        "barrage": {
+          "kind": "barrage",
+          "windup": 0.9,
+          "tellRadius": 80,
+          "duration": 4.0,
+          "wave": 0.7,
+          "speed": 260,
+          "radius": 9,
+          "range": 950,
+          "rainRadius": 60,
+          "damage": 15,
+          "recover": 2.6
         }
       },
       "keep": [
@@ -1029,6 +1138,19 @@
           "lock": 0.45,
           "damage": 33,
           "recover": 0.5
+        },
+        "barrage": {
+          "kind": "barrage",
+          "windup": 0.9,
+          "tellRadius": 80,
+          "duration": 4.0,
+          "wave": 0.7,
+          "speed": 260,
+          "radius": 9,
+          "range": 950,
+          "rainRadius": 60,
+          "damage": 15,
+          "recover": 2.6
         }
       },
       "keep": [
@@ -1086,6 +1208,14 @@
           "range": 820,
           "damage": 18,
           "recover": 0.5
+        },
+        "zones": {
+          "kind": "zones",
+          "count": 5,
+          "windup": 0.9,
+          "stagger": 0.35,
+          "damage": 27,
+          "recover": 0.6
         }
       },
       "keep": [
@@ -1155,6 +1285,14 @@
           "stagger": 0.25,
           "damage": 30,
           "recover": 0.5
+        },
+        "zones": {
+          "kind": "zones",
+          "count": 5,
+          "windup": 0.9,
+          "stagger": 0.35,
+          "damage": 27,
+          "recover": 0.6
         }
       },
       "keep": [
@@ -1216,6 +1354,13 @@
           "attack": 0.3,
           "speed": 0.3,
           "recover": 0.4
+        },
+        "bombers": {
+          "kind": "bombers",
+          "windup": 0.55,
+          "count": 8,
+          "ring": 190,
+          "recover": 0.6
         }
       },
       "keep": [
@@ -1277,6 +1422,13 @@
           "lock": 0.45,
           "damage": 33,
           "recover": 0.5
+        },
+        "bombers": {
+          "kind": "bombers",
+          "windup": 0.55,
+          "count": 8,
+          "ring": 190,
+          "recover": 0.6
         }
       },
       "keep": [
@@ -1349,6 +1501,14 @@
           "thickness": 34,
           "damage": 24,
           "recover": 0.5
+        },
+        "band": {
+          "kind": "band",
+          "windup": 1.0,
+          "speed": 450,
+          "thickness": 56,
+          "damage": 30,
+          "recover": 0.6
         }
       },
       "basics": {
@@ -1438,6 +1598,19 @@
           "windup": 0.45,
           "damage": 30,
           "recover": 0.6
+        },
+        "barrage": {
+          "kind": "barrage",
+          "windup": 0.9,
+          "tellRadius": 80,
+          "duration": 4.0,
+          "wave": 0.7,
+          "speed": 260,
+          "radius": 9,
+          "range": 950,
+          "rainRadius": 60,
+          "damage": 15,
+          "recover": 2.6
         }
       },
       "keep": [
@@ -1507,6 +1680,19 @@
           "range": 700,
           "damage": 15,
           "recover": 0.5
+        },
+        "barrage": {
+          "kind": "barrage",
+          "windup": 0.9,
+          "tellRadius": 80,
+          "duration": 4.0,
+          "wave": 0.7,
+          "speed": 260,
+          "radius": 9,
+          "range": 950,
+          "rainRadius": 60,
+          "damage": 15,
+          "recover": 2.6
         }
       },
       "keep": [
@@ -1574,6 +1760,14 @@
           "radius": 10,
           "range": 1100,
           "damage": 39,
+          "recover": 0.6
+        },
+        "zones": {
+          "kind": "zones",
+          "count": 5,
+          "windup": 0.9,
+          "stagger": 0.35,
+          "damage": 27,
           "recover": 0.6
         }
       },
@@ -1643,6 +1837,14 @@
           "range": 820,
           "damage": 18,
           "recover": 0.5
+        },
+        "zones": {
+          "kind": "zones",
+          "count": 5,
+          "windup": 0.9,
+          "stagger": 0.35,
+          "damage": 27,
+          "recover": 0.6
         }
       },
       "keep": [
@@ -1714,6 +1916,13 @@
           "stagger": 0.25,
           "damage": 30,
           "recover": 0.5
+        },
+        "bombers": {
+          "kind": "bombers",
+          "windup": 0.55,
+          "count": 8,
+          "ring": 190,
+          "recover": 0.6
         }
       },
       "keep": [
@@ -1784,12 +1993,40 @@
           "thickness": 34,
           "damage": 24,
           "recover": 0.5
+        },
+        "bombers": {
+          "kind": "bombers",
+          "windup": 0.55,
+          "count": 8,
+          "ring": 190,
+          "recover": 0.6
         }
       },
       "keep": [
         380,
         640
       ]
+    },
+    "bomber": {
+      "name": "폭탄병",
+      "hp": 6,
+      "attack": 16,
+      "speed": 165,
+      "radius": 11,
+      "knockbackResist": 0,
+      "color": "#c8742a",
+      "attackRange": 0,
+      "attackWindup": 0.3,
+      "rank": "normal",
+      "ai": "bomber",
+      "fuse": [
+        2,
+        3
+      ],
+      "blast": {
+        "radius": 70,
+        "warn": 0.6
+      }
     }
   },
   "counterWindow": 1,

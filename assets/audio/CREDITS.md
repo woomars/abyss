@@ -27,6 +27,9 @@
 | bgm/story.mp3 | 시작 스토리 | "Dark" by leberch — https://pixabay.com/music/ambient-dark-628701/ | 80kbps 스테레오 MP3로 다시 압축 |
 | bgm/base_1.mp3 | 시작 화면·거점 | "Shadows Beneath the Keep" by MenielDM — https://pixabay.com/music/fantasy-dreamy-childrens-shadows-beneath-the-keep-495833/ | 80kbps 스테레오 MP3로 다시 압축 |
 | bgm/explore_1.mp3 | 일반 전투 | "Battle" by PaulYudin — https://pixabay.com/music/main-title-battle-198395/ | 80kbps 스테레오 MP3로 다시 압축 |
+| bgm/stage_2.mp3 | 전투층 (20층마다 한 곡) | "Nocturnal Enigma" by moodmode — https://pixabay.com/music/solo-piano-nocturnal-enigma-166590/ | 80kbps 스테레오 MP3로 다시 압축 |
+| bgm/stage_6.mp3 | 전투층 (20층마다 한 곡) | "Echoes in the Halls 1" by adiiswanto — https://pixabay.com/music/modern-classical-echoes-in-the-halls-1-304718/ | 80kbps 스테레오 MP3로 다시 압축 |
+| bgm/stage_10.mp3 | 전투층 (20층마다 한 곡) | "Echoes in the Halls 2" by adiiswanto — https://pixabay.com/music/modern-classical-echoes-in-the-halls-2-304717/ | 80kbps 스테레오 MP3로 다시 압축 |
 | bgm/hard_6.mp3 | 고난도 전투 | "Intense - Intense Music" by The_Mountain — https://pixabay.com/music/classical-string-quartet-intense-intense-music-508028/ | 80kbps 스테레오 MP3로 다시 압축 |
 | bgm/miniboss_6.mp3 | 중간보스전 | "Boss Fight One" by BouncyRunner — https://pixabay.com/music/upbeat-boss-fight-one-400508/ | 80kbps 스테레오 MP3로 다시 압축 |
 | bgm/boss_1.mp3 | 대형 보스전 (1→6 순서대로) | "Huge Wall" by Jobisahealer — https://pixabay.com/music/fantasy-dreamy-childrens-huge-wall-446284/ | 80kbps 스테레오 MP3로 다시 압축 |

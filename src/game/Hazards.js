@@ -20,22 +20,24 @@ export class Hazards {
   }
 
   // follow: the circle tracks the player until lockAt, then stays put for the rest of its warning
-  circle({ x, y, radius, delay, damage, follow = false, lockAt = 0 }) {
-    this.list.push({ kind: 'circle', x, y, radius, delay, damage, t: 0, done: false, follow, lockAt, tell: !(damage > 0) });
+  circle({ x, y, radius, delay, damage, follow = false, lockAt = 0, owner = null, anchor = false }) {
+    this.list.push({ kind: 'circle', x, y, radius, delay, damage, t: 0, done: false, follow, lockAt, tell: !(damage > 0), owner, anchor });
   }
 
   // a ring-shaped zone between r0 and r1 around (x, y) (sequential area attacks)
-  annulus({ x, y, r0, r1, delay, damage }) {
-    this.list.push({ kind: 'annulus', x, y, r0, r1, radius: r1, delay, damage, t: 0, done: false, tell: !(damage > 0) });
+  annulus({ x, y, r0, r1, delay, damage, owner = null, anchor = false }) {
+    this.list.push({ kind: 'annulus', x, y, r0, r1, radius: r1, delay, damage, t: 0, done: false, tell: !(damage > 0), owner, anchor });
   }
 
+  // owner: the enemy whose own attack this is — the warning moves with it when anchor is set, and is gone
+  // when it dies or is stunned. Boss fields, bomber blasts and arrows have no owner: once out, they stay.
   // a straight band from (x, y) along dir (charge paths, sniper lines); damage 0 = warning only
-  line({ x, y, dir, length, width, delay, damage = 0 }) {
-    this.list.push({ kind: 'line', x, y, dir, length, width, radius: length, delay, damage, t: 0, done: false, tell: !(damage > 0) });
+  line({ x, y, dir, length, width, delay, damage = 0, owner = null, anchor = false }) {
+    this.list.push({ kind: 'line', x, y, dir, length, width, radius: length, delay, damage, t: 0, done: false, tell: !(damage > 0), owner, anchor });
   }
 
-  cone({ x, y, dir, radius, arcDeg, delay, damage }) {
-    this.list.push({ kind: 'cone', x, y, dir, radius, arcDeg, delay, damage, t: 0, done: false, tell: !(damage > 0) });
+  cone({ x, y, dir, radius, arcDeg, delay, damage, owner = null, anchor = false }) {
+    this.list.push({ kind: 'cone', x, y, dir, radius, arcDeg, delay, damage, t: 0, done: false, tell: !(damage > 0), owner, anchor });
   }
 
   // shockwave: telegraph for `delay`, then a band of `thickness` grows from 0 to maxRadius at `speed`
@@ -66,6 +68,11 @@ export class Hazards {
         if (Math.hypot(player.pos.x - h.x, player.pos.y - h.y) <= pr + h.radius) { this.hit(h, player); remove = true; }
         else if (h.traveled >= h.range || this.arena.resolveCircle({ x: h.x, y: h.y }, h.radius).hitWall) remove = true;
       } else if (h.kind === 'circle' || h.kind === 'cone' || h.kind === 'line' || h.kind === 'annulus') {
+        const o = h.owner;
+        if (o && !h.done) {
+          if (!o.alive || o.dying || o.stunTime > 0) { this.list.splice(i, 1); continue; }
+          if (h.anchor) { h.x = o.pos.x; h.y = o.pos.y; }
+        }
         if (h.follow && h.t < h.lockAt) { h.x = player.pos.x; h.y = player.pos.y; }
         if (!h.done && h.t >= h.delay) {
           h.done = true;

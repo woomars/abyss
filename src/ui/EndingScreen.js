@@ -2,7 +2,9 @@
 // then the credits roll over the last one; 건너뛰기 jumps to the credits and runs them fast. The last
 // line — the child setting out with the inherited item — comes up over the opening story's last
 // painting (the abyss gate), closing the circle. From the title (replay) it ends with 닫기.
-import { t, trPerson, trItemName } from '../i18n/index.js';
+import { TextScroller } from './TextScroller.js';
+import { storyText } from './storyText.js';
+import { t, trPerson, trItemName, getLang } from '../i18n/index.js';
 
 const ART = ['arrive', 'portal', 'cottage', 'couple'];
 const SPEED = 0.042; // share of the view height the text rises per second
@@ -36,7 +38,10 @@ export function endingLast(f) {
 }
 
 export class EndingScreen {
-  constructor(root, { music = null, onDone = () => {} } = {}) {
+  // story: () => config.tuning.story (the Korean text)
+  constructor(root, { music = null, onDone = () => {}, toLocal = null, story = () => null } = {}) {
+    this.story = story;
+    this.toLocal = toLocal; // screen -> stage coordinates
     this.music = music;
     this.onDone = onDone;
     this.el = document.createElement('div');
@@ -55,6 +60,17 @@ export class EndingScreen {
     this.roll = this.el.querySelector('.en-roll');
     this.final = this.el.querySelector('.en-final');
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
+    // a finger on the text pushes it (swipe) or holds it (press and keep still); buttons stay buttons
+    const ly = (e) => (this.toLocal ? this.toLocal(e.clientX, e.clientY).y : e.clientY);
+    this.el.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('[data-act]') || !this.scroller) return;
+      this.scroller.down(ly(e), e.timeStamp / 1000);
+      try { this.el.setPointerCapture(e.pointerId); } catch (_) { /* not capturable */ }
+    });
+    this.el.addEventListener('pointermove', (e) => { if (this.scroller) this.scroller.move(ly(e), e.timeStamp / 1000); });
+    const lift = (e) => { if (this.scroller) this.scroller.up(e.timeStamp / 1000); };
+    this.el.addEventListener('pointerup', lift);
+    this.el.addEventListener('pointercancel', lift);
     this.el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-act]');
       if (!b) return;
@@ -71,6 +87,8 @@ export class EndingScreen {
     this.finale = finale;
     this.replay = replay;
     this.y = 0;
+    this.scroller = new TextScroller({ auto: 0 });
+    this.scroller.clampMin(0);
     this.last = null;
     this.fast = false;
     this.phase = 'roll';
@@ -95,7 +113,8 @@ export class EndingScreen {
 
   relabel() {
     if (!this.finale) return;
-    const f = this.finale, para = (k) => `<p class="en-p" data-bg="${ART[k]}">${t(k === 2 ? `ending.p3.${f.heroSex === 'daughter' ? 'husband' : 'wife'}` : `ending.p${k + 1}`).replace(/\n/g, '<br>')}</p>`;
+    const f = this.finale, txt = storyText(getLang(), this.story(), t).ending;
+    const para = (k) => `<p class="en-p" data-bg="${ART[k]}">${txt[k === 2 ? `p3.${f.heroSex === 'daughter' ? 'husband' : 'wife'}` : `p${k + 1}`].replace(/\n/g, '<br>')}</p>`;
     this.roll.innerHTML = `${[0, 1, 2, 3].map(para).join('')}<div class="en-credits">${CREDITS.map(([c, txt]) => `<div class="en-c-${c}">${txt()}</div>`).join('')}</div>`;
     this.el.querySelector('.en-last').innerHTML = endingLast(f).replace(/\n/g, '<br>');
     this.el.querySelector('.en-skip').textContent = t('story.skip');
@@ -112,7 +131,7 @@ export class EndingScreen {
     if (this.phase !== 'roll') return;
     const credits = this.roll.querySelector('.en-credits');
     this.fast = true;
-    if (credits && this.y < credits.offsetTop) this.y = credits.offsetTop;
+    if (credits && this.scroller.pos < credits.offsetTop) this.scroller.pos = credits.offsetTop;
     this.el.querySelector('.en-skip').classList.add('hidden');
   }
 
@@ -122,7 +141,9 @@ export class EndingScreen {
     this.last = now;
     if (this.phase === 'roll') {
       const H = this.view.clientHeight || 390;
-      this.y += H * SPEED * dt * (this.fast ? FAST : 1);
+      this.scroller.auto = H * SPEED * (this.fast ? FAST : 1);
+      this.scroller.step(dt);
+      this.y = this.scroller.pos;
       this.roll.style.transform = `translateY(${(H - this.y).toFixed(1)}px)`;
       // the painting follows the paragraph at the middle; the credits stay on the last one
       let k = ART[0];

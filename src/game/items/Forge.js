@@ -207,3 +207,22 @@ export function resolveDeath(ctx, rng, record) {
   // lifesteal on gear stays with the gear for as long as the gear itself lasts
   return { survived, lost };
 }
+
+// ---- Phase 6 forge helpers ----
+// the set button on the paper doll: the set worn the most (first in config order on a tie)
+export function wornSetSummary(gearSets, setsCfg) {
+  let id = null, n = 0;
+  for (const k of Object.keys(setsCfg)) { const c = (gearSets && gearSets[k]) || 0; if (c > n) { id = k; n = c; } }
+  const total = id ? Object.keys(setsCfg[id].pieces).length : Object.keys(Object.values(setsCfg)[0].pieces).length;
+  return { id, n, total };
+}
+
+// which worn slots an item is compared with: a ring with both rings, anything else with its own slot
+export function compareSlots(loadout, item) {
+  return item.slot === 'ring' ? ['ring1', 'ring2'] : [loadout.slotFor(item)];
+}
+
+// 분해 "모두 선택": everything shown except legacy-token gear and set pieces (those are picked one by one)
+export function salvageSelectAll(items) {
+  return items.filter((it) => !it.token && !it.set).map((it) => it.id);
+}

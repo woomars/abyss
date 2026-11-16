@@ -20,7 +20,7 @@ export class DebugPanel {
     this.el = document.createElement('div');
     this.el.className = 'debug interactive collapsed';
     this.el.innerHTML = `
-      <div class="dhead"><button data-act="toggle">DEBUG</button><span class="fps">-- fps</span></div>
+      <div class="dhead"><button data-act="toggle">닫기</button><span class="fps">-- fps</span></div>
       <div class="dbody">
         <div class="dbtns">방 이동 <select data-act="floor"><option value="">고르기</option><option value="0">연습장</option><option value="-1">보물방</option><option value="-2">대장간</option><option value="-3">증표 받기</option><option value="-4">보스 연전 (끝없는 보스방)</option>${
           Array.from({ length: 21 }, (_, i) => `<option value="${i + 1}">지하 ${i + 1}층</option>`).join('')}<option value="100">지하 100층 (시조)</option></select></div>
@@ -64,6 +64,10 @@ export class DebugPanel {
   get isOpen() { return !this.el.classList.contains('collapsed'); }
 
   // opening the panel pauses the game; closing it (or going back to the game) carries on
+  // opened from the pause menu's [디버그] button; [닫기] in the panel closes it and the game goes on
+  open() { this.setOpen(true); }
+  close() { this.setOpen(false); }
+
   setOpen(open) {
     this.el.classList.toggle('collapsed', !open);
     if (open) this.refresh();

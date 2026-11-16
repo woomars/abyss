@@ -47,7 +47,7 @@ export class HeirScreen {
       ? `<div class="hs-kept">${t('heir.kept', { list: fate.survived.map((i) => `<b>${esc(trItemName(i.name))}</b>`).join(', ') })}</div>`
       : `<div class="hs-kept dim">${t('heir.noKept')}</div>`;
     this.el.innerHTML = `
-      <div class="hs-panel">
+      <div class="hs-panel"><div class="hs-scroll">
         ${note ? `<p class="hs-note">${esc(t(note))}</p>` : ''}
         <div class="hs-father">
           <div class="hs-label">${t('gen', { n: r.generation })}</div>
@@ -62,7 +62,8 @@ export class HeirScreen {
         ${(fate.trophies || []).length ? `<div class="hs-trophy">${relicIcon('trophy', 16)} ${t('heir.trophies', { list: fate.trophies.map((x) => esc(tr(x.name))).join(', ') })}</div>` : ''}
         <div class="hs-arrow">▼</div>
         <div class="hs-heir">${t('heir.line', { family: `<b class="hs-house">${esc(trPerson(h.family, 'family'))}</b>`, father: esc(trPerson(r.given, 'given')), child: t(`heir.child.${h.sex === 'daughter' ? 'daughter' : 'son'}`), name: esc(trPerson(h.given, 'given')) })} <small>${t('gen', { n: h.generation })} ${houseName(h.family, h.given)}</small></div>
-        <button class="tm-btn primary" data-act="go">${typeof label === 'function' ? label() : t(label)}</button>
+        </div>
+        <div class="hs-actions"><button class="tm-btn primary" data-act="go">${typeof label === 'function' ? label() : t(label)}</button></div>
       </div>`;
     this.el.classList.remove('hidden');
   }

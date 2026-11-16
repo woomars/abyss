@@ -2,6 +2,7 @@ import { Pool } from '../core/Pool.js';
 import { t } from '../i18n/index.js';
 
 const SLASH_LIFE = 0.2;
+const HIT_DEFAULT = { vignette: 0.3, vignetteAlpha: 0.45, flash: 0.15, shake: 6, numberScale: 1.4 };
 const RING_LIFE = 0.28;
 const LINK_LIFE = 0.22;
 const WIND_LIFE = 0.18;
@@ -10,6 +11,7 @@ const WIND_LIFE = 0.18;
 export class EffectManager {
   constructor(config, events, rng) {
     this.config = config; // full config (live); uses config.feedback
+    this.hurtVignette = 0; // seconds left of the red screen edge after a blow taken
     this.rng = rng;
     const f = config.feedback;
     this.particles = new Pool(() => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: '#fff', dust: false, a0: 1 }), f.particles.max);
@@ -59,11 +61,14 @@ export class EffectManager {
 
   text(x, y, value) {
     const n = this.numbers.acquire();
-    n.x = x; n.y = y; n.value = value; n.crit = false; n.hurt = true;
+    n.x = x; n.y = y; n.value = value; n.crit = false; n.hurt = true; n.scale = 1; n.tag = null;
     n.life = n.max = this.fb.damageNumberLife;
   }
 
   get fb() { return this.config.feedback; }
+
+  // tuning.hud.playerHit: how loudly a blow taken shows
+  get hitCfg() { return (this.config.tuning && this.config.tuning.hud && this.config.tuning.hud.playerHit) || HIT_DEFAULT; }
 
   spark(x, y, dir, n, speed, color, size, life) {
     for (let i = 0; i < n; i++) {
@@ -111,7 +116,8 @@ export class EffectManager {
   onPlayerHit({ damage, pos, from }) {
     const n = this.numbers.acquire();
     n.x = pos.x; n.y = pos.y - 30;
-    n.value = Math.max(1, Math.round(damage)); n.crit = false; n.hurt = true;
+    n.value = Math.max(1, Math.round(damage)); n.crit = false; n.hurt = true; n.scale = this.hitCfg.numberScale; n.tag = null;
+    this.hurtVignette = this.hitCfg.vignette; // the screen edge flashes red
     n.life = n.max = this.fb.damageNumberLife;
     const dir = from ? { x: pos.x - from.x, y: pos.y - from.y } : { x: 0, y: -1 };
     const l = Math.hypot(dir.x, dir.y) || 1;
@@ -139,7 +145,7 @@ export class EffectManager {
     this.spark(pos.x, pos.y, dir, this.fb.particles.hit, crit ? 520 : 380, color, crit ? 3.5 : 2.5, 0.25);
     const n = this.numbers.acquire();
     n.x = pos.x + (this.rng() * 2 - 1) * 8; n.y = pos.y - 18;
-    n.value = damage; n.crit = crit; n.hurt = false;
+    n.value = damage; n.crit = crit; n.hurt = false; n.scale = 1;
     n.tag = enemy && enemy.lastBlocked ? enemy.lastBlocked : null; // immune / guard instead of a number
     n.life = n.max = this.fb.damageNumberLife;
     if (crit || strong) {
@@ -177,6 +183,7 @@ export class EffectManager {
       p.vx *= k; p.vy *= k;
     });
     this.numbers.forEachActive((n) => { n.life -= dt; n.y -= 40 * dt; if (n.life <= 0) this.numbers.release(n); });
+    if (this.hurtVignette > 0) this.hurtVignette = Math.max(0, this.hurtVignette - dt);
     decay(this.rings); decay(this.slashes); decay(this.links); decay(this.winds);
 
     for (const a of this.afterimages) a.age += dt;

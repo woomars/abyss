@@ -17,7 +17,7 @@ export const spearmanAI = {
     if (s.cd <= 0 && d - e.radius - p.radius <= t.thrust.radius - 20) {
       const beat = s.rhythm.next();
       const delay = teleTime(e.root, t.thrust.windup, beat.tele);
-      game.hazards.cone({ x: e.pos.x, y: e.pos.y, dir: { x: dx / d, y: dy / d }, radius: t.thrust.radius + e.radius, arcDeg: t.thrust.arcDeg, delay, damage: e.attack });
+      game.hazards.cone({ x: e.pos.x, y: e.pos.y, dir: { x: dx / d, y: dy / d }, radius: t.thrust.radius + e.radius, arcDeg: t.thrust.arcDeg, delay, damage: e.attack, owner: e, anchor: true });
       game.events.emit('enemyThrust', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } });
       s.hold = delay + t.thrust.recover;
       s.cd = s.hold + beat.wait;

@@ -114,7 +114,7 @@ async function boot() {
   // dungeon announcements and music follow the room
   const banner = new Banner(ui);
   events.on('floorStart', (e) => {
-    music.play(e.music);
+    music.play(e.music, e.track);
     if (e.final) banner.show(founderTitle(e.founder), t('final.arrive'), { kind: 'boss', ms: 2800 });
     else if (e.kind === 'boss') banner.show(tr(e.boss), e.rush ? `보스 연전 ${e.rush.n}/${e.rush.total}${e.rush.loop ? ` · ${e.rush.loop + 1}바퀴` : ''} · ${floorLabel(e.floor)}` : `${floorLabel(e.floor)} ${tr(game.dungeon.info.band.title)}`, { kind: 'boss', ms: 2400 }); // the rush line is a debug screen (Korean only)
     else if (e.kind === 'treasure') { /* the card screen says it all */ }
@@ -132,6 +132,7 @@ async function boot() {
   const picker = new RelicPicker(ui, {
     pickDelay: () => config.relics.pickDelay,
     relics: () => config.relics,
+    hp: () => ({ hp: game.player.hp, maxHp: game.player.maxHp }),
     onPick: (i) => {
       if (game.skillOffer) { // special-attack growth card
         const c = game.chooseSkill(i);
@@ -152,8 +153,10 @@ async function boot() {
   events.on('lootPickup', (e) => toast.show(e.item));
   events.on('pocketFull', () => toast.text(t('notice.pocketFull')));
   events.on('relicReroll', (e) => picker.show(e.offers, { ...e, title: game.dungeon.state === 'treasure' ? 'room.treasure' : '', found: chest ? chest.gold : 0 }));
+  const debugOn = new URLSearchParams(location.search).get('debug') !== '0'; // the tuning panel (on unless ?debug=0)
   menu = new PauseMenu(ui, {
     settings,
+    onDebug: debugOn ? () => { if (debug) debug.open(); } : null,
     onChange: (s) => { applySettings(s); save.save(s); },
     onRestart: () => { gameOver.hide(); game.giveUp(); },
     onOpenChange: updatePaused,
@@ -172,6 +175,8 @@ async function boot() {
   events.on('finalDefeat', (e) => { banner.hide(); finalAsk.show(e); });
   events.on('founderPhase', (e) => { if (e.phase > 0) banner.show(t(`final.phase.${e.ai}`), e.ai === 'mirror' ? t('final.phase.mirrorSub') : '', { kind: 'boss', ms: 2000 }); });
   const ending = new EndingScreen(ui, {
+    toLocal: (x, y) => toLocal(x, y),
+    story: () => config.tuning.story,
     music,
     onDone: (replay) => {
       if (replay) { if (!started) music.play('base'); return; }
@@ -214,7 +219,7 @@ async function boot() {
   // 선조의 전당 (from 이어하기 -> a family)
   const hall = new HallScreen(ui, { config, onBack: () => {} });
   // opening story (plays by itself only when there is nothing to continue) and the controls guide
-  const story = new StoryScreen(ui, { music, onDone: () => music.play('base') });
+  const story = new StoryScreen(ui, { music, onDone: () => music.play('base'), toLocal: (x, y) => toLocal(x, y), story: () => config.tuning.story });
   const guide = new ControlsGuide(ui);
   const title = new TitleMenu(ui, {
     store, names: config.names,
@@ -278,7 +283,7 @@ async function boot() {
     updatePaused();
   };
   // in development the tuning panel is on by default; ?debug=0 hides it
-  if (new URLSearchParams(location.search).get('debug') !== '0') {
+  if (debugOn) {
     debug = new DebugPanel(ui, {
       config, game, onLayout: () => layout(),
       onGear: () => { if (forge.isOpen) forge.render(); },

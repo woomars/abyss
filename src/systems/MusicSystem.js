@@ -12,6 +12,7 @@ export class MusicSystem {
     this.type = null;     // stage type now playing (or fading in)
     this.pending = null;  // stage type to switch to once the fade-out ends
     this.track = null;
+    this.index = null;    // a chosen track of the type (combat floors keep one per cycle), or null = in order
     this.fade = 0;        // 0..1 multiplier
     this.enabled = true;
     this.ducked = false;
@@ -28,9 +29,11 @@ export class MusicSystem {
   }
 
   // switch to a stage type; same type keeps the current track running
-  play(type) {
-    if (type === this.type && !this.pending) { this.kick(); return; }
-    if (!this.track || this.fade <= 0.001 || !this.audible()) { this.type = type; this.pending = null; this.startTrack(); return; }
+  // index: play that track of the type, looped (null = the type's tracks in order)
+  play(type, index = null) {
+    if (type === this.type && index === this.index && !this.pending) { this.kick(); return; }
+    this.wantIndex = index;
+    if (!this.track || this.fade <= 0.001 || !this.audible()) { this.type = type; this.index = index; this.pending = null; this.startTrack(); return; }
     this.pending = type; // update() fades out, then starts it
   }
 
@@ -38,12 +41,13 @@ export class MusicSystem {
   next() { if (this.type) this.startTrack(); }
 
   startTrack() {
-    const file = this.playlist.take(this.type);
+    const list = this.cfg.playlists[this.type] || [];
+    const file = this.index != null && list.length ? list[this.index % list.length] : this.playlist.take(this.type);
     if (!file) return;
     const el = this.ensureEl();
     this.track = file;
     el.src = file;
-    el.loop = this.playlist.size(this.type) === 1;
+    el.loop = this.index != null || this.playlist.size(this.type) === 1;
     this.fade = 0;
     el.volume = 0;
     this.kick();
@@ -75,7 +79,7 @@ export class MusicSystem {
     const step = dt / Math.max(0.05, this.cfg.fadeTime);
     if (this.pending) {
       this.fade = Math.max(0, this.fade - step * 2); // fade out twice as fast
-      if (this.fade === 0) { this.type = this.pending; this.pending = null; this.startTrack(); }
+      if (this.fade === 0) { this.type = this.pending; this.index = this.wantIndex == null ? null : this.wantIndex; this.pending = null; this.startTrack(); }
     } else {
       this.fade = Math.min(1, this.fade + step);
     }

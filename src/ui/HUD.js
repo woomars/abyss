@@ -1,6 +1,7 @@
 import { relicIcon } from './relicIcons.js';
 import { floorLabel } from '../core/floorLabel.js';
 import { t, tr, trPerson } from '../i18n/index.js';
+import { hpBarHtml, paintHpBar } from './hpBarView.js';
 
 // Top HUD: HP bar, floor (or practice), gold, owned treasures, kills, enemies left, pause button.
 export class HUD {
@@ -9,7 +10,7 @@ export class HUD {
     this.el.className = 'hud';
     this.el.innerHTML = `
       <div class="hud-left">
-        <div class="hp"><div class="hp-fill"></div><span class="hp-text">HP 100 / 100</span></div>
+        ${hpBarHtml()}
         <div class="xp-row"><span class="lv">Lv 1</span><div class="xp"><div class="xp-fill"></div></div><span class="who"></span></div>
         <div class="meta"><span class="floor">${t('hud.practice')}</span><span class="gold-wrap"><span class="gold-icon">◆</span> <span class="gold">0</span></span><span class="pocket-wrap">${relicIcon('bag', 13)} <span class="pocket">0</span></span></div>
         <div class="relics"></div>
@@ -75,13 +76,13 @@ export class HUD {
       this.last.relics = key;
       this.relicsEl.innerHTML = owned.map((r) => `<span class="rl" title="${tr(r.name)}">${relicIcon(r.icon, 15)}${r.count > 1 ? `<b>${r.count}</b>` : ''}</span>`).join('');
     }
-    const p = game.player;
-    const hp = Math.ceil(p.hp);
-    if (hp !== this.lastHp) {
-      this.lastHp = hp;
-      if (!this.hpFill) { this.hpFill = this.el.querySelector('.hp-fill'); this.hpText = this.el.querySelector('.hp-text'); }
-      this.hpFill.style.width = `${(100 * p.hp) / p.maxHp}%`;
-      this.hpText.textContent = `HP ${hp} / ${p.maxHp}`;
+    // two layers: red drops at once, the white trail (game.hpTrail) follows after a moment
+    const p = game.player, trail = game.hpTrail ? game.hpTrail.trail : p.hp;
+    const hpKey = `${p.hp.toFixed(1)}/${p.maxHp}/${trail.toFixed(1)}`;
+    if (hpKey !== this.lastHp) {
+      this.lastHp = hpKey;
+      if (!this.hpEl) this.hpEl = this.el.querySelector('.hp');
+      paintHpBar(this.hpEl, p.hp, p.maxHp, trail);
       this.el.classList.toggle('low-hp', p.hp / p.maxHp <= 0.3);
     }
   }

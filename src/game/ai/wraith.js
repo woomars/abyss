@@ -49,7 +49,7 @@ export const wraithAI = {
       if (s.t <= 0) {
         e.hidden = false;
         e.fade = 1;
-        game.hazards.circle({ x: e.pos.x, y: e.pos.y, radius: t.aoeRadius, delay: t.aoeDelay, damage: e.attack });
+        game.hazards.circle({ x: e.pos.x, y: e.pos.y, radius: t.aoeRadius, delay: t.aoeDelay, damage: e.attack, owner: e });
         s.phase = 'cast'; s.t = t.aoeDelay;
       }
       return { x: 0, y: 0 };

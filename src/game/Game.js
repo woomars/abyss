@@ -23,6 +23,7 @@ import { succeed, randomGiven } from './Family.js';
 import { newCycle } from './Cycle.js';
 import { floorInfo } from './floorPlan.js';
 import { installGearEffects, evades, abyssRingBonus } from './items/effects.js';
+import { HpTrail } from './HpTrail.js';
 
 // Assembles all game systems. No DOM access here.
 export class Game {
@@ -34,6 +35,12 @@ export class Game {
     this.time = 0;
     this.arena = new Arena(config.movement.arena);
     this.player = new Player(config.movement, this.center());
+    // the white bars behind the red hp bars (player, boss)
+    const barCfg = (config.tuning && config.tuning.hud && config.tuning.hud.hpBar) || { trailDelay: 0.5, trailSpeed: 0.35 };
+    this.hpTrail = new HpTrail(barCfg);
+    this.hpTrail.reset(this.player.hp);
+    this.bossTrail = new HpTrail(barCfg);
+    this.bossTrailOf = null;
     this.strokes = new StrokeTracker(config.input, events);
     this.movement = new MovementController(config.movement, this.player, this.arena, events);
     this.enemies = new EnemyManager(config.enemies, this.arena, rng);
@@ -427,7 +434,7 @@ export class Game {
   snapshotRun() {
     const d = this.dungeon;
     return {
-      floor: d.floor, startFloor: d.startFloor || 1, gold: d.gold, hp: this.player.hp,
+      floor: d.floor, startFloor: d.startFloor || 1, gold: d.gold, hp: this.player.hp, stageTrack: d.stageTrack, stageCycle: d.stageCycle,
       pocket: this.loot.pocket.slice(), relics: { owned: { ...this.relics.owned }, stats: { ...this.relics.stats } },
       stats: JSON.parse(JSON.stringify(this.stats)),
     };
@@ -441,6 +448,7 @@ export class Game {
     const d = this.dungeon;
     d.reset();
     d.floor = snap.floor; d.startFloor = snap.startFloor; d.gold = snap.gold;
+    d.stageTrack = snap.stageTrack != null ? snap.stageTrack : null; d.stageCycle = snap.stageCycle != null ? snap.stageCycle : null; // the cycle keeps its track
     d.info = floorInfo(snap.floor, d.cfg);
     d.roomKind = 'forge'; d.state = 'forge'; d.fade = 1;
     this.loot.pocket.push(...snap.pocket);
@@ -612,11 +620,12 @@ export class Game {
     p.hp = Math.max(0, p.hp - amount);
     this.combat.interrupt(); // a blow taken mid dash/chain breaks the chain
     p.invuln = this.config.combat.player.hurtInvuln;
+    p.hurtFlash = this.effects.hitCfg.flash; // the knight flashes red
     this.sinceHit = 0;
     const from = source ? { x: source.pos.x, y: source.pos.y } : null;
     this.events.emit('playerHit', { damage: amount, pos: { x: p.pos.x, y: p.pos.y }, from, hp: p.hp, maxHp: p.maxHp });
     this.hitStop.trigger('normal');
-    const shake = this.config.camera.shake.strong;
+    const shake = this.effects.hitCfg.shake;
     if (shake) this.camera.addShake(shake);
     if (p.hp <= 0) {
       // who struck the last blow (area attacks in a boss room belong to the boss)
@@ -720,6 +729,15 @@ export class Game {
     }
   }
 
+  updateTrails(dt) {
+    const p = this.player;
+    if (p.hurtFlash > 0) p.hurtFlash = Math.max(0, p.hurtFlash - dt);
+    this.hpTrail.update(p.hp, p.maxHp, dt);
+    const b = this.mode === 'dungeon' ? this.dungeon.boss : null;
+    if (b !== this.bossTrailOf) { this.bossTrailOf = b; if (b) this.bossTrail.reset(b.hp); }
+    if (b) this.bossTrail.update(b.hp, b.maxHp, dt);
+  }
+
   update(realDt) {
     if (this.paused) return;
     if (this.offer || this.skillOffer || this.forge || this.tokenScene || this.finalAsk || this.ending) return; // cards / forge / legacy token / floor-100 question / ending
@@ -741,6 +759,7 @@ export class Game {
     this.enemies.update(dt, this.player.pos, this.viewRect(), this.combat.inputDir, this.player.radius);
     this.hazards.update(dt, this.player);
     if (this.mode === 'dungeon') { this.dungeon.update(dt); this.loot.update(dt); }
+    this.updateTrails(realDt);
     this.camera.update(dt, this.player);
     this.effects.update(realDt, this.player, this.combat.inCombat || this.skills.busy);
   }

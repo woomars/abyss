@@ -1,8 +1,9 @@
 // Opening story: Pixabay paintings cross-fade behind text that rises slowly like film credits.
 // Plays by itself only when there is nothing to continue; the title's story icon replays it.
-import { t } from '../i18n/index.js';
+import { t, getLang } from '../i18n/index.js';
+import { TextScroller } from './TextScroller.js';
+import { storyText } from './storyText.js';
 
-const PARAS = ['story.p1', 'story.p2', 'story.p3', 'story.p4', 'story.p5'];
 const ART = ['abyss', 'fallen', 'treasure', 'gate'];
 const ART_OF = [0, 1, 1, 2, 3]; // painting behind each paragraph
 const SPEED = 15; // px per second the text rises (the whole story takes about a minute)
@@ -11,7 +12,10 @@ const SPEED = 15; // px per second the text rises (the whole story takes about a
 export function autoStory(slots) { return !slots.some((r) => r && r.summary); }
 
 export class StoryScreen {
-  constructor(root, { onDone = () => {}, music = null } = {}) {
+  // story: () => config.tuning.story (the Korean text; other languages come from the dictionaries)
+  constructor(root, { onDone = () => {}, music = null, toLocal = null, story = () => null } = {}) {
+    this.story = story;
+    this.toLocal = toLocal; // screen -> stage coordinates
     this.onDone = onDone;
     this.music = music;
     this.el = document.createElement('div');
@@ -27,6 +31,17 @@ export class StoryScreen {
     this.text = this.el.querySelector('.st-text');
     this.view = this.el.querySelector('.st-view');
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
+    // a finger on the text pushes it (swipe) or holds it (press and keep still); buttons stay buttons
+    const ly = (e) => (this.toLocal ? this.toLocal(e.clientX, e.clientY).y : e.clientY);
+    this.el.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('[data-act]') || !this.scroller) return;
+      this.scroller.down(ly(e), e.timeStamp / 1000);
+      try { this.el.setPointerCapture(e.pointerId); } catch (_) { /* not capturable */ }
+    });
+    this.el.addEventListener('pointermove', (e) => { if (this.scroller) this.scroller.move(ly(e), e.timeStamp / 1000); });
+    const lift = (e) => { if (this.scroller) this.scroller.up(e.timeStamp / 1000); };
+    this.el.addEventListener('pointerup', lift);
+    this.el.addEventListener('pointercancel', lift);
     this.el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-act]');
       if (b) this.finish();
@@ -39,6 +54,8 @@ export class StoryScreen {
   show() {
     this.y = null;
     this.last = null;
+    this.scroller = new TextScroller({ auto: SPEED });
+    this.scroller.clampMin(0);
     this.done = false;
     this.art = -1;
     this.el.classList.remove('hidden');
@@ -62,7 +79,7 @@ export class StoryScreen {
 
   // the language changed while it plays: same place, new words
   relabel() {
-    this.text.innerHTML = PARAS.map((k) => `<p>${t(k).split('\n').map((l) => `<span>${l}</span>`).join('<br>')}</p>`).join('');
+    this.text.innerHTML = storyText(getLang(), this.story(), t).opening.map((p) => `<p>${p.split('\n').map((l) => `<span>${l}</span>`).join('<br>')}</p>`).join('');
     this.el.querySelector('.st-skip').textContent = t('story.skip');
     this.el.querySelector('.st-start').textContent = t('story.start');
   }
@@ -78,13 +95,14 @@ export class StoryScreen {
     const dt = this.last == null ? 0 : Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
     const H = this.view.clientHeight || 390;
-    if (this.y == null) this.y = H; // start just below the view
     const paras = [...this.text.children];
-    // stop when the last paragraph sits a little above the middle
+    // the roll ends when the last paragraph sits a little above the middle (a swipe cannot pass it)
     const lastP = paras[paras.length - 1];
-    const lastMid = this.y + lastP.offsetTop + lastP.offsetHeight / 2;
-    if (lastMid > H * 0.45) this.y -= SPEED * dt;
-    else if (!this.done) { this.done = true; this.el.querySelector('.st-start').classList.remove('hidden'); }
+    const end = H + lastP.offsetTop + lastP.offsetHeight / 2 - H * 0.45;
+    this.scroller.clampMax(end);
+    this.scroller.step(dt);
+    this.y = H - this.scroller.pos; // starts just below the view
+    if (this.scroller.pos >= end - 0.5 && !this.done) { this.done = true; this.el.querySelector('.st-start').classList.remove('hidden'); }
     this.text.style.transform = `translateY(${this.y.toFixed(1)}px)`;
     // the painting of the paragraph nearest the middle
     let best = 0, bd = Infinity;

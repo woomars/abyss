@@ -56,6 +56,7 @@ html, body {
 .hp {
   position: relative; width: 170px; height: 14px; border: 1px solid #5a2a2a; background: #1a0d10; border-radius: 3px; overflow: hidden;
 }
+.hp-trail { position: absolute; inset: 0; width: 100%; background: #f2ece4; }
 .hp-fill { position: absolute; inset: 0; background: linear-gradient(#c0392b, #7d1f17); }
 .hp-text { position: absolute; inset: 0; font-size: 10px; line-height: 14px; text-align: center; color: #f4e6e6; text-shadow: 0 0 2px #000; }
 .meta { display: flex; gap: 10px; color: #b3a8c4; }
@@ -106,7 +107,7 @@ html, body {
   display: flex; flex-direction: column; background: rgba(10, 8, 14, 0.88); border: 1px solid #3b2f4f;
   border-radius: 8px; font-size: 10px; color: #cfc6dc; overflow: hidden;
 }
-.debug.collapsed { bottom: auto; width: auto; }
+.debug.collapsed { display: none; } /* opened from the pause menu */
 .debug.collapsed .dbody { display: none; }
 .dhead { display: flex; align-items: center; gap: 8px; padding: 4px; }
 .dhead button, .dbtns button {
@@ -185,7 +186,6 @@ html, body {
 /* low HP warning */
 .hud.low-hp .hp { animation: hp-pulse 0.8s ease-in-out infinite; }
 @keyframes hp-pulse { 50% { box-shadow: 0 0 10px #ff3b30; } }
-.hp-fill { transition: width 0.15s; }
 
 /* aiming a directional skill */
 .skill.aiming { transform: scale(1.12); border-color: #9fd8ff; box-shadow: 0 0 16px rgba(159, 216, 255, 0.6); }
@@ -330,7 +330,10 @@ html, body {
 
 /* ---------- heir ---------- */
 .heir-screen { z-index: 25; background: radial-gradient(ellipse at 50% 40%, rgba(40, 20, 30, 0.95), rgba(5, 3, 8, 0.97)); }
-.hs-panel { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; max-width: 92%; }
+.hs-panel { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; max-width: 92%; max-height: calc(100% - 16px); }
+/* the record scrolls; the button row stays on screen however many medals there are */
+.hs-scroll { display: flex; flex-direction: column; align-items: center; gap: 8px; overflow-y: auto; min-height: 0; flex: 1 1 auto; padding: 4px 6px; }
+.hs-actions { flex: none; padding-bottom: 4px; }
 .hs-note { margin: 0; color: #ffb0a0; font-size: 13px; }
 .hs-father { padding: 10px 22px; border: 1px solid #4a2a33; border-radius: 12px; background: rgba(30, 12, 18, 0.7); }
 .hs-label { font-size: 12px; color: #9c91ad; letter-spacing: 2px; }
@@ -468,14 +471,33 @@ html, body {
 .fg-act-l, .fg-act-r { display: flex; gap: 6px; flex-wrap: wrap; }
 .fg-act-r { margin-left: auto; justify-content: flex-end; }
 .fg-actions.sticky { position: sticky; bottom: -6px; margin: 2px 0 -6px; padding: 5px 0 6px; background: rgba(12, 9, 16, 0.97); }
+/* item pop-up: tap the shade around it to close */
+.fg-pop-shade { position: absolute; inset: 0; z-index: 4; background: rgba(4, 3, 8, 0.55); }
+.fg-pop { position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(640px, calc(100% - 24px)); max-height: calc(100% - 20px); display: flex; flex-direction: column; padding: 8px 10px; border: 1px solid #6b4b8c; border-radius: 10px; background: rgba(14, 10, 20, 0.98); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6); }
+.fg-pop-body { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; overflow-y: auto; min-height: 0; flex: 1 1 auto; touch-action: pan-y; }
+.fg-pop .fg-actions { flex: none; margin-top: 8px; padding-top: 6px; border-top: 1px solid #2a2234; }
+/* salvage: select-all / clear at the top left, the red salvage button at the bottom right — far apart */
+.fg-selrow { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.fg-selrow .fg-note { margin-left: 4px; }
+.fg-salv { justify-content: space-between; align-items: center; flex-wrap: nowrap; }
+.fg-salv-sum { flex: 1; min-width: 0; }
+.fg-salv-go { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; margin-left: auto; }
+.fg-setview .fg-h { min-height: 32px; display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .fg-flash.good { background: rgba(40, 20, 60, 0.95); border-color: #c27cff; color: #f0dcff; font-size: 15px; font-weight: 700; box-shadow: 0 0 24px rgba(194, 124, 255, 0.6); }
 .pause-menu { z-index: 40; }
+/* resume with the toggles on the left; give up alone at the bottom right, far from resume */
+.pause-menu .main-view { min-width: min(560px, calc(100% - 24px)); max-height: calc(100% - 12px); padding: 12px 16px; }
+.pm-cols { display: flex; gap: 14px; }
+.pm-col { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pm-gap { flex: 1; min-height: 4px; }
 .idetail .ilost { font-size: 11px; color: #8a7a9a; font-style: italic; }
 
 /* treasure room: a static screen, no walking */
 .relic-picker.static { background: radial-gradient(ellipse at 50% 60%, rgba(70, 48, 14, 0.95), rgba(8, 6, 4, 0.98) 70%); }
 .rp-room { font-size: 13px; color: #c9a86a; letter-spacing: 2px; margin-bottom: -4px; }
 .rp-room b { color: #ffe08a; font-size: 15px; }
+.rp-hp { width: 220px; height: 16px; }
+.rp-hp .hp-text { line-height: 16px; font-size: 11px; }
 
 /* ---------- 유산의 증표 ---------- */
 .legacy-scene { z-index: 26; background: radial-gradient(ellipse at 50% 45%, rgba(60, 44, 12, 0.96), rgba(6, 4, 2, 0.98) 72%); }

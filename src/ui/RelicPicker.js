@@ -1,11 +1,14 @@
 import { relicIcon } from './relicIcons.js';
 import { t, tr, relicDesc } from '../i18n/index.js';
+import { hpBarHtml, paintHpBar } from './hpBarView.js';
 
 // Chest scene: three cards rise from the chest; tap one to keep it, or pay gold to draw three new
 // ones. Cards ignore taps for a moment after appearing so the swipe that walked into the chest
 // cannot pick one by accident.
 export class RelicPicker {
-  constructor(root, { onPick, onReroll, pickDelay = () => 0.6, relics = () => null }) {
+  // hp: () => ({ hp, maxHp }) — shown above the cards so a healing card can be weighed
+  constructor(root, { onPick, onReroll, pickDelay = () => 0.6, relics = () => null, hp = null }) {
+    this.hp = hp;
     this.relics = relics; // config.relics (to show card text in the current language)
     this.onPick = onPick;
     this.onReroll = onReroll;
@@ -16,6 +19,7 @@ export class RelicPicker {
     this.el.innerHTML = `
       <div class="rp-wrap">
         <div class="rp-room"></div>
+        ${hpBarHtml('hp rp-hp')}
         <h2 class="rp-title" data-i18n="rp.title">${t('rp.title')}</h2>
         <div class="rp-cards"></div>
         <div class="rp-bottom">
@@ -49,6 +53,9 @@ export class RelicPicker {
     this.el.classList.toggle('static', !!title || skill);
     this.el.classList.toggle('skill-mode', skill);
     this.el.querySelector('.rp-title').textContent = t(skill ? 'sk.title' : 'rp.title');
+    const bar = this.el.querySelector('.rp-hp'), life = this.hp ? this.hp() : null;
+    bar.classList.toggle('hidden', !life || skill);
+    if (life && !skill) paintHpBar(bar, life.hp, life.maxHp);
     this.isOpen = true;
     this.ready = false;
     this.chosen = false;

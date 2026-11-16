@@ -10,6 +10,14 @@ const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 // One dungeon run: floors of rooms. Combat rooms spawn waves; clearing opens the exit; walking into
 // the exit fades to the next room. Treasure rooms follow some floors; boss floors spawn a boss.
 // Pure game logic (driven by Game.update), emits events for HUD / sound / music.
+// combat-floor music: a track of n, not the one the last cycle had (prev may be null)
+export function pickStageTrack(n, prev, rng) {
+  if (n <= 1) return 0;
+  if (prev == null) return Math.floor(rng() * n);
+  const k = Math.floor(rng() * (n - 1));
+  return k >= prev ? k + 1 : k;
+}
+
 export class Dungeon {
   constructor(cfg, game) {
     this.cfg = cfg; // config.dungeon (live)
@@ -25,6 +33,8 @@ export class Dungeon {
     this.rush = null; // debug boss rush: every boss in turn, full hp after each
     this.forceBoss = null;
     this.lastBoss = {}; // tier -> boss met last in this run (not twice in a row)
+    this.stageTrack = null; // combat-floor music: one track per 20-floor cycle (music.playlists.stage)
+    this.stageCycle = null;
     this.floor = 0;
     this.gold = 0;
     this.room = null;
@@ -87,6 +97,11 @@ export class Dungeon {
       if (this.variant === 'trap') this.layTraps();
       this.waveCount = info.band.waves.count;
       this.spawnWave();
+      const stage = g.config.music && g.config.music.playlists && g.config.music.playlists.stage;
+      if (stage && stage.length) {
+        if (this.stageTrack == null || this.stageCycle !== info.cycle) { this.stageTrack = pickStageTrack(stage.length, this.stageTrack, g.rng); this.stageCycle = info.cycle; }
+        music = 'stage';
+      }
     } else if (kind === 'boss') {
       // one of this tier's bosses unlocked by the loop, at random (not the one met last time)
       const b = info.boss, types = g.config.enemies.types;
@@ -109,7 +124,7 @@ export class Dungeon {
       music = 'rest';
     }
     this.lastAlive = this.remaining;
-    g.events.emit('floorStart', { floor: this.floor, kind, music, title, boss: bossName, final: kind === 'boss' && this.isFinal, founder: this.boss && this.boss.founder ? this.boss.founder : null, variant: this.variant, rush: this.rush ? { n: this.rush.i + 1, total: this.rush.list.length, loop: this.rush.loop } : null });
+    g.events.emit('floorStart', { floor: this.floor, kind, music, track: music === 'stage' ? this.stageTrack : null, title, boss: bossName, final: kind === 'boss' && this.isFinal, founder: this.boss && this.boss.founder ? this.boss.founder : null, variant: this.variant, rush: this.rush ? { n: this.rush.i + 1, total: this.rush.list.length, loop: this.rush.loop } : null });
   }
 
   // floor 100 (dungeon.final): the founder's room

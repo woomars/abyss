@@ -26,6 +26,13 @@
     "rest": [
       "assets/audio/bgm/rest_1.mp3"
     ],
+    "stage": [
+      "assets/audio/bgm/explore_1.mp3",
+      "assets/audio/bgm/hard_6.mp3",
+      "assets/audio/bgm/stage_2.mp3",
+      "assets/audio/bgm/stage_6.mp3",
+      "assets/audio/bgm/stage_10.mp3"
+    ],
     "story": [
       "assets/audio/bgm/story.mp3"
     ],

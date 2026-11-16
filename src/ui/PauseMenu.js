@@ -3,7 +3,9 @@ import { t, setLang, getLang } from '../i18n/index.js';
 import { langSwitch } from './TitleMenu.js';
 
 export class PauseMenu {
-  constructor(root, { settings, onChange, onRestart, onOpenChange }) {
+  // onDebug: given only when the debug panel exists (not with ?debug=0) — then a [디버그] button
+  constructor(root, { settings, onChange, onRestart, onOpenChange, onDebug = null }) {
+    this.onDebug = onDebug;
     this.settings = settings;
     this.onChange = onChange;
     this.onRestart = onRestart;
@@ -15,12 +17,20 @@ export class PauseMenu {
     this.el.innerHTML = `
       <div class="panel main-view">
         <h2 data-i18n="pause.title">${t('pause.title')}</h2>
-        <button data-act="resume" class="primary" data-i18n="pause.resume">${t('pause.resume')}</button>
-        <button data-act="restart" data-i18n="pause.giveUp">${t('pause.giveUp')}</button>
-        <button data-act="shake" class="toggle"></button>
-        <button data-act="sound" class="toggle"></button>
-        <button data-act="music" class="toggle"></button>
-        <div class="pm-lang"></div>
+        <div class="pm-cols">
+          <div class="pm-col">
+            <button data-act="resume" class="primary" data-i18n="pause.resume">${t('pause.resume')}</button>
+            <button data-act="shake" class="toggle"></button>
+            <button data-act="sound" class="toggle"></button>
+            <button data-act="music" class="toggle"></button>
+          </div>
+          <div class="pm-col">
+            <div class="pm-lang"></div>
+            ${onDebug ? `<button data-act="debug" data-i18n="pause.debug">${t('pause.debug')}</button>` : ''}
+            <span class="pm-gap"></span>
+            <button data-act="restart" data-i18n="pause.giveUp">${t('pause.giveUp')}</button>
+          </div>
+        </div>
       </div>
       <div class="panel confirm-view hidden">
         <h2 data-i18n="pause.confirm">${t('pause.confirm')}</h2>
@@ -57,6 +67,7 @@ export class PauseMenu {
     else if (a === 'restart') { this.mainView.classList.add('hidden'); this.confirmView.classList.remove('hidden'); }
     else if (a === 'confirm-no') { this.confirmView.classList.add('hidden'); this.mainView.classList.remove('hidden'); }
     else if (a === 'confirm-yes') { this.onRestart(); this.close(); }
+    else if (a === 'debug' && this.onDebug) { this.close(); this.onDebug(); }
     else if (a === 'shake' || a === 'sound' || a === 'music') {
       this.settings[a] = !this.settings[a];
       this.renderToggles();

@@ -1,5 +1,6 @@
 import { nearestOffscreen } from '../game/pointer.js';
 import { BUILD } from '../version.js';
+import { telegraphStyle } from './telegraph.js';
 import { t, tr, fullName } from '../i18n/index.js';
 
 export const COLORS = {
@@ -80,10 +81,13 @@ export class Renderer {
     this.drawGear(game);
     this.drawLinks(fx);
     this.drawEnemies(game, alpha);
+    this.drawTelegraphs(game, alpha);
     this.drawAfterimages(fx, game.player);
     this.drawWinds(fx);
     this.drawRoll(game, alpha);
     this.drawPlayer(game.player, alpha, this.jumpLift(game.skills));
+    this.drawHurtFlash(game, alpha);
+    this.drawOverheadHp(game, alpha);
     this.drawSpin(game.skills, game.player, alpha);
     this.drawAim(game.skills, game.player, alpha);
     this.drawPointer(game, alpha);
@@ -464,7 +468,7 @@ export class Renderer {
       const k = n.life / n.max;
       const pop = n.crit ? 1 + 0.6 * Math.max(0, (k - 0.75) / 0.25) : 1;
       ctx.globalAlpha = Math.min(1, k * 2);
-      ctx.font = `bold ${Math.round((n.crit ? 26 : 17) * pop)}px system-ui, sans-serif`;
+      ctx.font = `bold ${Math.round((n.crit ? 26 : 17) * pop * (n.scale || 1))}px system-ui, sans-serif`;
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#000000';
       // a blow the shield soaked still shows its damage, in the shield's gold; immunity shows a word
@@ -599,20 +603,6 @@ export class Renderer {
         ctx.lineWidth = 2.5;
         ctx.stroke();
       }
-      // counterattack telegraph: reach circle that fills in as the strike approaches
-      if (e.windupTime > 0 && !e.dying) {
-        const reach = r + (e.tcfg.attackRange || 0) + 16 + (e.lunge || 0);
-        const k = 1 - e.windupTime / (e.windupMax || e.tcfg.attackWindup || 0.2);
-        ctx.beginPath();
-        ctx.arc(x, y, reach, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255,70,60,0.55)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(x, y, reach * k, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,60,50,${0.12 + 0.18 * k})`;
-        ctx.fill();
-      }
       if ((e.isElite || e.mods.enhanced) && !e.isBoss && !e.dying && e.hp < e.maxHp) {
         const w = r * 2.2, h = 5;
         ctx.fillStyle = '#20141a';
@@ -746,6 +736,49 @@ export class Renderer {
   }
 
   // telegraphs and arrows (drawn on the floor, under the enemies)
+  // attack warnings on top of every body: melee reach circles (an orc's counter used to hide under the
+  // crowd) and the edges of enemy circles and cones (their fill stays below, drawn by drawHazards)
+  drawTelegraphs(game, alpha) {
+    const ctx = this.ctx;
+    for (const e of game.enemies.all()) {
+      if (!(e.windupTime > 0) || e.dying || !this.isVisible(e.pos, e.radius * 4)) continue;
+      const { x, y } = lerpPos(e.prevPos, e.pos, alpha);
+      const reach = e.radius + (e.tcfg.attackRange || 0) + 16 + (e.lunge || 0);
+      const total = e.windupMax || e.tcfg.attackWindup || 0.2;
+      const k = 1 - e.windupTime / total, st = telegraphStyle(k, total - e.windupTime);
+      ctx.beginPath();
+      ctx.arc(x, y, reach * k, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,60,50,${st.fillAlpha})`;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, y, reach, 0, Math.PI * 2);
+      ctx.strokeStyle = st.flash ? `rgba(255,235,200,${st.strokeAlpha})` : `rgba(255,70,55,${st.strokeAlpha})`;
+      ctx.lineWidth = st.lineWidth;
+      ctx.stroke();
+    }
+    const hz = game.hazards;
+    for (const h of hz.list) {
+      if ((h.kind !== 'circle' && h.kind !== 'cone') || h.tell || h.done) continue;
+      if (!this.isVisible(h, h.radius + 20)) continue;
+      const st = telegraphStyle(Math.min(1, h.t / h.delay), h.t);
+      ctx.save();
+      if (h.kind !== 'circle') this.clipCover(h, hz.arena);
+      ctx.translate(h.x, h.y);
+      ctx.beginPath();
+      if (h.kind === 'circle') ctx.arc(0, 0, h.radius, 0, Math.PI * 2);
+      else {
+        const a0 = Math.atan2(h.dir.y, h.dir.x), half = (h.arcDeg * Math.PI / 180) / 2;
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, h.radius, a0 - half, a0 + half);
+        ctx.closePath();
+      }
+      ctx.strokeStyle = st.flash ? `rgba(255,235,200,${st.strokeAlpha})` : `rgba(255,70,55,${st.strokeAlpha})`;
+      ctx.lineWidth = st.lineWidth;
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
   drawHazards(hz) {
     const ctx = this.ctx;
     for (const h of hz.list) {
@@ -871,10 +904,11 @@ export class Renderer {
   }
 
   drawScreen(game) {
+    this.drawHurtVignette(game.effects);
     this.drawTrail(game);
     this.drawCombo(game.effects.combo, game.comboMult());
     if (game.mode === 'dungeon') {
-      this.drawBossBar(game.dungeon.boss);
+      this.drawBossBar(game.dungeon.boss, game.bossTrail && game.bossTrailOf === game.dungeon.boss ? game.bossTrail.trail : null);
       this.drawExitArrow(game.dungeon);
       const f = game.dungeon.fade;
       if (f > 0) {
@@ -1000,7 +1034,48 @@ export class Renderer {
   }
 
   // boss name and health across the top of the screen
-  drawBossBar(boss) {
+  // a blow taken: the knight glows red for a moment (player.hurtFlash, tuning.hud.playerHit.flash)
+  drawHurtFlash(game, alpha) {
+    const p = game.player;
+    if (!(p.hurtFlash > 0)) return;
+    const total = game.effects.hitCfg.flash || 0.15, a = Math.min(1, p.hurtFlash / total);
+    const { x, y } = lerpPos(p.prevPos || p.pos, p.pos, alpha);
+    const ctx = this.ctx;
+    ctx.beginPath();
+    ctx.arc(x, y, p.radius * 1.35, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,40,30,${0.55 * a})`;
+    ctx.fill();
+  }
+
+  // the hero's own hp over the head: white trail behind, red in front (tuning.hud.overhead)
+  drawOverheadHp(game, alpha) {
+    const p = game.player;
+    if (!p || game.over || !(p.maxHp > 0)) return;
+    const o = (this.config.tuning && this.config.tuning.hud && this.config.tuning.hud.overhead) || { width: 44, height: 5, offsetY: 34 };
+    const { x, y } = lerpPos(p.prevPos || p.pos, p.pos, alpha);
+    const ctx = this.ctx, w = o.width, h = o.height, left = x - w / 2, top = y - o.offsetY - h / 2;
+    const k = Math.max(0, p.hp / p.maxHp), kt = Math.max(k, (game.hpTrail ? game.hpTrail.trail : p.hp) / p.maxHp);
+    ctx.fillStyle = 'rgba(20,8,10,0.8)';
+    ctx.fillRect(left - 1, top - 1, w + 2, h + 2);
+    ctx.fillStyle = '#f2ece4';
+    ctx.fillRect(left, top, w * Math.min(1, kt), h);
+    ctx.fillStyle = '#d0352a';
+    ctx.fillRect(left, top, w * k, h);
+  }
+
+  // a blow taken: the screen edge flashes red, fading out (tuning.hud.playerHit)
+  drawHurtVignette(fx) {
+    if (!(fx.hurtVignette > 0)) return;
+    const c = fx.hitCfg, k = Math.min(1, fx.hurtVignette / (c.vignette || 0.3));
+    const ctx = this.ctx, w = this.cssW, h = this.cssH;
+    const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.hypot(w, h) * 0.55);
+    g.addColorStop(0, 'rgba(255,0,0,0)');
+    g.addColorStop(1, `rgba(220,20,20,${(c.vignetteAlpha || 0.45) * k})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  drawBossBar(boss, trail = null) {
     if (!boss || !boss.alive) return;
     const ctx = this.ctx;
     const w = Math.min(420, this.cssW * 0.42), h = 10;
@@ -1015,6 +1090,7 @@ export class Renderer {
     ctx.fillText(name + (enraged ? t('boss.enraged') : ''), this.cssW / 2, y - 3);
     ctx.fillStyle = '#1a0d10';
     ctx.fillRect(x, y, w, h);
+    if (trail != null) { ctx.fillStyle = '#f2ece4'; ctx.fillRect(x, y, w * Math.min(1, Math.max(k, trail / boss.maxHp)), h); }
     ctx.fillStyle = enraged ? '#ff3b2a' : '#c0392b';
     ctx.fillRect(x, y, w * k, h);
     ctx.strokeStyle = '#c9a86a';

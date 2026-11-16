@@ -610,13 +610,15 @@ export class Game {
     const p = this.player;
     if (this.over || p.invuln > 0 || amount <= 0) return false;
     if (this.mode === 'dungeon' && this.dungeon.state === 'fadeOut') return false; // already leaving
-    if (!riposte && this.dashInvuln()) return false;
+    if (this.dashInvuln()) return false; // in the air nothing lands, not even a riposte (Phase 6)
     if (evades(this)) { // 망령의 갑옷
       p.invuln = this.config.items.effects.wraithArmor.invuln;
       this.events.emit('evade', { pos: { x: p.pos.x, y: p.pos.y } });
       return false;
     }
     amount *= Math.max(0.2, 1 - this.bonusStats.armor);
+    const ls = this.gearEffects.has('lastStand') ? this.config.items.effects.lastStand : null; // 망령 군주의 왕관
+    if (ls && p.hp <= p.maxHp * ls.threshold) amount *= 1 - ls.reduce;
     p.hp = Math.max(0, p.hp - amount);
     this.combat.interrupt(); // a blow taken mid dash/chain breaks the chain
     p.invuln = this.config.combat.player.hurtInvuln;

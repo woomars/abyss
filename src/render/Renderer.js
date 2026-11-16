@@ -197,21 +197,27 @@ export class Renderer {
     if (!s) return;
     const ctx = this.ctx;
     const { x, y } = lerpPos(player.prevPos, player.pos, alpha);
-    const r = s.def.radius;
-    const a = s.start + s.swept;
-    const trail = Math.min(1.4, s.swept);
+    const r = s.radius || s.def.radius;
+    this.drawBlade(x, y, r, s.start + s.swept, s, 1);
+    if (s.twin) this.drawBlade(x, y, r, s.start + Math.PI - s.swept, s, -1); // 폭풍 5세트: the other blade, turning back
+  }
+
+  // one spinning blade at angle a with its trail behind it (turn: +1 clockwise, -1 the other way)
+  drawBlade(x, y, r, a, s, turn) {
+    const ctx = this.ctx;
+    const trail = Math.min(1.4, s.swept) * turn;
     const steps = 6;
     for (let i = 0; i < steps; i++) {
       const a0 = a - trail * (i + 1) / steps, a1 = a - trail * i / steps;
       ctx.beginPath();
       ctx.moveTo(x, y);
-      ctx.arc(x, y, r, a0, a1);
+      ctx.arc(x, y, r, Math.min(a0, a1), Math.max(a0, a1));
       ctx.closePath();
       ctx.fillStyle = `rgba(255,214,150,${0.32 * (1 - i / steps)})`;
       ctx.fill();
     }
     ctx.beginPath();
-    ctx.arc(x, y, r, a - trail, a);
+    ctx.arc(x, y, r, Math.min(a - trail, a), Math.max(a - trail, a));
     ctx.strokeStyle = 'rgba(255,240,210,0.9)';
     ctx.lineWidth = 4;
     ctx.stroke();
@@ -313,11 +319,16 @@ export class Renderer {
     const a = skills.aim;
     if (!a) return;
     const def = skills.def(skills.cfg.slots[a.slot]);
+    if (skills.cfg.slots[a.slot] === 'rushStrike') { // the jump: its own pick (farthest foe) or the drag's way and distance
+      const plan = skills.jumpPlan(a.dir), q = lerpPos(player.prevPos, player.pos, alpha);
+      this.drawJumpAim(skills, def, player, q.x, q.y, plan.dir.x, plan.dir.y, plan.dist);
+      return;
+    }
+    if (!a.dir) return;
     const len = Math.hypot(a.dir.x, a.dir.y) || 1;
     const ux = a.dir.x / len, uy = a.dir.y / len;
     const reach = def.distance || def.range || 300;
     const { x, y } = lerpPos(player.prevPos, player.pos, alpha);
-    if (skills.cfg.slots[a.slot] === 'rushStrike') { this.drawJumpAim(skills, def, player, x, y, ux, uy); return; }
     if (skills.cfg.slots[a.slot] === 'bladeWave' && skills.waveWidth) { this.drawWaveAim(skills, def, x, y, ux, uy); return; }
     const ex = x + ux * reach, ey = y + uy * reach;
     const ctx = this.ctx;
@@ -355,11 +366,11 @@ export class Renderer {
 
   // jump aim: an arching arrow to where the hero will come down (walls and pillars cut it short) and the
   // landing circle there
-  drawJumpAim(skills, def, player, x, y, ux, uy) {
+  drawJumpAim(skills, def, player, x, y, ux, uy, dist = def.distance) {
     const ctx = this.ctx, ar = skills.arena;
     let d = 0;
-    while (d < def.distance) {
-      const n = Math.min(def.distance, d + 8);
+    while (d < dist) {
+      const n = Math.min(dist, d + 8);
       if (ar && ar.resolveCircle({ x: x + ux * n, y: y + uy * n }, player.radius).hitWall) break;
       d = n;
     }

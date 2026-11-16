@@ -6,7 +6,7 @@ import {
   findItem, equipItem, unequipItem, storeItem, takeItem, salvagePreview, salvageItems, enhancePreview, enhanceItem,
   wornSetSummary, compareSlots, salvageSelectAll, gradeUpPreview, gradeUpItem, stashPrice, buyStashSlot,
 } from '../game/items/Forge.js';
-import { sortItems, applyAutoEquip, snapshotGear, restoreGear } from '../game/items/gear.js';
+import { sortItems, applyAutoEquip, snapshotGear, restoreGear, setPieceOwners, equipSet } from '../game/items/gear.js';
 import { captureScroll, restoreScroll } from './scrollKeep.js';
 import { STAT_KEYS } from '../game/Stats.js';
 import { floorLabel } from '../core/floorLabel.js';
@@ -18,7 +18,7 @@ const SLOT_ICON = { weapon: 'sword', helm: 'helm', armor: 'shield', gloves: 'glo
 const TIER = ['일반', '상급', '최상급']; // powder tiers (shown through tr)
 const tierLabel = (q) => tr(TIER[q]);
 const PARTS = ['weapon', 'helm', 'armor', 'gloves', 'boots', 'amulet', 'ring'];
-const SCROLLERS = ['.fg-scroll', '.fg-pop-body', '.fg-setview', '.fg-box'];
+const SCROLLERS = ['.fg-scroll', '.fg-pop-body', '.fg-sets', '.fg-box'];
 // is any checked item like this (token gear, set piece)? — for the salvage warning
 const picked = (ctx, checked, test) => [...checked].some((id) => { const f = findItem(ctx, id); return f && test(f.item); });
 
@@ -206,20 +206,26 @@ export class ForgeScreen {
   // set overview: every piece (silhouette until found), how many are worn, active and next bonus
   renderSets() {
     const cfg = this.cfg, v = this.ctx.vault, lo = this.ctx.loadout;
-    return Object.entries(cfg.sets).map(([id, s]) => {
+    return `<div class="fg-sets">${Object.entries(cfg.sets).map(([id, s]) => {
       const worn = (this.game.gearSets || {})[id] || 0;
       const seen = v.seen[id] || {};
+      const owners = setPieceOwners(this.ctx, id);
+      let canWear = false;
       const pieces = Object.entries(s.pieces).map(([slot, name]) => {
-        const on = lo.items().some((it) => it.set === id && it.slot === slot);
-        return `<div class="fg-piece${seen[slot] ? ' seen' : ''}${on ? ' on' : ''}">${relicIcon(cfg.parts[slot].icon, 26)}<span>${seen[slot] ? esc(tr(name)) : '???'}</span></div>`;
+        const o = owners[slot], on = o && o.where === 'equipped', own = o && !on;
+        if (own) canWear = true;
+        const label = `${relicIcon(cfg.parts[slot].icon, 26)}<span>${seen[slot] || o ? esc(tr(name)) : '???'}</span><small>${t(on ? 'fg.pieceWorn' : own ? 'fg.pieceOwn' : 'fg.pieceNone')}</small>`;
+        // an owned piece not worn: tap to wear just that one
+        return own ? `<button class="fg-piece seen own" data-act="wearPiece" data-v="${o.item.id}">${label}</button>`
+          : `<div class="fg-piece${seen[slot] || on ? ' seen' : ''}${on ? ' on' : ''}">${label}</div>`;
       }).join('');
       const needs = Object.keys(s.labels).map(Number).sort((a, b) => a - b);
       const next = needs.find((n) => n > worn);
       const bonus = needs.map((n) => `<div class="fg-bonus${worn >= n ? ' on' : ''}${n === next ? ' next' : ''}"><b>${t('fg.setN', { n })}</b> ${esc(tr(s.labels[n]))}${n === next ? ` <small>${t('fg.next')}</small>` : ''}</div>`).join('');
       return `<div class="fg-setview"><div class="fg-h">${esc(tr(s.name))} <span class="fg-setn">${t('fg.wornCount', { a: worn, b: Object.keys(s.pieces).length })}</span></div>
         <div class="fg-pieces">${pieces}</div><div class="fg-bonuses">${bonus}</div>
-        <button class="fg-btn" data-act="tab" data-v="equip">${t('fg.backToGear')}</button></div>`;
-    }).join('');
+        <div class="fg-setacts"><button class="fg-btn" data-act="tab" data-v="equip">${t('fg.backToGear')}</button>${canWear ? `<button class="fg-btn pri" data-act="wearSet" data-v="${id}">${t('fg.wearSet')}</button>` : ''}</div></div>`;
+    }).join('')}</div>`; // one row per set, scrolled
   }
 
   renderSalvage() {
@@ -312,6 +318,8 @@ export class ForgeScreen {
     else if (a === 'salvageYes') { const r = salvageItems(c, [...this.checked]); this.confirm = false; if (r.ok) { this.checked.clear(); this.changed('salvage'); } else { this.render(); if (r.reason === 'gold') this.flash(t('fg.needGold', { n: r.gold - c.vault.gold })); } }
     else if (a === 'auto') { const snap = snapshotGear(c); if (applyAutoEquip(c).changed) { this.undo = snap; this.sel = null; this.changed('auto'); } else this.flash(t('fg.autoNone')); }
     else if (a === 'undo') { if (this.undo) { restoreGear(c, this.undo); this.undo = null; this.changed('undo'); } }
+    else if (a === 'wearPiece') { if (equipItem(c, Number(v)).ok) this.changed('equip'); }
+    else if (a === 'wearSet') { if (equipSet(c, v).changed) this.changed('equip'); }
     else if (a === 'buySlot') { if (buyStashSlot(c).ok) this.changed('buySlot'); }
     else if (a === 'gradeUp') { if (gradeUpItem(c, this.sel).ok) this.changed('gradeUp'); }
     else if (a === 'tier') { this.tier = Number(v); this.count = 1; this.render(); }

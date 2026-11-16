@@ -32,7 +32,7 @@ function read(game) {
     cooldown: Math.min(0.8, b.cooldown || 0),
     lifesteal: b.lifesteal || 0,
     skillDmg: skillMul - 1,
-    spinDmg: spin.damage * skillMul, spinR: spin.radius, spinCd: sk.cooldownOf(spin),
+    spinDmg: sk.baseDamage('spin') * skillMul, spinR: spin.radius, spinCd: sk.cooldownOf(spin),
     jumpDmg: land.damage * skillMul, jumpR: land.radius, jumpDist: jump.distance, jumpCd: sk.cooldownOf(jump),
     waveNear: near.damage * skillMul, waveFar: far.damage * skillMul, waveStun: near.stun, waveFarStun: far.stun,
     waveAngle: sk.waveAngle(wave), waveRange: wave.range, waveCd: sk.cooldownOf(wave),

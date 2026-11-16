@@ -4,6 +4,8 @@ export const STAT_KEYS = [
   'damage', 'attackFlat', 'maxHp', 'crit', 'critDamage', 'speed', 'cooldown', 'lifesteal', 'armor',
   'chain', 'chainRange', 'chainDamage', 'range', 'dashRange', 'knockback', 'attackSpeed', 'skillDamage', 'comboStep', 'jumpRadius', 'jumpDamage',
   'waveDamage', 'waveStun', 'waveFalloff', 'waveAngle',
+  // Phase 6 set steps (tuning/sets.json): 번개 chain stun, 폭풍 blade and stun, 유성 landing, 망령 stun
+  'chainStun', 'spinStun', 'spinRadiusBonus', 'jumpCore', 'jumpRadiusScale', 'jumpDistance', 'jumpKnockback', 'wraithStun',
 ];
 
 export function zeroStats() {

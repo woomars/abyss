@@ -5,11 +5,28 @@ import { OLD_BOSS_KEYS } from '../Medals.js';
 export const VAULT_VERSION = 1;
 const PARTS = ['weapon', 'helm', 'armor', 'gloves', 'boots', 'amulet', 'ring']; // the old per-part powder (before Phase 6)
 const OLD_STASH_SIZE = 60; // a save from before Phase 6 had 60 stash places: they count as bought
-const ESSENCE_KEEP = ['chain', 'jumpDamage']; // not shrunk by the Phase 6 x0.1 (the leap changes in stage 3)
+const ESSENCE_KEEP = ['chain', 'jumpDamage']; // not shrunk by the Phase 6 x0.1 (jumpDamage is moved to jumpRadius right after)
 
-// set pieces once put 의 after the set name (질풍의 사냥꾼의 검); now 질풍의 사냥꾼 검
-const OLD_SET_NAME = /^(비전의 장막|질풍의 사냥꾼|무덤의 부름)의 /;
-const renameSetPiece = (it) => { if (it && typeof it.name === 'string' && it.set) it.name = it.name.replace(OLD_SET_NAME, '$1 '); return it; };
+// set pieces: the Phase 6 names (세트 이름 + 부위, no 의) and all legendary, whatever an old save says
+const SET_NAMES = {"abyss":"번개","arcaneVeil":"폭풍","meteor":"유성","galeHunter":"질풍","gravecall":"망령"};
+const PART_NAMES = {"weapon":"검","helm":"투구","armor":"갑옷","gloves":"장갑","boots":"장화"};
+// legendaries changed in Phase 6 stage 3: 세 갈래 팔찌 became another gloves legendary; two effects changed
+const OLD_LEGEND = { tridentBracers: { legendary: 'earthshatter', effect: 'earthshatter', name: '대지 파쇄자' } };
+const OLD_EFFECT = { quakestride: 'earthStep', wraithCrown: 'lastStand' };
+const fixLegend = (it) => {
+  if (!it || !it.legendary) return it;
+  const to = OLD_LEGEND[it.legendary];
+  if (to) Object.assign(it, to);
+  if (OLD_EFFECT[it.legendary]) it.effect = OLD_EFFECT[it.legendary];
+  return it;
+};
+const renameSetPiece = (it) => {
+  fixLegend(it);
+  if (!it || !it.set || !SET_NAMES[it.set]) return it;
+  if (PART_NAMES[it.slot]) it.name = `${SET_NAMES[it.set]} ${PART_NAMES[it.slot]}`;
+  it.grade = 'legendary';
+  return it;
+};
 
 function migrateBestiary(b) {
   const out = {};
@@ -142,6 +159,10 @@ export class Vault {
     const nums = (o) => Object.fromEntries(Object.entries(obj(o)).filter(([, n]) => Number.isFinite(n)));
     v.essence = { stats: nums(data.essence && data.essence.stats), owned: nums(data.essence && data.essence.owned) };
     if (!data.phase6) for (const k of Object.keys(v.essence.stats)) if (!ESSENCE_KEEP.includes(k)) v.essence.stats[k] *= 0.1; // essences are a tenth now
+    if (v.essence.stats.jumpDamage != null) { // the essence of the leap widens the landing now (1% a card)
+      v.essence.stats.jumpRadius = (v.essence.stats.jumpRadius || 0) + (v.essence.owned.leap || 0) * 0.01;
+      delete v.essence.stats.jumpDamage;
+    }
     v.trophies = obj(data.trophies);
     v.skillUps = nums(data.skillUps);
     v.cycle = Number.isFinite(data.cycle) && data.cycle >= 1 ? Math.floor(data.cycle) : 1;

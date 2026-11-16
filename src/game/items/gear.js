@@ -78,3 +78,26 @@ export function restoreGear(ctx, snap) {
   ctx.pocket.splice(0, ctx.pocket.length, ...snap.pocket);
   ctx.vault.stash.splice(0, ctx.vault.stash.length, ...snap.stash);
 }
+
+// ---- the set screen ----
+// the best owned piece of a set in each of its slots: { slot: { item, where } | null } (a worn piece first)
+export function setPieceOwners(ctx, setId) {
+  const cfg = ctx.cfg, cmp = better(cfg), out = {};
+  const worn = LOADOUT_SLOTS.map((s) => ctx.loadout.slots[s]).filter(Boolean);
+  for (const slot of Object.keys(cfg.sets[setId].pieces)) {
+    const w = worn.find((it) => it.set === setId && it.slot === slot);
+    if (w) { out[slot] = { item: w, where: 'equipped' }; continue; }
+    const p = ctx.pocket.filter((it) => it.set === setId && it.slot === slot).sort(cmp)[0];
+    const s = ctx.vault.stash.filter((it) => it.set === setId && it.slot === slot).sort(cmp)[0];
+    const pick = p && s ? (cmp(p, s) <= 0 ? p : s) : (p || s);
+    out[slot] = pick ? { item: pick, where: pick === p ? 'pocket' : 'stash' } : null;
+  }
+  return out;
+}
+
+// [세트 착용]: wear every owned piece of the set that is not worn yet (the gear it replaces goes to the pocket)
+export function equipSet(ctx, setId) {
+  let changed = 0;
+  for (const o of Object.values(setPieceOwners(ctx, setId))) if (o && o.where !== 'equipped' && equipItem(ctx, o.item.id).ok) changed++;
+  return { changed };
+}

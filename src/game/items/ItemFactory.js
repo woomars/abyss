@@ -59,11 +59,11 @@ export function createItem(cfg, rng, opts) {
   let grade = opts.grade || 'common';
   let slot = opts.slot || pick(cfg.slots, rng);
   let name = null, effect = null, legendary = null, set = null;
-  if (opts.legendary || (grade === 'legendary' && !opts.slot)) {
+  if (!opts.set && (opts.legendary || (grade === 'legendary' && !opts.slot))) { // set pieces pick their slot below, evenly
     legendary = opts.legendary || pick(Object.keys(cfg.legendaries), rng);
     const L = cfg.legendaries[legendary];
     grade = 'legendary'; slot = L.slot; name = L.name; effect = L.effect;
-  } else if (grade === 'legendary') {
+  } else if (!opts.set && grade === 'legendary') {
     // a legendary forced into a slot: use one made for that slot if there is one
     const fits = Object.keys(cfg.legendaries).filter((k) => cfg.legendaries[k].slot === slot);
     if (fits.length) { legendary = pick(fits, rng); name = cfg.legendaries[legendary].name; effect = cfg.legendaries[legendary].effect; }
@@ -73,7 +73,8 @@ export function createItem(cfg, rng, opts) {
     const pieces = cfg.sets[set].pieces;
     if (!pieces[slot]) slot = pick(Object.keys(pieces), rng);
     name = pieces[slot];
-    grade = 'epic';
+    grade = 'legendary'; // every set piece is legendary (Phase 6), with its set instead of a unique effect
+    legendary = null; effect = null;
   }
   const quality = opts.quality != null ? opts.quality : 0;
   const b = cfg.base[slot];
@@ -98,8 +99,8 @@ export function rollDrop(cfg, rng, { id, floor = 1, boss = false, minGrade = nul
   const quality = rollQuality(cfg, rng, floor, boss);
   const sc = cfg.drops.set;
   const setIds = Object.keys(cfg.sets);
-  if (setIds.length && (grade === 'rare' || grade === 'epic') && rng() < Math.min(sc.max, sc.base + sc.perFloor * (floor - 1))) {
-    return createItem(cfg, rng, { id, level: floor, grade: 'epic', quality, set: pick(setIds, rng) });
+  if (setIds.length && grade === 'legendary' && rng() < Math.min(sc.max, sc.base + sc.perFloor * (floor - 1))) { // some legendaries are set pieces
+    return createItem(cfg, rng, { id, level: floor, grade: 'legendary', quality, set: pick(setIds, rng) });
   }
   return createItem(cfg, rng, { id, level: floor, grade, quality });
 }

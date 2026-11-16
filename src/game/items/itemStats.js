@@ -41,7 +41,7 @@ export function describeItem(item, cfg) {
     effectText: item.effect ? tr(cfg.effects[item.effect].label) : null,
     setText: set ? tr(set.name) : null,
     setAngle: set && set.angleLabel ? tr(set.angleLabel) : null,
-    setJump: set && cfg.setJump ? tr(cfg.setJump.label) : null, // every set piece grows the jump's landing slam
+    setJump: null, // Phase 6: set pieces no longer grow the jump; // every set piece grows the jump's landing slam
     scar: !!item.scar,
     // heirloom: the latest owner who passed it down (and his feat for notable items)
     heirloom: item.legacy && item.legacy.length ? item.legacy[item.legacy.length - 1] : null,

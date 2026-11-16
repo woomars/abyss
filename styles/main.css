@@ -484,6 +484,12 @@ html, body {
 .fg-salv-go { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; margin-left: auto; }
 .fg-bagbar { display: flex; align-items: center; gap: 6px; }
 .fg-auto { display: flex; gap: 6px; margin-left: auto; }
+.fg-piece small { display: block; font-size: 10px; color: #9c91ad; }
+button.fg-piece.own { cursor: pointer; border: 1px solid #c9a86a; border-radius: 8px; background: rgba(60, 44, 20, 0.5); color: inherit; font: inherit; }
+.fg-setacts { display: flex; gap: 8px; justify-content: space-between; }
+.fg-sets { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; touch-action: pan-y; }
+.fg-sets .fg-setview { flex: none; overflow: visible; }
+.fg-sets .fg-pieces { flex-wrap: nowrap; overflow-x: auto; }
 .fg-buyrow { display: flex; gap: 8px; align-items: center; }
 .fg-top { color: #ffcf5a; }
 .fg-setview .fg-h { min-height: 32px; display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }

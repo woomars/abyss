@@ -57,6 +57,7 @@ export class SkillButtons {
       const r = b.getBoundingClientRect();
       ui.aiming = { id: e.pointerId, center: this.toLocal(r.left + r.width / 2, r.top + r.height / 2), dir: null };
       b.classList.add('aiming');
+      if (this.skills.cfg.slots[i] === 'rushStrike') this.skills.setAim(i, null); // the jump shows its own pick (the farthest foe) at once
     });
     b.addEventListener('pointermove', (e) => {
       if (ui.drag === e.pointerId) { this.dragTo(i, e); return; }
@@ -64,8 +65,9 @@ export class SkillButtons {
       if (!a || a.id !== e.pointerId) return;
       const p = this.toLocal(e.clientX, e.clientY);
       const dx = p.x - a.center.x, dy = p.y - a.center.y;
-      if (Math.hypot(dx, dy) < AIM_DEADZONE) { a.dir = null; this.skills.clearAim(); return; }
-      a.dir = { x: dx, y: dy };
+      const jump = this.skills.cfg.slots[i] === 'rushStrike';
+      if (Math.hypot(dx, dy) < AIM_DEADZONE) { a.dir = null; if (jump) this.skills.setAim(i, null); else this.skills.clearAim(); return; }
+      a.dir = { x: dx, y: dy, len: Math.hypot(dx, dy) }; // the jump reads how far the finger went
       this.skills.setAim(i, a.dir);
     });
     const finish = (e, fire) => {

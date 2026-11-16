@@ -44,7 +44,10 @@ export class EffectManager {
       this.ring(e.pos.x, e.pos.y, 14, e.radius, '#ffd28a'); this.ring(e.pos.x, e.pos.y, 8, e.radius * 0.6, '#fff4dc');
       for (const d of [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) this.spark(e.pos.x, e.pos.y, d, 5, e.radius * 2.4, '#bfae98', 5, 0.4);
     });
-    events.on('setBlast', (e) => { this.ring(e.pos.x, e.pos.y, 12, e.radius, '#c27cff'); this.ring(e.pos.x, e.pos.y, 6, e.radius * 0.6, '#ffffff'); });
+    events.on('setBlast', (e) => { // 번개 5세트: a cone of lightning ahead (a ring when there is no way)
+      if (e.dir) { this.onSlash({ pos: e.pos, dir: e.dir, radius: e.radius, arcDeg: e.arcDeg, strong: true, wave: true }); this.ring(e.pos.x, e.pos.y, 6, e.radius * 0.5, '#9fd8ff'); }
+      else { this.ring(e.pos.x, e.pos.y, 12, e.radius, '#c27cff'); this.ring(e.pos.x, e.pos.y, 6, e.radius * 0.6, '#ffffff'); }
+    });
     events.on('enemyStrike', (e) => {
       if (!e.riposte) return; // riposte: a red burst on the angry enemy
       const r = this.rings.acquire();

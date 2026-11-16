@@ -14,7 +14,6 @@
     "spin": {
       "name": "회전 베기",
       "cooldown": 10,
-      "damage": 25,
       "radius": 150,
       "duration": 0.35,
       "hitPause": 0.06,
@@ -29,7 +28,6 @@
       "cooldown": 4,
       "distance": 150,
       "speed": 300,
-      "damage": 30,
       "radius": 110,
       "recover": 0.3,
       "knockback": 340
@@ -38,7 +36,6 @@
       "name": "질풍 베기",
       "directional": true,
       "cooldown": 7,
-      "damage": 30,
       "range": 180,
       "speed": 700,
       "hitPause": 0.06,

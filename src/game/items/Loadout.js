@@ -47,12 +47,6 @@ export class Loadout {
       if (it.effect) effects.add(it.effect);
       if (it.set) sets[it.set] = (sets[it.set] || 0) + 1;
     }
-    const sj = cfg.setJump; // each worn set piece, of any set, widens and strengthens the jump's landing
-    if (sj) {
-      const pieces = Object.values(sets).reduce((a, b) => a + b, 0);
-      stats.jumpRadius += sj.radius * pieces;
-      stats.jumpDamage += sj.damage * pieces;
-    }
     for (const [id, n] of Object.entries(sets)) {
       const bonuses = cfg.sets[id].bonuses;
       for (const [need, b] of Object.entries(bonuses)) {
@@ -63,7 +57,21 @@ export class Loadout {
       const ang = cfg.sets[id].angles; // 질풍: each piece worn widens 질풍 베기
       if (ang) stats.waveAngle += ang[Math.min(n, ang.length - 1)] - ang[0];
     }
+    // set steps from tuning/sets.json, added up to the number of pieces worn
+    const T = cfg.setTables, sum = (arr, n) => (arr || []).slice(0, n).reduce((a, b) => a + b, 0);
+    if (T) for (const [id, n] of Object.entries(sets)) {
+      if (id === 'abyss' && T.lightning) stats.chainStun += sum(T.lightning.stun, n);
+      else if (id === 'arcaneVeil' && T.storm) { stats.spinStun += sum(T.storm.stun, n); stats.spinRadiusBonus += sum(T.storm.radius, n); }
+      else if (id === 'meteor' && T.meteor) {
+        const k = Math.min(n, 5) - 1;
+        stats.jumpCore += T.meteor.coreRadius[k];
+        stats.jumpRadiusScale += T.meteor.radiusScale[k];
+        stats.jumpDistance += sum(T.meteor.distance, n);
+        stats.jumpKnockback += sum(T.meteor.knockback, n);
+      } else if (id === 'gravecall' && T.wraith) stats.wraithStun += sum(T.wraith.stun, n);
+    }
     if (effects.has('storm')) stats.chainRange += cfg.effects.storm.chainRange;
+    if (effects.has('earthStep')) { stats.dashRange += cfg.effects.earthStep.dashRange; stats.knockback += cfg.effects.earthStep.knockback; } // 지진의 장화
     return { stats, effects, sets };
   }
 

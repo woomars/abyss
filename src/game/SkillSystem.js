@@ -2,6 +2,7 @@
 // Skills are data-defined (config.skills.defs) and equipped into slots (config.skills.slots).
 import { NO_BONUS } from './Relics.js';
 import { grownDef } from './SkillGrowth.js';
+import { clampStun, bossScale, jumpStun, spinStun } from './stun.js';
 
 export class SkillSystem {
   constructor(cfg, { player, movement, enemies, combat, combatCfg, events, rng, arena, bonus = null, ups = null, gear = null, gearCfg = null, stopCost = null }) {
@@ -81,8 +82,49 @@ export class SkillSystem {
     return !!(id && this.cfg.defs[id].directional);
   }
 
-  // aim preview while a directional button is held (drawn by the renderer)
-  setAim(slot, dir) { this.aim = { slot, dir: { x: dir.x, y: dir.y } }; }
+  // aim preview while a directional button is held (drawn by the renderer); dir null = the jump's own pick
+  setAim(slot, dir) { this.aim = { slot, dir: dir ? { x: dir.x, y: dir.y, len: dir.len } : null }; }
+
+  // the farthest targetable foe within maxDist: { dir, dist } or null
+  farthestInRange(maxDist) {
+    const p = this.player.pos;
+    let best = null, bd = -1;
+    for (const e of this.enemies.targetable()) {
+      const dx = e.pos.x - p.x, dy = e.pos.y - p.y, d = Math.hypot(dx, dy);
+      if (d > maxDist || d < 1e-6 || d <= bd) continue;
+      bd = d; best = { dir: { x: dx / d, y: dy / d }, dist: d };
+    }
+    return best;
+  }
+
+  // where the jump goes: a plain press = the farthest foe in reach (none: the running way, full reach);
+  // aim { x, y, len } = that way, distance from the drag length (30 px dead zone, full reach at 150 px,
+  // never under 15%); aim without len = that way at full reach. Walls and pillars stop the leap itself.
+  jumpPlan(aim) {
+    const plan = this.jumpWay(aim), ar = this.arena, p = this.player;
+    if (!ar) return plan;
+    let d = 0; // the leap comes down before the first wall or pillar on its way (the preview shows the same spot)
+    while (d < plan.dist) {
+      const n = Math.min(plan.dist, d + 8);
+      if (ar.resolveCircle({ x: p.pos.x + plan.dir.x * n, y: p.pos.y + plan.dir.y * n }, p.radius).hitWall) break;
+      d = n;
+    }
+    return { dir: plan.dir, dist: d };
+  }
+
+  jumpWay(aim) {
+    const max = this.def('rushStrike').distance * (1 + (this.bonus().jumpDistance || 0)); // 유성 set leaps further
+    const l = aim ? Math.hypot(aim.x, aim.y) : 0;
+    if (l > 1e-6) {
+      const k = aim.len == null ? 1 : Math.max(0.15, Math.min(1, (aim.len - 30) / 120));
+      return { dir: { x: aim.x / l, y: aim.y / l }, dist: max * k };
+    }
+    const far = this.farthestInRange(max);
+    if (far) return far;
+    const p = this.player, hd = p.heading && Math.hypot(p.heading.x, p.heading.y) > 1e-6 ? p.heading : this.combat.inputDir;
+    const hl = Math.hypot(hd.x, hd.y) || 1;
+    return { dir: { x: hd.x / hl, y: hd.y / hl }, dist: max };
+  }
   clearAim() { this.aim = null; }
 
   // aimDir: optional direction for directional skills (button drag); a plain tap aims at the nearest
@@ -100,10 +142,12 @@ export class SkillSystem {
       ? { x: aimDir.x / len, y: aimDir.y / len }
       : auto || (id === 'rushStrike' ? { x: hd.x, y: hd.y } : { x: this.combat.inputDir.x, y: this.combat.inputDir.y }); // no enemy: the jump goes the way the hero is moving
     this.events.emit('skill', { id, pos: { x: p.pos.x, y: p.pos.y }, dir });
-    if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set() };
-    else if (id === 'rushStrike') { // 점프: the distance grows with the growth cards, the airtime never does (a longer leap flies faster)
-      const base = this.cfg.defs.rushStrike;
-      this.rush = { def, dir, traveled: 0, dist: def.distance, speed: def.speed * (def.distance / (base.distance || def.distance)) };
+    if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set(), hit2: new Set(), twin: this.gear().has('twinBlade'), radius: this.spinRadius(def) };
+    else if (id === 'rushStrike') { // 점프: the airtime never changes — a longer leap flies faster, a short hop slower
+      const base = this.cfg.defs.rushStrike, air = (base.distance || def.distance) / (base.speed || def.speed);
+      const plan = this.jumpPlan(aimDir);
+      this.rush = { def, dir: plan.dir, traveled: 0, dist: plan.dist, speed: plan.dist / air };
+      this.events.emit('jumpAim', { dir: plan.dir, dist: plan.dist });
     }
     else if (id === 'bladeWave') {
       const angle = this.waveAngle(def); // 질풍 베기: the blade sweeps the cone, the gale flies on
@@ -127,8 +171,9 @@ export class SkillSystem {
     if (killed) { this.events.emit('kill', { enemy: e, pos, dir, crit }); return; }
     // special attacks usually stun, and a stunned enemy forgets the attack it was building up
     const st = this.cfg.stun;
-    const chance = stunChance == null ? (e.isBoss ? st && st.bossChance : st && st.chance) : (e.isBoss ? stunChance * (st.bossChance / st.chance) : stunChance);
-    if (st && this.rng() < chance) {
+    const own = clampStun(stunChance == null ? (st ? st.chance : 0) : stunChance);
+    const chance = st && e.isBoss ? bossScale(own, st.bossChance / st.chance) : own; // bosses: ~44% even for a certain stun
+    if (st && chance > 0 && this.rng() < chance) {
       const k = this.gear().has('stunUp') ? ((this.gearCfg().stunUp || {}).mult || 1) : 1; // 천둥 망치
       e.stun((e.isBoss ? st.bossDuration : st.duration) * k);
       this.events.emit('stun', { enemy: e, pos });
@@ -152,25 +197,35 @@ export class SkillSystem {
     const p = this.player.pos;
     const maxPause = def.maxPause != null ? def.maxPause : Infinity, minTurn = ((def.pauseMinTurn || 0) * Math.PI) / 180;
     for (;;) {
-      let first = null, firstRel = Infinity, firstDir = null;
+      // each blade strikes a foe once; the 폭풍 set's second blade starts opposite and turns the other way
+      let first = null, firstRel = Infinity, firstDir = null, firstSet = null;
+      const R = s.radius || def.radius;
       for (const e of this.enemies.targetable()) {
-        if (s.hit.has(e.id)) continue;
         const dx = e.pos.x - p.x, dy = e.pos.y - p.y;
         const d = Math.hypot(dx, dy);
-        if (d - e.radius > def.radius) continue;
-        let rel = (Math.atan2(dy, dx) - s.start) % TAU;
-        if (rel < 0) rel += TAU;
-        if (rel > next) continue;
-        if (rel < firstRel) { first = e; firstRel = rel; firstDir = d > 1e-6 ? { x: dx / d, y: dy / d } : this.player.heading; }
+        if (d - e.radius > R) continue;
+        const ang = Math.atan2(dy, dx), dirE = d > 1e-6 ? { x: dx / d, y: dy / d } : this.player.heading;
+        if (!s.hit.has(e.id)) {
+          let rel = (ang - s.start) % TAU;
+          if (rel < 0) rel += TAU;
+          if (rel <= next && rel < firstRel) { first = e; firstRel = rel; firstDir = dirE; firstSet = s.hit; }
+        }
+        if (s.twin && !s.hit2.has(e.id)) {
+          let rel2 = (s.start + Math.PI - ang) % TAU;
+          if (rel2 < 0) rel2 += TAU;
+          if (rel2 <= next && rel2 < firstRel) { first = e; firstRel = rel2; firstDir = dirE; firstSet = s.hit2; }
+        }
       }
       if (!first) break;
-      s.hit.add(first.id);
+      firstSet.add(first.id);
       s.swept = Math.max(s.swept, firstRel);
       // a pause (with its hit stop) only while the budget lasts and the blade has turned far enough
       const left = maxPause - (s.paused || 0), stop = this.stopCost();
       const pause = left > 1e-9 && (s.pausedAt == null || firstRel - s.pausedAt >= minTurn - 1e-9);
-      const damage = def.damage * (1 + def.chainDamageStep * s.hits);
-      this.hitEnemy(first, damage, firstDir, { critChance: this.spinCritChance(s.hits), chainIndex: s.hits, skill: 'spin', noStop: !pause });
+      const damage = this.baseDamage('spin') * (1 + def.chainDamageStep * s.hits);
+      const fd = Math.hypot(first.pos.x - p.x, first.pos.y - p.y);
+      const stun = spinStun(fd, R, (this.cfg.stun ? this.cfg.stun.chance : 0) + (this.bonus().spinStun || 0), def.nearZero != null ? def.nearZero : 0.4); // the far part of the blade stuns
+      this.hitEnemy(first, damage, firstDir, { critChance: this.spinCritChance(s.hits), chainIndex: s.hits, skill: 'spin', noStop: !pause, stunChance: stun });
       s.hits += 1;
       if (!this.spin) return; // the room ended under the blade
       if (pause) {
@@ -184,15 +239,20 @@ export class SkillSystem {
     if (s.swept >= TAU - 1e-9) this.spin = null;
   }
 
+  // the spin's blade length: 75 (+ growth cards in def.radius) grown by the 폭풍 set
+  spinRadius(def) { return def.radius * (1 + (this.bonus().spinRadiusBonus || 0)); }
+
+  // the hero's attack (base + flat): every special attack is a share of it (spin 1.1, wave 1.2, jump 0.1)
+  charDamage() { return this.combatCfg.attackDamage + (this.bonus().attackFlat || 0); }
+  baseDamage(id) { return this.charDamage() * (this.def(id).mult || 0); }
+
   // the landing circle: base size and damage, grown by worn set pieces (jumpRadius / jumpDamage), the
   // 지진의 장화 legendary (rushSlam) and the hero's base attack (level-ups and flat attack raise it too)
   landing(def) {
     const b = this.bonus(), c = this.combatCfg;
-    const slam = this.gear().has('rushSlam') ? (this.gearCfg().rushSlam || {}) : {};
-    const base = c.attackDamage > 0 ? (c.attackDamage + (b.attackFlat || 0)) / c.attackDamage : 1;
     return {
-      radius: def.radius * (1 + (b.jumpRadius || 0) + (slam.radius || 0)),
-      damage: def.damage * base * (1 + (b.jumpDamage || 0) + (slam.damage || 0)),
+      radius: def.radius * (b.jumpRadiusScale || 1) * (1 + (b.jumpRadius || 0)), // 유성 set (up to 150%) and the essence of the leap
+      damage: this.baseDamage('rushStrike') * (1 + (b.jumpDamage || 0)),
     };
   }
 
@@ -200,13 +260,27 @@ export class SkillSystem {
   // landing spot (no chain dash follows)
   land(r) {
     const p = this.player.pos, { radius, damage } = this.landing(r.def);
-    const hit = new Set();
+    const hit = new Set(), b = this.bonus(), core = b.jumpCore || r.def.coreRadius || 0.2;
     this.events.emit('jumpLand', { pos: { x: p.x, y: p.y }, radius });
+    const pull = this.gear().has('meteorPull'); // 유성 5세트: the landing draws the foes around into its core
+    if (pull) {
+      const band = (this.gearCfg().meteorPull || {}).pullBand != null ? this.gearCfg().meteorPull.pullBand : 0.2;
+      for (const e of this.enemies.targetable()) {
+        const dx = e.pos.x - p.x, dy = e.pos.y - p.y, d = Math.hypot(dx, dy);
+        if (d < 1e-6 || d > radius * (1 + band)) continue;
+        if ((e.tcfg && e.tcfg.knockbackResist >= 1) || (this.arena && this.arena.blocks(p, e.pos))) continue; // bosses, magic circles and foes behind a pillar stay put
+        const to = d <= radius ? Math.min(d, radius * core * 0.9) : radius * (core + (1 - core) * ((d - radius) / (radius * band))) - 1; // inside: into the core; beyond: onto the outer rings
+        e.pos.x = p.x + (dx / d) * to; e.pos.y = p.y + (dy / d) * to;
+        e.prevPos.x = e.pos.x; e.prevPos.y = e.pos.y;
+      }
+      this.events.emit('meteorPull', { pos: { x: p.x, y: p.y }, radius: radius * (1 + band) });
+    }
     for (const e of this.enemies.targetable()) {
       const dx = e.pos.x - p.x, dy = e.pos.y - p.y, d = Math.hypot(dx, dy);
       if (d > radius + e.radius) continue;
       hit.add(e.id);
-      this.hitEnemy(e, damage, d > 1e-6 ? { x: dx / d, y: dy / d } : r.dir, { skill: 'rushStrike', knockback: r.def.knockback });
+      const kb = pull ? 0 : r.def.knockback * (1 + (b.jumpKnockback || 0)); // the pull replaces the push
+      this.hitEnemy(e, damage, d > 1e-6 ? { x: dx / d, y: dy / d } : r.dir, { skill: 'rushStrike', knockback: kb, stunChance: jumpStun(d, radius, core, r.def.outerZones || [0.5, 0]) });
     }
     return hit.size;
   }
@@ -216,7 +290,7 @@ export class SkillSystem {
   // fall off toward the far end (damage by fallDamage, stun by fallStun). The 질풍 set adds damage and
   // close-range stun and softens the fall-off (waveDamage, waveStun, waveFalloff).
   waveAngle(def) {
-    const fan = this.gear().has('waveFan') ? ((this.gearCfg().waveFan || {}).angle || 0) : 0;
+    const fan = 0;
     return Math.min(170, (def.angle || 60) + (this.bonus().waveAngle || 0) + fan);
   }
 
@@ -230,7 +304,7 @@ export class SkillSystem {
     const f = Math.max(0, Math.min(1, (dist - (def.near || 0)) / Math.max(1, def.range - (def.near || 0))));
     const soft = 1 - Math.min(1, b.waveFalloff || 0);
     return {
-      damage: def.damage * (1 + (b.waveDamage || 0)) * (1 - (def.fallDamage || 0) * f * soft),
+      damage: this.baseDamage('bladeWave') * (1 + (b.waveDamage || 0)) * (1 - (def.fallDamage || 0) * f * soft),
       stun: Math.min(1, (def.stunNear != null ? def.stunNear : 0.5) + (b.waveStun || 0)) * (1 - (def.fallStun || 0) * f * soft),
     };
   }

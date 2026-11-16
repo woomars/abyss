@@ -25,7 +25,7 @@ export function mirrorMoves(game) {
   const land = sk.landing(jump), at = sk.waveAt(wave, wave.near || 0);
   return {
     normal: { damage: (c.attackDamage + (b.attackFlat || 0)) * (1 + (b.damage || 0)), reach: c.dashRange * (1 + (b.dashRange || 0)), chain: game.combat.chainCount },
-    spin: { damage: spin.damage * skillMul, radius: spin.radius, cooldown: sk.cooldownOf(spin) },
+    spin: { damage: sk.baseDamage('spin') * skillMul, radius: spin.radius, cooldown: sk.cooldownOf(spin) },
     jump: { damage: land.damage * skillMul, radius: land.radius, distance: jump.distance, cooldown: sk.cooldownOf(jump) },
     wave: { damage: at.damage * skillMul, range: wave.range, angle: sk.waveAngle(wave), cooldown: sk.cooldownOf(wave) },
     speed: game.config.movement.cruiseSpeed,

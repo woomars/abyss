@@ -11,12 +11,12 @@ export function installGearEffects(game) {
   const base = () => (game.config.combat.attackDamage + game.bonusStats.attackFlat) * (1 + game.bonusStats.damage);
 
   // hit an enemy with an effect (never counts as a chain hit, so effects cannot trigger each other)
-  const strike = (e, damage, from, skill) => {
+  const strike = (e, damage, from, skill, noRiposte = false) => {
     const dx = e.pos.x - from.x, dy = e.pos.y - from.y, d = Math.hypot(dx, dy) || 1;
     const dir = { x: dx / d, y: dy / d };
-    const { killed } = e.takeHit({ damage: Math.round(damage), knockDir: dir, knockback: 60, stagger: 0.1 });
+    const { killed } = e.takeHit({ damage: Math.max(1, Math.round(damage)), knockDir: dir, knockback: 60, stagger: 0.1, noRiposte });
     const pos = { x: e.pos.x, y: e.pos.y };
-    ev.emit('hit', { enemy: e, damage: Math.round(damage), crit: false, strong: false, chainIndex: 0, pos, dir, skill });
+    ev.emit('hit', { enemy: e, damage: Math.max(1, Math.round(damage)), crit: false, strong: false, chainIndex: 0, pos, dir, skill });
     if (killed) ev.emit('kill', { enemy: e, pos, dir, crit: false });
   };
 
@@ -59,7 +59,21 @@ export function installGearEffects(game) {
     game.fields.push({ x: h.pos.x, y: h.pos.y, r: c.radius, t: c.life, tick: 0 });
   });
 
-  // 망령 군주의 왕관 / 무덤의 부름 5세트: a slain foe rises as an allied wraith for a while
+  // 망령 set: by pieces worn, slain foes rise as wraiths (how many at once, and for how long each) — tuning/sets.json
+  ev.on('kill', (k) => {
+    if (!on('wraithSet') || game.over || !k.enemy || k.enemy.isBoss) return;
+    const T = game.config.items.setTables, n = Math.min(5, (game.gearSets || {}).gravecall || 0);
+    const row = T && T.wraith && n > 0 ? T.wraith.summons[n - 1] : null;
+    if (!row) return;
+    game.allies = game.allies || [];
+    if (game.allies.length >= row.count) return;
+    const used = new Set(game.allies.filter((a) => a.set).map((a) => a.slot));
+    let slot = 0; while (used.has(slot)) slot++;
+    game.allies.push({ x: k.pos.x, y: k.pos.y, t: row.life[Math.min(slot, row.life.length - 1)], cd: 0.3, set: true, slot });
+    ev.emit('thrallRise', { pos: { x: k.pos.x, y: k.pos.y } });
+  });
+
+  // 망령 군주의 왕관: a slain foe rises as an allied wraith for a while
   ev.on('kill', (k) => {
     if (!on('thrall') || game.over || !k.enemy || k.enemy.isBoss) return;
     const c = cfg().thrall;
@@ -111,20 +125,44 @@ export function installGearEffects(game) {
         if (best && bd <= c.range && a.cd <= 0) {
           a.cd = c.every;
           ev.emit('thrallHit', { from: { x: a.x, y: a.y }, to: { x: best.pos.x, y: best.pos.y } });
-          strike(best, base() * c.damage, a, 'thrall');
+          if (a.set) { // 망령 set wraith: 5% of the hero's attack, never angers the foe, may stun
+            const T = game.config.items.setTables, k = T && T.wraith ? T.wraith.damage : 0.05;
+            strike(best, (game.config.combat.attackDamage + game.bonusStats.attackFlat) * k, a, 'wraith', true);
+            setStun(best, game.bonusStats.wraithStun);
+          } else strike(best, base() * c.damage, a, 'thrall');
         }
         if (a.t <= 0) allies.splice(i, 1);
       }
     }
   };
 
-  // 심연의 군주 5세트: the last chain strike explodes
+// a certain-or-likely stun from a set (bosses scaled like every special stun)
+  const setStun = (e, chance) => {
+    const st = game.config.skills.stun;
+    if (!st || !e.alive || e.dying || !(chance > 0)) return;
+    const p = Math.min(1, chance) * (e.isBoss ? st.bossChance / st.chance : 1);
+    if (game.rng() < p) { e.stun(e.isBoss ? st.bossDuration : st.duration); ev.emit('stun', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } }); }
+  };
+
+  // 번개 set: chain hits (the hero's own blows, not specials) may stun
+  ev.on('hit', (h) => {
+    if (h.skill || !h.enemy || !(game.bonusStats.chainStun > 0)) return;
+    setStun(h.enemy, game.bonusStats.chainStun);
+  });
+
+  // 번개 5세트: the last chain strike bursts into a cone of lightning ahead; every foe inside is stunned
   ev.on('slash', (s) => {
     if (!on('setBlast') || !s.strong || s.wave) return; // the chain's last blow only, not 질풍 베기's swing
-    const c = cfg().setBlast;
-    ev.emit('setBlast', { pos: { x: s.pos.x, y: s.pos.y }, radius: c.radius });
+    const T = game.config.items.setTables, f = (T && T.lightning && T.lightning.full) || { coneAngle: 70, coneRange: 160, damage: 1, stun: 1 };
+    const d = s.dir && Math.hypot(s.dir.x, s.dir.y) > 1e-6 ? s.dir : { x: 1, y: 0 }, a0 = Math.atan2(d.y, d.x), half = (f.coneAngle * Math.PI / 180) / 2;
+    ev.emit('setBlast', { pos: { x: s.pos.x, y: s.pos.y }, radius: f.coneRange, dir: { x: d.x, y: d.y }, arcDeg: f.coneAngle });
     for (const e of game.enemies.targetable()) {
-      if (Math.hypot(e.pos.x - s.pos.x, e.pos.y - s.pos.y) <= c.radius + e.radius) strike(e, base() * c.damage, s.pos, 'blast');
+      const dx = e.pos.x - s.pos.x, dy = e.pos.y - s.pos.y, dist = Math.hypot(dx, dy);
+      if (dist > f.coneRange + e.radius) continue;
+      const da = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - a0), Math.cos(Math.atan2(dy, dx) - a0)));
+      if (dist > e.radius && da > half) continue;
+      strike(e, base() * f.damage, s.pos, 'blast');
+      setStun(e, f.stun);
     }
   });
 }

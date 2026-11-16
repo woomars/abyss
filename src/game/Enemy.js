@@ -86,7 +86,8 @@ export class Enemy {
     this.lunge = lunge;
   }
 
-  takeHit({ damage, knockDir, knockback, stagger }) {
+  // noRiposte: a blow that never angers (망령 set wraiths) — no riposte window, no counter
+  takeHit({ damage, knockDir, knockback, stagger, noRiposte = false }) {
     this.lastBlocked = null;
     if (this.immune) { damage = 0; this.lastBlocked = 'immune'; } // a boss quest: minions or sigils still stand
     else if (this.guard > 0) { // a warrior's guard soaks blows until it breaks; what is left over goes through
@@ -113,6 +114,7 @@ export class Enemy {
       this.canCounter = false;
       return { killed: true };
     }
+    if (noRiposte) { this.counterTime = 0; this.canCounter = false; return { killed: false }; }
     if (this.canRiposte && this.stunTime <= 0) {
       this.angerTime = this.riposteWindow;
       this.wasInReach = true; // the strike that angered it does not count as stepping in

@@ -25,6 +25,7 @@ export class DebugPanel {
         <div class="dbtns">방 이동 <select data-act="floor"><option value="">고르기</option><option value="0">연습장</option><option value="-1">보물방</option><option value="-2">대장간</option><option value="-3">증표 받기</option><option value="-4">보스 연전 (끝없는 보스방)</option>${
           Array.from({ length: 21 }, (_, i) => `<option value="${i + 1}">지하 ${i + 1}층</option>`).join('')}<option value="100">지하 100층 (시조)</option></select></div>
         <div class="dbtns">장비 지급 <select data-act="grant"><option value="">고르기</option><option value="common">일반</option><option value="uncommon">고급</option><option value="rare">희귀</option><option value="epic">영웅</option><option value="legendary">전설</option><option value="set">세트</option></select></div>
+        <div class="dbtns">세트 전체 장착 <select data-act="grantSet"><option value="">고르기</option></select> 강화 <input type="number" class="dsetup" min="0" max="10" step="1" value="0" inputmode="numeric" style="width:44px;user-select:text;-webkit-user-select:text"></div>
         <div class="dbtns">내 레벨 <input type="number" class="dlevel" min="1" step="1" value="1" inputmode="numeric" style="width:56px;user-select:text;-webkit-user-select:text"><button data-act="setLevel">적용</button><span class="dlevel-now"></span></div>
         <div class="dbtns"><button data-act="ending">엔딩 보기</button></div>
         <div class="dsec">특수기술 성장 <span class="dups-note"></span></div>
@@ -34,8 +35,13 @@ export class DebugPanel {
       </div>`;
     root.appendChild(this.el);
     this.fpsEl = this.el.querySelector('.fps');
+    this.el.querySelector('[data-act="grantSet"]').insertAdjacentHTML('beforeend', Object.entries(config.items.sets).map(([k, s]) => `<option value="${k}">${s.name}</option>`).join(''));
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.el.addEventListener('change', (e) => {
+      if (e.target.dataset.act === 'grantSet' && e.target.value !== '') {
+        this.grantSet(e.target.value, Number(this.el.querySelector('.dsetup').value) || 0);
+        e.target.value = '';
+      }
       if (e.target.dataset.act === 'grant' && e.target.value !== '') {
         this.grant(e.target.value);
         e.target.value = '';
@@ -119,6 +125,20 @@ export class DebugPanel {
   }
 
   // a new item of the chosen grade is put on at once; what was worn in that slot goes to the pocket
+  // every piece of one set, legendary, worn at once (strengthened to `enhance`)
+  grantSet(setId, enhance) {
+    const g = this.game, cfg = this.config.items, floor = g.dungeon && g.dungeon.floor > 0 ? g.dungeon.floor : 1;
+    import('../game/items/ItemFactory.js').then(({ createItem }) => {
+      for (const slot of Object.keys(cfg.sets[setId].pieces)) {
+        const it = createItem(cfg, Math.random, { id: g.allocItemId(), level: floor, set: setId, slot });
+        it.enhance = Math.max(0, Math.min(cfg.enhance.max, enhance));
+        g.wearNew(it);
+      }
+      this.onGear();
+      this.refresh();
+    });
+  }
+
   grant(grade) {
     const g = this.game;
     const cfg = this.config.items;

@@ -1,6 +1,6 @@
 // Rolling text (opening story, ending) that a finger can push: it rolls up at `auto` px/s by itself;
 // a finger on it takes over (swipe up = forward, down = back) and holding it still stops the roll;
-// on release a swipe glides on and eases back to the auto speed. Times are in seconds. Pure.
+// on release a swipe glides on and eases back to the auto speed. Dragging back does nothing. Times are in seconds. Pure.
 const HOLD_GAP = 0.1; // s without movement before lifting = it was held, not flung
 const STILL = 8; // px: less than this since touching down counts as holding, not swiping
 
@@ -34,11 +34,11 @@ export class TextScroller {
 
   move(y, t) {
     if (!this.pressed) return;
-    const dy = this.lastY - y; // finger up = text forward
-    this.pos = this.clamp(this.pos + dy);
+    const dy = this.lastY - y; // finger up = text forward; dragging back is ignored (forward only)
+    if (dy > 0) this.pos = this.clamp(this.pos + dy);
     this.moved += Math.abs(dy);
     const dt = t - this.lastT;
-    if (dt > 0) this.vel = dy / dt;
+    if (dt > 0) this.vel = Math.max(0, dy / dt);
     this.lastY = y;
     this.lastT = t;
   }

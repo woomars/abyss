@@ -1,31 +1,42 @@
-// The white bar behind a red hp bar: the red drops at once, the white waits trailDelay seconds after a
-// hit and then slides down to it at trailSpeed (share of max hp per second), so the loss can be seen.
-// Only the first hit of a burst waits: a hit while the white is still waiting or sliding adds no new
-// wait. Healing lifts the white with the red at once. Pure.
+// The two layers of an hp bar, so a change of hp can be seen:
+// - a blow: the red drops at once; the white behind it waits trailDelay seconds, then slides down.
+// - healing: the white jumps up at once; the red waits trailDelay seconds, then rises to it.
+// Only the first change of a burst waits: a further change while one is still waiting or sliding adds
+// no new wait. Slides move at trailSpeed (share of max hp per second). white >= hp >= red always. Pure.
 export class HpTrail {
   constructor(cfg) {
     this.cfg = cfg; // tuning.hud.hpBar: { trailDelay, trailSpeed }
-    this.trail = 0;
-    this.wait = 0;      // > 0: waiting before sliding
-    this.busy = false;  // waiting or sliding toward hp
+    this.reset(NaN);
   }
 
   reset(hp) {
-    this.trail = Number.isFinite(hp) ? hp : 0; // 0 until the first update when hp is not known yet
-    this.wait = 0;
-    this.busy = false;
+    this.known = Number.isFinite(hp);
+    const v = this.known ? hp : 0; // 0 until the first update when hp is not known yet
+    this.trail = v; this.red = v;           // white and red widths, in hp
+    this.down = { wait: 0, busy: false };   // the white sliding down after a blow
+    this.up = { wait: 0, busy: false };     // the red rising after a heal
+  }
+
+  // one lagging side: wait once per burst, then move `from` toward `to` by at most step per second
+  lag(s, from, to, dt, step) {
+    if (!s.busy) { s.busy = true; s.wait = this.cfg.trailDelay; }
+    if (s.wait > 0) {
+      s.wait -= dt;
+      if (s.wait > 0) return from;
+      dt = -s.wait; // the rest of this step moves
+      s.wait = 0;
+    }
+    const d = step * dt, next = to > from ? Math.min(to, from + d) : Math.max(to, from - d);
+    if (next === to) s.busy = false;
+    return next;
   }
 
   update(hp, maxHp, dt) {
-    if (!Number.isFinite(this.trail) || hp >= this.trail) { this.reset(hp); return; } // not set yet, or healed
-    if (!this.busy) { this.busy = true; this.wait = this.cfg.trailDelay; }
-    if (this.wait > 0) {
-      this.wait -= dt;
-      if (this.wait > 0) return;
-      dt = -this.wait; // the rest of this step slides
-      this.wait = 0;
-    }
-    this.trail = Math.max(hp, this.trail - this.cfg.trailSpeed * maxHp * dt);
-    if (this.trail <= hp) this.busy = false;
+    if (!this.known) { this.reset(hp); return; } // the first hp seen is not a heal
+    const step = this.cfg.trailSpeed * maxHp;
+    if (hp >= this.trail) { this.trail = hp; this.down.busy = false; } // white is never below hp
+    else this.trail = this.lag(this.down, this.trail, hp, dt, step);
+    if (hp <= this.red) { this.red = hp; this.up.busy = false; }       // red is never above hp
+    else this.red = this.lag(this.up, this.red, hp, dt, step);
   }
 }

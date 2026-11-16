@@ -741,7 +741,7 @@ export class Game {
   update(realDt) {
     if (this.paused) return;
     if (this.offer || this.skillOffer || this.forge || this.tokenScene || this.finalAsk || this.ending) return; // cards / forge / legacy token / floor-100 question / ending
-    if (this.over) { this.effects.update(realDt, this.player, false); return; }
+    if (this.over) { this.hpTrail.reset(this.player.hp); this.effects.update(realDt, this.player, false); return; } // dead: both bars empty at once
     const dt = this.hitStop.update(realDt);
     this.time += dt;
     this.player.savePrev();

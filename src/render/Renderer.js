@@ -908,7 +908,8 @@ export class Renderer {
     this.drawTrail(game);
     this.drawCombo(game.effects.combo, game.comboMult());
     if (game.mode === 'dungeon') {
-      this.drawBossBar(game.dungeon.boss, game.bossTrail && game.bossTrailOf === game.dungeon.boss ? game.bossTrail.trail : null);
+      const bt = game.bossTrail && game.bossTrailOf === game.dungeon.boss ? game.bossTrail : null;
+      this.drawBossBar(game.dungeon.boss, bt ? bt.trail : null, bt ? bt.red : null);
       this.drawExitArrow(game.dungeon);
       const f = game.dungeon.fade;
       if (f > 0) {
@@ -1054,7 +1055,7 @@ export class Renderer {
     const o = (this.config.tuning && this.config.tuning.hud && this.config.tuning.hud.overhead) || { width: 44, height: 5, offsetY: 34 };
     const { x, y } = lerpPos(p.prevPos || p.pos, p.pos, alpha);
     const ctx = this.ctx, w = o.width, h = o.height, left = x - w / 2, top = y - o.offsetY - h / 2;
-    const k = Math.max(0, p.hp / p.maxHp), kt = Math.max(k, (game.hpTrail ? game.hpTrail.trail : p.hp) / p.maxHp);
+    const ht = game.hpTrail, k = Math.max(0, Math.min(p.hp, ht ? ht.red : p.hp) / p.maxHp), kt = Math.max(p.hp / p.maxHp, (ht ? ht.trail : p.hp) / p.maxHp);
     ctx.fillStyle = 'rgba(20,8,10,0.8)';
     ctx.fillRect(left - 1, top - 1, w + 2, h + 2);
     ctx.fillStyle = '#f2ece4';
@@ -1075,12 +1076,12 @@ export class Renderer {
     ctx.fillRect(0, 0, w, h);
   }
 
-  drawBossBar(boss, trail = null) {
+  drawBossBar(boss, trail = null, red = null) {
     if (!boss || !boss.alive) return;
     const ctx = this.ctx;
     const w = Math.min(420, this.cssW * 0.42), h = 10;
     const x = (this.cssW - w) / 2, y = 58;
-    const k = Math.max(0, boss.hp / boss.maxHp);
+    const k = Math.max(0, (red != null ? Math.min(boss.hp, red) : boss.hp) / boss.maxHp);
     const enraged = boss.ai && boss.ai.enraged;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
@@ -1090,7 +1091,7 @@ export class Renderer {
     ctx.fillText(name + (enraged ? t('boss.enraged') : ''), this.cssW / 2, y - 3);
     ctx.fillStyle = '#1a0d10';
     ctx.fillRect(x, y, w, h);
-    if (trail != null) { ctx.fillStyle = '#f2ece4'; ctx.fillRect(x, y, w * Math.min(1, Math.max(k, trail / boss.maxHp)), h); }
+    if (trail != null) { ctx.fillStyle = '#f2ece4'; ctx.fillRect(x, y, w * Math.min(1, Math.max(boss.hp, trail) / boss.maxHp), h); }
     ctx.fillStyle = enraged ? '#ff3b2a' : '#c0392b';
     ctx.fillRect(x, y, w * k, h);
     ctx.strokeStyle = '#c9a86a';

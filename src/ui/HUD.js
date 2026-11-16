@@ -77,12 +77,12 @@ export class HUD {
       this.relicsEl.innerHTML = owned.map((r) => `<span class="rl" title="${tr(r.name)}">${relicIcon(r.icon, 15)}${r.count > 1 ? `<b>${r.count}</b>` : ''}</span>`).join('');
     }
     // two layers: red drops at once, the white trail (game.hpTrail) follows after a moment
-    const p = game.player, trail = game.hpTrail ? game.hpTrail.trail : p.hp;
-    const hpKey = `${p.hp.toFixed(1)}/${p.maxHp}/${trail.toFixed(1)}`;
+    const p = game.player, trail = game.hpTrail ? game.hpTrail.trail : p.hp, red = game.hpTrail ? game.hpTrail.red : p.hp;
+    const hpKey = `${p.hp.toFixed(1)}/${p.maxHp}/${trail.toFixed(1)}/${red.toFixed(1)}`;
     if (hpKey !== this.lastHp) {
       this.lastHp = hpKey;
       if (!this.hpEl) this.hpEl = this.el.querySelector('.hp');
-      paintHpBar(this.hpEl, p.hp, p.maxHp, trail);
+      paintHpBar(this.hpEl, p.hp, p.maxHp, trail, red);
       this.el.classList.toggle('low-hp', p.hp / p.maxHp <= 0.3);
     }
   }

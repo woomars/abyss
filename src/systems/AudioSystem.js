@@ -72,7 +72,7 @@ export class AudioSystem {
     events.on('stormZap', () => this.play('blink', { pitch: 1.8, gain: 0.5 }));
     events.on('quake', () => this.play('roar', { pitch: 2, gain: 0.35 }));
     events.on('setBlast', () => this.play('portal', { pitch: 0.7, gain: 0.8 }));
-    events.on('meteorPull', () => this.play('pull')); // 유성 5세트: foes drawn into the landing
+    events.on('meteorPull', (e) => { this.pullTime = e.time > 0.05 ? e.time : 0.12; this.play('pull'); }); // 유성 5세트: foes drawn in before the landing
     events.on('bossExposed', () => { this.play('chime', { pitch: 1.4, gain: 1.2 }); this.play('crush', { pitch: 0.8, gain: 0.6 }); });
     events.on('jumpLand', () => this.play('crush', { pitch: 0.75, gain: 0.8 }));
     events.on('bomberBlast', () => this.play('crush', { pitch: 1.3, gain: 0.7 }));
@@ -302,13 +302,12 @@ const VOICES = {
     a.noiseBurst('bandpass', 300 * p, 2400 * p, 2, 0.2 * g, 0.45, 0.05);
     a.tone('sine', 220 * p, 880 * p, 0.12 * g, 0.45, 0.02);
   },
-  // 유성 5세트 pull: a reversed rush (noise swelling and rising, cut off as the foes arrive), then a soft
-  // low thump — the "reverse suction whoosh into hit" kind of effect
+  // 유성 5세트 pull: a reversed rush — noise swelling and rising as the foes slide in, cut off as they
+  // arrive (the landing's own crash follows right then)
   pull: (a, p, g) => {
-    const dur = 0.26;
+    const dur = a.pullTime || 0.3;
     a.swell('bandpass', 350 * p, 3200 * p, 1.4, 0.32 * g, dur);
     a.toneSwell('sine', 140 * p, 520 * p, 0.09 * g, dur);
-    setTimeout(() => { if (a.ctx) { a.tone('sine', 120 * p, 42, 0.5 * g, 0.16); a.noiseBurst('lowpass', 900 * p, 150, 0.8, 0.18 * g, 0.08); } }, dur * 1000);
   },
   whoosh: (a, p, g) => a.noiseBurst('bandpass', 500 * p, 1700 * p, 2.5, 0.12 * g, 0.12, 0.02),
   hurt: (a, p, g) => {

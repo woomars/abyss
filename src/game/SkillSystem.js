@@ -59,6 +59,7 @@ export class SkillSystem {
   cancelActive() {
     this.stiff = 0;
     this.rush = null;
+    this.pulling = null;
     this.spin = null;
     this.projectiles.length = 0;
     this.aim = null;
@@ -68,6 +69,7 @@ export class SkillSystem {
     this.remaining = this.cfg.slots.map(() => 0);
     this.stiff = 0;
     this.rush = null;
+    this.pulling = null;
     this.spin = null;
     this.projectiles.length = 0;
     this.aim = null;
@@ -262,27 +264,49 @@ export class SkillSystem {
     };
   }
 
+  // 유성 5세트: who is drawn toward c and to where (inside: into the core; just beyond: onto the outer rings).
+  // Bosses, magic circles (knockback resist 1) and foes behind a pillar stay put.
+  startPull(c, radius, core, time) {
+    const band = (this.gearCfg().meteorPull || {}).pullBand != null ? this.gearCfg().meteorPull.pullBand : 0.2;
+    const moves = [];
+    for (const e of this.enemies.targetable()) {
+      const dx = e.pos.x - c.x, dy = e.pos.y - c.y, d = Math.hypot(dx, dy);
+      if (d < 1e-6 || d > radius * (1 + band)) continue;
+      if ((e.tcfg && e.tcfg.knockbackResist >= 1) || (this.arena && this.arena.blocks(c, e.pos))) continue;
+      const to = d <= radius ? Math.min(d, radius * core * 0.9) : radius * (core + (1 - core) * ((d - radius) / (radius * band))) - 1;
+      moves.push({ e, from: { x: e.pos.x, y: e.pos.y }, to: { x: c.x + (dx / d) * to, y: c.y + (dy / d) * to } });
+    }
+    this.pulling = { moves, t: 0, time };
+    this.events.emit('meteorPull', { pos: { x: c.x, y: c.y }, radius: radius * (1 + band), core: radius * core, time, moves: moves.map((m) => ({ from: m.from, to: m.to })) });
+  }
+
+  // the drawn foes slide in, faster and faster (sucked in), held in the pull until it ends
+  stepPull(dt) {
+    const pl = this.pulling;
+    pl.t += dt;
+    const k = pl.time > 0 ? Math.min(1, pl.t / pl.time) : 1, s = k * k;
+    for (const m of pl.moves) {
+      const e = m.e;
+      if (!e.alive || e.dying) continue;
+      e.pos.x = m.from.x + (m.to.x - m.from.x) * s; e.pos.y = m.from.y + (m.to.y - m.from.y) * s;
+      if (e.vel) { e.vel.x = 0; e.vel.y = 0; }
+      if (k >= 1) { e.prevPos.x = e.pos.x; e.prevPos.y = e.pos.y; }
+    }
+  }
+
   // the jump comes down: everything inside the landing circle is struck and thrown back, away from the
   // landing spot (no chain dash follows)
   land(r) {
     const p = this.player.pos, { radius, damage } = this.landing(r.def);
     const hit = new Set(), b = this.bonus(), core = b.jumpCore || r.def.coreRadius || 0.2;
-    this.events.emit('jumpLand', { pos: { x: p.x, y: p.y }, radius });
-    const pull = this.gear().has('meteorPull'); // 유성 5세트: the landing draws the foes around into its core
+    const pull = this.gear().has('meteorPull'); // 유성 5세트: the foes were drawn in on the way down; now they sit in the core
     if (pull) {
-      const band = (this.gearCfg().meteorPull || {}).pullBand != null ? this.gearCfg().meteorPull.pullBand : 0.2;
-      const moves = [];
-      for (const e of this.enemies.targetable()) {
-        const dx = e.pos.x - p.x, dy = e.pos.y - p.y, d = Math.hypot(dx, dy);
-        if (d < 1e-6 || d > radius * (1 + band)) continue;
-        if ((e.tcfg && e.tcfg.knockbackResist >= 1) || (this.arena && this.arena.blocks(p, e.pos))) continue; // bosses, magic circles and foes behind a pillar stay put
-        const to = d <= radius ? Math.min(d, radius * core * 0.9) : radius * (core + (1 - core) * ((d - radius) / (radius * band))) - 1; // inside: into the core; beyond: onto the outer rings
-        moves.push({ from: { x: e.pos.x, y: e.pos.y }, to: { x: p.x + (dx / d) * to, y: p.y + (dy / d) * to } });
-        e.pos.x = p.x + (dx / d) * to; e.pos.y = p.y + (dy / d) * to;
-        e.prevPos.x = e.pos.x; e.prevPos.y = e.pos.y;
-      }
-      this.events.emit('meteorPull', { pos: { x: p.x, y: p.y }, radius: radius * (1 + band), core: radius * core, moves });
+      if (!this.pulling) this.startPull(p, radius, core, 0); // (no time to show it: at once)
+      this.pulling.t = this.pulling.time;
+      this.stepPull(0);
+      this.pulling = null;
     }
+    this.events.emit('jumpLand', { pos: { x: p.x, y: p.y }, radius });
     for (const e of this.enemies.targetable()) {
       const dx = e.pos.x - p.x, dy = e.pos.y - p.y, d = Math.hypot(dx, dy);
       if (d > radius + e.radius) continue;
@@ -360,6 +384,16 @@ export class SkillSystem {
 
     if (this.rush) {
       const r = this.rush;
+      const pt = (this.gearCfg().meteorPull || {}).pullTime || 0;
+      if (!r.pullStarted && pt > 0 && this.gear().has('meteorPull')) { // 유성 5세트: the pull starts `pullTime` before touchdown
+        const left = (r.dist - r.traveled) / (r.speed || r.def.speed);
+        if (left <= pt + 1e-9) {
+          r.pullStarted = true;
+          const pp = this.player.pos, rest = r.dist - r.traveled, b = this.bonus();
+          this.startPull({ x: pp.x + r.dir.x * rest, y: pp.y + r.dir.y * rest }, this.landing(r.def).radius, b.jumpCore || r.def.coreRadius || 0.2, left);
+        }
+      }
+      if (this.pulling) this.stepPull(dt);
       // 점프: a leap (the hero cannot be hit while airborne), then a slam all around the landing spot
       const stepLen = Math.min((r.speed || r.def.speed) * dt, r.dist - r.traveled);
       const { blocked } = this.movement.step(r.dir, stepLen);

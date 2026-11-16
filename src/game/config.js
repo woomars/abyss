@@ -31,6 +31,7 @@ export function applyTuning(config) {
     d.spin.mult = sp.damage.spin;
     d.bladeWave.mult = sp.damage.bladeWave;
     d.bladeWave.stunNear = st.base;
+    config.items.stunBase = st.base; // the set screen's lines (질풍 5: certain stun)
     Object.assign(d.rushStrike, { distance: j.distance, radius: j.radius, knockback: j.knockback, mult: sp.damage.jump, speed: j.distance / j.airTime, coreRadius: j.coreRadius, outerZones: j.outerZones });
     if (t.sets && t.sets.storm) d.spin.nearZero = t.sets.storm.nearZero; // the spin stuns only with the far part of its blade
     config.skills.stun = { chance: st.base, duration: st.duration, bossChance: st.base * st.bossRatio, bossDuration: st.bossDuration };

@@ -114,7 +114,7 @@ export class Enemy {
       this.canCounter = false;
       return { killed: true };
     }
-    if (noRiposte) { this.counterTime = 0; this.canCounter = false; return { killed: false }; }
+    if (noRiposte) return { killed: false }; // a wraith blow: no anger, and a window the hero opened stays as it was
     if (this.canRiposte && this.stunTime <= 0) {
       this.angerTime = this.riposteWindow;
       this.wasInReach = true; // the strike that angered it does not count as stepping in

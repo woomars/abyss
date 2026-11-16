@@ -8,6 +8,7 @@ import {
 } from '../game/items/Forge.js';
 import { sortItems, applyAutoEquip, snapshotGear, restoreGear, setPieceOwners, equipSet } from '../game/items/gear.js';
 import { captureScroll, restoreScroll } from './scrollKeep.js';
+import { setLabel } from '../game/items/setLabels.js';
 import { STAT_KEYS } from '../game/Stats.js';
 import { floorLabel } from '../core/floorLabel.js';
 import { t, tr, fullName } from '../i18n/index.js';
@@ -221,7 +222,7 @@ export class ForgeScreen {
       }).join('');
       const needs = Object.keys(s.labels).map(Number).sort((a, b) => a - b);
       const next = needs.find((n) => n > worn);
-      const bonus = needs.map((n) => `<div class="fg-bonus${worn >= n ? ' on' : ''}${n === next ? ' next' : ''}"><b>${t('fg.setN', { n })}</b> ${esc(tr(s.labels[n]))}${n === next ? ` <small>${t('fg.next')}</small>` : ''}</div>`).join('');
+      const bonus = needs.map((n) => `<div class="fg-bonus${worn >= n ? ' on' : ''}${n === next ? ' next' : ''}"><b>${t('fg.setN', { n })}</b> ${esc(setLabel(cfg, id, n))}${n === next ? ` <small>${t('fg.next')}</small>` : ''}</div>`).join('');
       return `<div class="fg-setview"><div class="fg-h">${esc(tr(s.name))} <span class="fg-setn">${t('fg.wornCount', { a: worn, b: Object.keys(s.pieces).length })}</span></div>
         <div class="fg-pieces">${pieces}</div><div class="fg-bonuses">${bonus}</div>
         <div class="fg-setacts"><button class="fg-btn" data-act="tab" data-v="equip">${t('fg.backToGear')}</button>${canWear ? `<button class="fg-btn pri" data-act="wearSet" data-v="${id}">${t('fg.wearSet')}</button>` : ''}</div></div>`;

@@ -25,8 +25,9 @@ export function mirrorMoves(game) {
   const land = sk.landing(jump), at = sk.waveAt(wave, wave.near || 0);
   return {
     normal: { damage: (c.attackDamage + (b.attackFlat || 0)) * (1 + (b.damage || 0)), reach: c.dashRange * (1 + (b.dashRange || 0)), chain: game.combat.chainCount },
-    spin: { damage: sk.baseDamage('spin') * skillMul, radius: spin.radius, cooldown: sk.cooldownOf(spin) },
-    jump: { damage: land.damage * skillMul, radius: land.radius, distance: jump.distance, cooldown: sk.cooldownOf(jump) },
+    // the hero's 폭풍 / 유성 sets too: blade length and twin blades, landing size, reach and the pull
+    spin: { damage: sk.baseDamage('spin') * skillMul, radius: sk.spinRadius(), twin: sk.gear().has('twinBlade'), cooldown: sk.cooldownOf(spin) },
+    jump: { damage: land.damage * skillMul, radius: land.radius, distance: sk.jumpReach(), pull: sk.gear().has('meteorPull') ? (sk.gearCfg().meteorPull || { pullBand: 0.2 }) : null, core: game.bonusStats.jumpCore || jump.coreRadius || 0.2, cooldown: sk.cooldownOf(jump) },
     wave: { damage: at.damage * skillMul, range: wave.range, angle: sk.waveAngle(wave), cooldown: sk.cooldownOf(wave) },
     speed: game.config.movement.cruiseSpeed,
   };
@@ -58,8 +59,9 @@ function mirrorStart(e, game, kind, mv, v) {
   s.dir = { x: v.x, y: v.y };
   if (kind === 'spin') {
     hz.circle({ x: e.pos.x, y: e.pos.y, radius: mv.spin.radius + e.radius * 0.5, delay: m.spinWindup, damage: mv.spin.damage });
+    if (mv.spin.twin) hz.circle({ x: e.pos.x, y: e.pos.y, radius: mv.spin.radius + e.radius * 0.5, delay: m.spinWindup + 0.25, damage: mv.spin.damage }); // 폭풍 5세트: the second blade comes round
     st.cd.spin = mv.spin.cooldown;
-    st.act = { kind, t: m.spinWindup + 0.15 };
+    st.act = { kind, t: m.spinWindup + (mv.spin.twin ? 0.4 : 0.15) };
   } else if (kind === 'wave') {
     hz.cone({ x: e.pos.x, y: e.pos.y, dir: { x: v.x, y: v.y }, radius: mv.wave.range + e.radius, arcDeg: mv.wave.angle, delay: m.waveWindup, damage: mv.wave.damage });
     st.cd.wave = mv.wave.cooldown;
@@ -69,12 +71,25 @@ function mirrorStart(e, game, kind, mv, v) {
     const to = game.arena.resolveCircle({ x: p.x, y: p.y }, e.radius).pos; // he comes down where the hero stands
     hz.circle({ x: to.x, y: to.y, radius: mv.jump.radius, delay: m.jumpCrouch + m.jumpAir, damage: mv.jump.damage });
     st.cd.jump = mv.jump.cooldown;
-    st.act = { kind, t: m.jumpCrouch + m.jumpAir + 0.3, from: { x: e.pos.x, y: e.pos.y }, to, crouch: m.jumpCrouch, air: m.jumpAir, el: 0 };
+    st.act = { kind, t: m.jumpCrouch + m.jumpAir + 0.3, from: { x: e.pos.x, y: e.pos.y }, to, crouch: m.jumpCrouch, air: m.jumpAir, el: 0, pull: mv.jump.pull, radius: mv.jump.radius, core: mv.jump.core };
   } else { // a chain of dashes, each marked first
     st.act = { kind: 'dash', left: Math.max(1, Math.min(m.maxChain, mv.normal.chain)), step: 'mark', t: 0, dir: null, len: 0 };
     st.atk = m.attackEvery;
   }
   game.events.emit('bossPattern', { enemy: e, pattern: `mirror_${kind}`, kind, pos: { x: e.pos.x, y: e.pos.y } });
+}
+
+// 유성 5세트 copied: the landing draws the hero (not mid-leap, not through a pillar) into its core
+export function mirrorPull(game, a) {
+  const pl = game.player, p = pl.pos, c = a.to, R = a.radius, band = a.pull.pullBand != null ? a.pull.pullBand : 0.2;
+  const dx = p.x - c.x, dy = p.y - c.y, d = Math.hypot(dx, dy);
+  if (d < 1e-6 || d > R * (1 + band) || game.skills.rush || game.arena.blocks(c, p)) return false;
+  const to = Math.min(d, R * a.core * 0.9), from = { x: p.x, y: p.y };
+  const at = game.arena.resolveCircle({ x: c.x + (dx / d) * to, y: c.y + (dy / d) * to }, pl.radius).pos;
+  p.x = at.x; p.y = at.y;
+  if (pl.prevPos) { pl.prevPos.x = at.x; pl.prevPos.y = at.y; }
+  game.events.emit('meteorPull', { pos: { x: c.x, y: c.y }, radius: R * (1 + band), core: R * a.core, moves: [{ from, to: { x: at.x, y: at.y } }] });
+  return true;
 }
 
 function mirrorUpdate(e, dt, game) {
@@ -95,6 +110,7 @@ function mirrorUpdate(e, dt, game) {
         e.pos = game.arena.resolveCircle(want, e.radius).pos;
         e.airborne = true;
       } else e.airborne = false;
+      if (a.pull && !a.pulled && a.el >= a.crouch + a.air + 0.05) { a.pulled = true; mirrorPull(game, a); } // just after the slam: the hero is drawn in to him
       if (a.t <= 0) { st.act = null; e.airborne = false; }
       return { x: 0, y: 0 };
     }

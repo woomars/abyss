@@ -113,7 +113,7 @@ export class SkillSystem {
   }
 
   jumpWay(aim) {
-    const max = this.def('rushStrike').distance * (1 + (this.bonus().jumpDistance || 0)); // 유성 set leaps further
+    const max = this.jumpReach();
     const l = aim ? Math.hypot(aim.x, aim.y) : 0;
     if (l > 1e-6) {
       const k = aim.len == null ? 1 : Math.max(0.15, Math.min(1, (aim.len - 30) / 120));
@@ -142,7 +142,7 @@ export class SkillSystem {
       ? { x: aimDir.x / len, y: aimDir.y / len }
       : auto || (id === 'rushStrike' ? { x: hd.x, y: hd.y } : { x: this.combat.inputDir.x, y: this.combat.inputDir.y }); // no enemy: the jump goes the way the hero is moving
     this.events.emit('skill', { id, pos: { x: p.pos.x, y: p.pos.y }, dir });
-    if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set(), hit2: new Set(), twin: this.gear().has('twinBlade'), radius: this.spinRadius(def) };
+    if (id === 'spin') this.spin = { def, start: Math.atan2(p.heading.y, p.heading.x), swept: 0, pause: 0, hits: 0, hit: new Set(), hit2: new Set(), twin: this.gear().has('twinBlade'), radius: this.spinRadius() };
     else if (id === 'rushStrike') { // 점프: the airtime never changes — a longer leap flies faster, a short hop slower
       const base = this.cfg.defs.rushStrike, air = (base.distance || def.distance) / (base.speed || def.speed);
       const plan = this.jumpPlan(aimDir);
@@ -240,7 +240,13 @@ export class SkillSystem {
   }
 
   // the spin's blade length: 75 (+ growth cards in def.radius) grown by the 폭풍 set
-  spinRadius(def) { return def.radius * (1 + (this.bonus().spinRadiusBonus || 0)); }
+  spinRadius() {
+    const up = (this.ups().spin || {}).radius || 0; // growth cards and the set add up: 75 x (1 + growth + 폭풍)
+    return this.cfg.defs.spin.radius * (1 + up + (this.bonus().spinRadiusBonus || 0));
+  }
+
+  // the jump's full reach (growth cards, then the 유성 set)
+  jumpReach() { return this.def('rushStrike').distance * (1 + (this.bonus().jumpDistance || 0)); }
 
   // the hero's attack (base + flat): every special attack is a share of it (spin 1.1, wave 1.2, jump 0.1)
   charDamage() { return this.combatCfg.attackDamage + (this.bonus().attackFlat || 0); }
@@ -265,15 +271,17 @@ export class SkillSystem {
     const pull = this.gear().has('meteorPull'); // 유성 5세트: the landing draws the foes around into its core
     if (pull) {
       const band = (this.gearCfg().meteorPull || {}).pullBand != null ? this.gearCfg().meteorPull.pullBand : 0.2;
+      const moves = [];
       for (const e of this.enemies.targetable()) {
         const dx = e.pos.x - p.x, dy = e.pos.y - p.y, d = Math.hypot(dx, dy);
         if (d < 1e-6 || d > radius * (1 + band)) continue;
         if ((e.tcfg && e.tcfg.knockbackResist >= 1) || (this.arena && this.arena.blocks(p, e.pos))) continue; // bosses, magic circles and foes behind a pillar stay put
         const to = d <= radius ? Math.min(d, radius * core * 0.9) : radius * (core + (1 - core) * ((d - radius) / (radius * band))) - 1; // inside: into the core; beyond: onto the outer rings
+        moves.push({ from: { x: e.pos.x, y: e.pos.y }, to: { x: p.x + (dx / d) * to, y: p.y + (dy / d) * to } });
         e.pos.x = p.x + (dx / d) * to; e.pos.y = p.y + (dy / d) * to;
         e.prevPos.x = e.pos.x; e.prevPos.y = e.pos.y;
       }
-      this.events.emit('meteorPull', { pos: { x: p.x, y: p.y }, radius: radius * (1 + band) });
+      this.events.emit('meteorPull', { pos: { x: p.x, y: p.y }, radius: radius * (1 + band), core: radius * core, moves });
     }
     for (const e of this.enemies.targetable()) {
       const dx = e.pos.x - p.x, dy = e.pos.y - p.y, d = Math.hypot(dx, dy);

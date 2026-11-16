@@ -158,20 +158,7 @@
   "exitRadius": 46,
   "chestRadius": 30,
   "rewards": {
-    "clearGold": [
-      8,
-      14
-    ],
-    "chestGold": [
-      30,
-      60
-    ],
-    "bossChestGold": [
-      120,
-      200
-    ],
-    "bossChestHeal": 0,
-    "goldPerFloor": 0.1
+    "bossChestHeal": 0
   },
   "rooms": {
     "combat": [
@@ -403,8 +390,7 @@
     "from": 5,
     "elite": 0.15,
     "trap": 0.1,
-    "eliteSize": 0.6,
-    "eliteDrop": "rare"
+    "eliteSize": 0.6
   },
   "trap": {
     "tiles": 10,

@@ -36,7 +36,6 @@ export class Dungeon {
     this.stageTrack = null; // combat-floor music: one track per 20-floor cycle (music.playlists.stage)
     this.stageCycle = null;
     this.floor = 0;
-    this.gold = 0;
     this.room = null;
     this.roomKind = null;
     this.info = null;
@@ -50,6 +49,10 @@ export class Dungeon {
     this.sinceKill = 0;
     this.lastAlive = 0;
   }
+
+  // gold is the family's purse (vault.gold): it stays through death, the forge and new lines
+  get gold() { return this.game.vault ? this.game.vault.gold : 0; }
+  set gold(v) { if (this.game.vault) this.game.vault.gold = Math.max(0, v); }
 
   start(floor) {
     this.reset();
@@ -313,7 +316,7 @@ export class Dungeon {
       const pos = g.arena.resolveCircle(bossPos, c.chestRadius + 10).pos;
       this.chest = { x: pos.x, y: pos.y, r: c.chestRadius * 1.3, opened: false, big: true };
     }
-    if (this.variant === 'elite') g.loot.dropAt(bossPos || g.player.pos, { minGrade: c.variants.eliteDrop, count: 1 }); // the elite room's prize
+    if (this.variant === 'elite') { const er = g.config.items.drops.eliteRoom; g.loot.dropAt(bossPos || g.player.pos, { minGrade: er.minGrade, count: er.count }); } // the elite room's prize
     this.spikes = []; // the traps fall silent
     g.events.emit('roomCleared', { floor: this.floor, kind: this.roomKind, gold, variant: this.variant });
     // the way down appears in the middle of the room a moment later (moved off a pillar if needed)

@@ -3,7 +3,9 @@
 import { OLD_BOSS_KEYS } from '../Medals.js';
 
 export const VAULT_VERSION = 1;
-const PARTS = ['weapon', 'helm', 'armor', 'gloves', 'boots', 'amulet', 'ring'];
+const PARTS = ['weapon', 'helm', 'armor', 'gloves', 'boots', 'amulet', 'ring']; // the old per-part powder (before Phase 6)
+const OLD_STASH_SIZE = 60; // a save from before Phase 6 had 60 stash places: they count as bought
+const ESSENCE_KEEP = ['chain', 'jumpDamage']; // not shrunk by the Phase 6 x0.1 (the leap changes in stage 3)
 
 // set pieces once put 의 after the set name (질풍의 사냥꾼의 검); now 질풍의 사냥꾼 검
 const OLD_SET_NAME = /^(비전의 장막|질풍의 사냥꾼|무덤의 부름)의 /;
@@ -37,8 +39,9 @@ function migrateTally(t) {
 export class Vault {
   constructor({ family = '', given = '' } = {}) {
     this.stash = [];
-    this.powder = {};
-    for (const p of PARTS) this.powder[p] = [0, 0, 0];
+    this.powder = [0, 0, 0]; // 일반 · 상급 · 최상급 (any part)
+    this.stashSlots = 0;     // stash places bought with gold
+    this.phase6 = true;      // saved in the Phase 6 shape (old saves are moved once on load)
     this.seen = {};       // setId -> { slot: true }
     this.equipped = {};   // Loadout JSON
     this.state = 'idle';  // idle | run (left a forge, fighting) | rest (sitting in a forge mid-run)
@@ -50,6 +53,7 @@ export class Vault {
     this.lastFloor = 0; // floor of the run in progress (for a run cut short by closing the game)
     this.carry = [];    // pocket while at the start forge (taken along into the run)
     this.tokens = 0;    // 유산의 증표 not yet put on an item
+    this.gold = 0;      // the family purse: kept through death and new lines (Phase 6)
     this.medals = {};   // medalId -> { count, first: { given, family, generation, floor, at } }
     this.bestiary = {}; // bossKey -> { name, title, kills, deepest, first }
     this.runStats = null; // the run in progress (kills, medals, bosses) for a run cut short
@@ -80,8 +84,8 @@ export class Vault {
 
   toJSON() {
     return {
-      version: VAULT_VERSION, stash: this.stash, powder: this.powder, seen: this.seen, equipped: this.equipped,
-      state: this.state, run: this.run, nextId: this.nextId, lineage: this.lineage, progress: this.progress, savedAt: this.savedAt, lastFloor: this.lastFloor, carry: this.carry, tokens: this.tokens,
+      version: VAULT_VERSION, stash: this.stash, powder: this.powder, stashSlots: this.stashSlots, phase6: true, seen: this.seen, equipped: this.equipped,
+      state: this.state, run: this.run, nextId: this.nextId, lineage: this.lineage, progress: this.progress, savedAt: this.savedAt, lastFloor: this.lastFloor, carry: this.carry, tokens: this.tokens, gold: this.gold,
       medals: this.medals, bestiary: this.bestiary, runStats: this.runStats, medalsFilled: this.medalsFilled, essence: this.essence, trophies: this.trophies, skillUps: this.skillUps, cycle: this.cycle, chronicles: this.chronicles,
     };
   }
@@ -92,9 +96,16 @@ export class Vault {
     if (!data.lineage || typeof data.lineage.family !== 'string') return null;
     const v = new Vault();
     v.stash = Array.isArray(data.stash) ? data.stash.filter((i) => i && typeof i === 'object') : [];
-    for (const p of PARTS) {
-      const a = data.powder && data.powder[p];
-      v.powder[p] = Array.isArray(a) && a.length === 3 ? a.map((n) => Math.max(0, Number(n) || 0)) : [0, 0, 0];
+    const n0 = (n) => Math.max(0, Number(n) || 0);
+    if (data.phase6) {
+      v.powder = Array.isArray(data.powder) && data.powder.length === 3 ? data.powder.map(n0) : [0, 0, 0];
+      v.stashSlots = Math.max(0, Math.floor(Number(data.stashSlots) || 0));
+    } else { // a save from before Phase 6: powder by part -> by quality, the old 60 places count as bought
+      for (const p of PARTS) {
+        const a = data.powder && data.powder[p];
+        if (Array.isArray(a)) for (let q = 0; q < 3; q++) v.powder[q] += n0(a[q]);
+      }
+      v.stashSlots = OLD_STASH_SIZE;
     }
     v.seen = data.seen && typeof data.seen === 'object' ? data.seen : {};
     v.equipped = data.equipped && typeof data.equipped === 'object' ? data.equipped : {};
@@ -116,6 +127,8 @@ export class Vault {
     v.lastFloor = Number.isFinite(data.lastFloor) ? data.lastFloor : 0;
     v.carry = Array.isArray(data.carry) ? data.carry.filter((i) => i && typeof i === 'object') : [];
     v.tokens = Number.isFinite(data.tokens) ? Math.max(0, data.tokens) : 0;
+    v.gold = Math.max(0, Number(data.gold) || 0);
+    if (!data.phase6 && v.run && Number(v.run.gold) > 0) v.gold += Number(v.run.gold); // gold of an old run in progress joins the purse (once)
     const obj = (o) => (o && typeof o === 'object' && !Array.isArray(o) ? o : {});
     v.medals = obj(data.medals);
     v.bestiary = migrateBestiary(obj(data.bestiary));
@@ -128,6 +141,7 @@ export class Vault {
     v.medalsFilled = data.medalsFilled === true;
     const nums = (o) => Object.fromEntries(Object.entries(obj(o)).filter(([, n]) => Number.isFinite(n)));
     v.essence = { stats: nums(data.essence && data.essence.stats), owned: nums(data.essence && data.essence.owned) };
+    if (!data.phase6) for (const k of Object.keys(v.essence.stats)) if (!ESSENCE_KEEP.includes(k)) v.essence.stats[k] *= 0.1; // essences are a tenth now
     v.trophies = obj(data.trophies);
     v.skillUps = nums(data.skillUps);
     v.cycle = Number.isFinite(data.cycle) && data.cycle >= 1 ? Math.floor(data.cycle) : 1;

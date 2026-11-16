@@ -312,7 +312,7 @@ export class Game {
     this.resetRun();
     const d = this.dungeon;
     d.reset();
-    d.floor = run.floor; d.startFloor = run.startFloor; d.gold = run.gold;
+    d.floor = run.floor; d.startFloor = run.startFloor;
     d.info = floorInfo(run.floor, d.cfg);
     this.loot.pocket.push(...(run.pocket || []));
     Object.assign(this.relics.owned, run.relics.owned);
@@ -347,7 +347,7 @@ export class Game {
     return old;
   }
 
-  forgeCtx() { return { cfg: this.config.items, loadout: this.loadout, pocket: this.loot.pocket, vault: this.vault }; }
+  forgeCtx() { return { cfg: this.config.items, econ: this.config.tuning.economy, rng: this.rng, loadout: this.loadout, pocket: this.loot.pocket, vault: this.vault }; }
 
   saveVault() {
     this.vault.equipped = this.loadout.toJSON();
@@ -434,7 +434,7 @@ export class Game {
   snapshotRun() {
     const d = this.dungeon;
     return {
-      floor: d.floor, startFloor: d.startFloor || 1, gold: d.gold, hp: this.player.hp, stageTrack: d.stageTrack, stageCycle: d.stageCycle,
+      floor: d.floor, startFloor: d.startFloor || 1, hp: this.player.hp, stageTrack: d.stageTrack, stageCycle: d.stageCycle,
       pocket: this.loot.pocket.slice(), relics: { owned: { ...this.relics.owned }, stats: { ...this.relics.stats } },
       stats: JSON.parse(JSON.stringify(this.stats)),
     };
@@ -447,7 +447,7 @@ export class Game {
     this.resetRun();
     const d = this.dungeon;
     d.reset();
-    d.floor = snap.floor; d.startFloor = snap.startFloor; d.gold = snap.gold;
+    d.floor = snap.floor; d.startFloor = snap.startFloor;
     d.stageTrack = snap.stageTrack != null ? snap.stageTrack : null; d.stageCycle = snap.stageCycle != null ? snap.stageCycle : null; // the cycle keeps its track
     d.info = floorInfo(snap.floor, d.cfg);
     d.roomKind = 'forge'; d.state = 'forge'; d.fade = 1;

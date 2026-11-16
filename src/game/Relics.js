@@ -6,8 +6,11 @@
 // Pure game logic; this-life picks reset every run.
 import { zeroStats } from './Stats.js';
 
+// percent: one decimal under 10% (small essences would round to +0%), whole numbers above
 export function formatValue(v, fmt) {
-  return fmt === 'pct' ? `${Math.round(v * 100)}%` : String(Math.round(v));
+  if (fmt !== 'pct') return String(Math.round(v));
+  const p = v * 100, r = Math.abs(p) < 10 ? Math.round(p * 10) / 10 : Math.round(p);
+  return `${r}%`;
 }
 
 export class Relics {

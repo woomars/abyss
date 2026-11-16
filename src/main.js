@@ -157,7 +157,7 @@ async function boot() {
   menu = new PauseMenu(ui, {
     settings,
     onDebug: debugOn ? () => { if (debug) debug.open(); } : null,
-    onChange: (s) => { applySettings(s); save.save(s); },
+    onChange: (s) => { applySettings(s); save.save(s); if (forge.isOpen) forge.render(); }, // the stash order may have changed
     onRestart: () => { gameOver.hide(); game.giveUp(); },
     onOpenChange: updatePaused,
   });
@@ -201,6 +201,7 @@ async function boot() {
   events.on('legacyToken', (e) => { banner.hide(); legacy.show({ floor: e.floor }); });
   const forge = new ForgeScreen(ui, {
     game,
+    sortMode: () => settings.sortMode,
     onToken: () => legacy.show(),
     onDepart: () => { forge.hide(); game.departForge(); },
     onTitle: () => { forge.hide(); toTitle(); },

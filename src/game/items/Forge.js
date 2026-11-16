@@ -1,7 +1,7 @@
 // Forge rules on { cfg, loadout, pocket, vault }: wear, take off, store, salvage into powder,
 // strengthen with powder, and what a death keeps. Pure; the screen calls these and re-renders.
 import { LOADOUT_SLOTS } from './Loadout.js';
-import { gradeIndex } from './ItemFactory.js';
+import { gradeIndex, rollAffixes } from './ItemFactory.js';
 import { josa } from '../../core/josa.js';
 import { floorLabel } from '../../core/floorLabel.js';
 
@@ -44,7 +44,7 @@ export function unequipItem(ctx, slot) {
 export function storeItem(ctx, id) {
   const f = findItem(ctx, id);
   if (!f || f.where === 'stash') return { ok: false };
-  if (ctx.vault.stash.length >= ctx.cfg.stashSize) return { ok: false, reason: 'stashFull' };
+  if (ctx.vault.stash.length >= ctx.vault.stashSlots) return { ok: false, reason: 'stashFull' }; // places bought with gold
   const it = f.where === 'equipped' ? ctx.loadout.unequip(f.slot) : pull(ctx.pocket, id);
   ctx.vault.stash.push(it);
   ctx.vault.markSeen(it);
@@ -59,39 +59,53 @@ export function takeItem(ctx, id) {
   return { ok: true };
 }
 
-// ---- salvage ----
-const emptyPowder = () => ({ weapon: [0, 0, 0], helm: [0, 0, 0], armor: [0, 0, 0], gloves: [0, 0, 0], boots: [0, 0, 0], amulet: [0, 0, 0], ring: [0, 0, 0] });
+// ---- gold (the family purse, ctx.vault.gold; prices in ctx.econ = tuning/economy.json) ----
+// strengthening from item.enhance up to toLevel: base x grade multiplier x the step reached, per step
+export function enhanceGold(econ, item, toLevel) {
+  const e = econ.enhance, m = e.gradeMult[item.grade] || 1;
+  let g = 0;
+  for (let k = item.enhance + 1; k <= toLevel; k++) g += Math.round(e.base * m * k);
+  return g;
+}
 
+// salvaging costs gold by grade
+export function salvageGold(econ, items) {
+  return items.reduce((s, it) => s + (econ.dismantle[it.grade] || 0), 0);
+}
+
+// ---- salvage ----
+// powder is by quality only (일반 · 상급 · 최상급), any part
 function powderOf(ctx, item, into) {
   const cfg = ctx.cfg;
-  into[item.slot][item.quality] += cfg.grades[item.grade].powder;
-  if (item.invested > 0) into[item.slot][0] += Math.ceil((item.invested * cfg.enhance.refund) / cfg.enhance.points[0]);
+  into[item.quality] += cfg.grades[item.grade].powder;
+  if (item.invested > 0) into[0] += Math.floor((item.invested * ctx.econ.dismantle.powderRefund) / cfg.enhance.points[0]); // rounded down: never more than 90% back
   return into;
 }
 
 // only pocket and stash items can be salvaged (worn gear is refused)
 export function salvagePreview(ctx, ids) {
-  const powder = emptyPowder();
-  let count = 0;
+  const powder = [0, 0, 0], items = [];
   for (const id of ids) {
     const f = findItem(ctx, id);
     if (!f || f.where === 'equipped') continue;
     powderOf(ctx, f.item, powder);
-    count++;
+    items.push(f.item);
   }
-  return { powder, count };
+  return { powder, count: items.length, gold: salvageGold(ctx.econ, items) };
 }
 
 export function salvageItems(ctx, ids) {
-  const { powder, count } = salvagePreview(ctx, ids);
+  const { powder, count, gold } = salvagePreview(ctx, ids);
   if (!count) return { ok: false, powder };
+  if (ctx.vault.gold < gold) return { ok: false, reason: 'gold', powder, gold };
   for (const id of ids) {
     const f = findItem(ctx, id);
     if (!f || f.where === 'equipped') continue;
     pull(f.where === 'pocket' ? ctx.pocket : ctx.vault.stash, id);
   }
-  for (const [part, arr] of Object.entries(powder)) for (let q = 0; q < 3; q++) ctx.vault.powder[part][q] += arr[q];
-  return { ok: true, powder, count };
+  for (let q = 0; q < 3; q++) ctx.vault.powder[q] += powder[q];
+  ctx.vault.gold -= gold;
+  return { ok: true, powder, count, gold };
 }
 
 // ---- legacy token ----
@@ -127,21 +141,22 @@ function applyPoints(cfg, item, points) {
   return { level, points: cur, used };
 }
 
-// tier: 0 일반 / 1 상급 / 2 최상급 powder of the item's part; count: how many to use
+// tier: 0 일반 / 1 상급 / 2 최상급 powder (any part); count: how many to use; gold for the steps gained
 export function enhancePreview(ctx, id, tier, count) {
   const f = findItem(ctx, id);
   if (!f) return { ok: false };
   const cfg = ctx.cfg, it = f.item;
-  const have = ctx.vault.powder[it.slot][tier];
+  const have = ctx.vault.powder[tier];
   const maxed = it.enhance >= cfg.enhance.max;
   // never use more powder than the item can still take
   let n = Math.max(0, Math.min(count, have));
   const per = cfg.enhance.points[tier];
   while (n > 0 && applyPoints(cfg, it, (n - 1) * per).level >= cfg.enhance.max) n--;
   const r = applyPoints(cfg, it, n * per);
+  const gold = enhanceGold(ctx.econ, it, r.level), rich = ctx.vault.gold >= gold;
   return {
-    ok: n > 0 && !maxed, from: it.enhance, to: r.level, points: r.points, use: n, have,
-    need: r.level < cfg.enhance.max ? cfg.enhance.need[r.level] : 0, maxed,
+    ok: n > 0 && !maxed && rich, reason: n > 0 && !maxed && !rich ? 'gold' : undefined, from: it.enhance, to: r.level, points: r.points, use: n, have,
+    need: r.level < cfg.enhance.max ? cfg.enhance.need[r.level] : 0, maxed, gold,
   };
 }
 
@@ -153,8 +168,9 @@ export function enhanceItem(ctx, id, tier, count) {
   it.enhance = r.level;
   it.points = r.points;
   it.invested += r.used;
-  ctx.vault.powder[it.slot][tier] -= p.use;
-  return { ok: true, from: p.from, to: r.level };
+  ctx.vault.powder[tier] -= p.use;
+  ctx.vault.gold -= p.gold;
+  return { ok: true, from: p.from, to: r.level, gold: p.gold };
 }
 
 // ---- death ----
@@ -225,4 +241,54 @@ export function compareSlots(loadout, item) {
 // 분해 "모두 선택": everything shown except legacy-token gear and set pieces (those are picked one by one)
 export function salvageSelectAll(items) {
   return items.filter((it) => !it.token && !it.set).map((it) => it.id);
+}
+
+// ---- +10 grade-up (one grade higher for gold; back to +0; the new grade's affix count) ----
+export function gradeUpPreview(ctx, id) {
+  const f = findItem(ctx, id);
+  if (!f) return { ok: false };
+  const cfg = ctx.cfg, it = f.item, order = cfg.gradeOrder, gi = order.indexOf(it.grade);
+  const to = order[gi + 1] || null, cost = to ? ctx.econ.gradeUp[it.grade] : 0;
+  const base = { from: it.grade, to, cost };
+  if (!to) return { ...base, ok: false, reason: 'maxGrade' };
+  if (it.enhance < cfg.enhance.max) return { ...base, ok: false, reason: 'notMax' };
+  if (ctx.vault.gold < cost) return { ...base, ok: false, reason: 'gold' };
+  return { ...base, ok: true };
+}
+
+export function gradeUpItem(ctx, id) {
+  const p = gradeUpPreview(ctx, id);
+  if (!p.ok) return { ok: false, reason: p.reason };
+  const cfg = ctx.cfg, it = findItem(ctx, id).item;
+  ctx.vault.gold -= p.cost;
+  it.grade = p.to;
+  it.enhance = 0;
+  it.points = 0; // invested stays: salvaging still gives back what went in
+  const want = cfg.grades[it.grade].affixes - it.affixes.length;
+  if (want > 0) it.affixes.push(...rollAffixes(cfg, ctx.rng, it.grade, want, [it.base.stat, ...it.affixes.map((a) => a.stat)]));
+  // a legendary gets a unique effect of its slot (set pieces keep their set instead)
+  if (it.grade === 'legendary' && !it.set && !it.effect) {
+    const fits = Object.keys(cfg.legendaries).filter((k) => cfg.legendaries[k].slot === it.slot);
+    if (fits.length) {
+      const k = fits[Math.floor(ctx.rng() * fits.length) % fits.length], L = cfg.legendaries[k];
+      it.legendary = k; it.effect = L.effect; it.name = L.name;
+    }
+  }
+  return { ok: true, item: it };
+}
+
+// ---- stash places (a new family has none; each costs `growth` times more than the last) ----
+export function stashPrice(econ, slots) {
+  const s = econ.stash;
+  return Math.round(s.firstPrice * Math.pow(s.growth, slots - s.startSlots));
+}
+
+export function buyStashSlot(ctx) {
+  const v = ctx.vault, s = ctx.econ.stash;
+  if (v.stashSlots >= s.maxSlots) return { ok: false, reason: 'max' };
+  const price = stashPrice(ctx.econ, v.stashSlots);
+  if (v.gold < price) return { ok: false, reason: 'gold', price };
+  v.gold -= price;
+  v.stashSlots += 1;
+  return { ok: true, price };
 }

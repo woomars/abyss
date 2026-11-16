@@ -2,6 +2,7 @@
 // Order: ?lang= in the address (also saved) -> saved choice -> browser language -> en.
 // UI strings: t(key, params). Data strings from src/data/*.json stay Korean in the json and in saves;
 // tr(korean) shows them in the current language (falls back to the Korean when a word is missing).
+import { formatValue } from '../game/Relics.js';
 import KO from './ko.js';
 import EN from './en.js';
 import JA from './ja.js';
@@ -143,7 +144,7 @@ export function fullName(family, given) {
 export function relicDesc(o, relicsCfg) {
   if (lang === 'ko' || !relicsCfg || !relicsCfg.list[o.id]) return o.desc;
   const d = relicsCfg.list[o.id];
-  const v = d.fmt === 'pct' ? `${Math.round(o.value * 100)}%` : String(Math.round(o.value));
+  const v = formatValue(o.value, d.fmt); // one decimal under 10%, like the Korean card
   return tr(d.desc).replace('{v}', v);
 }
 

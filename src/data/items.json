@@ -590,61 +590,12 @@
       }
     }
   },
-  "drops": {
-    "chance": {
-      "normal": 0.03,
-      "enhanced": 0.12,
-      "elite": 0.15
-    },
-    "boss": {
-      "count": 2,
-      "minGrade": "rare",
-      "floorBonus": 10
-    },
-    "gradeWeights": {
-      "common": 55,
-      "uncommon": 28,
-      "rare": 12,
-      "epic": 4,
-      "legendary": 1
-    },
-    "gradePerFloor": {
-      "common": -1.2,
-      "uncommon": 0.4,
-      "rare": 0.5,
-      "epic": 0.25,
-      "legendary": 0.08
-    },
-    "gradeMin": 5,
-    "setChance": {
-      "base": 0.06,
-      "perFloor": 0.006,
-      "max": 0.25
-    },
-    "quality": {
-      "chance": [
-        null,
-        {
-          "base": 0.15,
-          "perFloor": 0.015,
-          "max": 0.45
-        },
-        {
-          "base": 0.03,
-          "perFloor": 0.01,
-          "max": 0.3
-        }
-      ],
-      "bossBonus": 0.1
-    }
-  },
   "pickup": {
     "radius": 90,
     "flyTime": 0.28,
     "scatter": 40
   },
   "pocketSize": 30,
-  "stashSize": 60,
   "enhance": {
     "max": 10,
     "points": [

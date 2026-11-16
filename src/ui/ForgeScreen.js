@@ -4,8 +4,9 @@ import { itemStats, formatStat } from '../game/items/itemStats.js';
 import { LOADOUT_SLOTS } from '../game/items/Loadout.js';
 import {
   findItem, equipItem, unequipItem, storeItem, takeItem, salvagePreview, salvageItems, enhancePreview, enhanceItem,
-  wornSetSummary, compareSlots, salvageSelectAll,
+  wornSetSummary, compareSlots, salvageSelectAll, gradeUpPreview, gradeUpItem, stashPrice, buyStashSlot,
 } from '../game/items/Forge.js';
+import { sortItems, applyAutoEquip, snapshotGear, restoreGear } from '../game/items/gear.js';
 import { captureScroll, restoreScroll } from './scrollKeep.js';
 import { STAT_KEYS } from '../game/Stats.js';
 import { floorLabel } from '../core/floorLabel.js';
@@ -24,7 +25,10 @@ const picked = (ctx, checked, test) => [...checked].some((id) => { const f = fin
 // The forge: 장비 (paper doll, pocket / stash, compare), 분해 (multi-select into powder), 강화 (powder into
 // any item, worn / pocket / stash). Every action goes through the pure Forge rules, then game.forgeChanged().
 export class ForgeScreen {
-  constructor(root, { game, onDepart, onTitle, onSets, onToken }) {
+  // sortMode: () => 'grade' | 'type' (the pocket/stash order chosen in the pause menu)
+  constructor(root, { game, onDepart, onTitle, onSets, onToken, sortMode = () => 'grade' }) {
+    this.sortMode = sortMode;
+    this.undo = null; // gear before the last auto-equip (one undo, until anything else is done)
     this.onToken = onToken;
     this.game = game;
     this.onDepart = onDepart;
@@ -58,17 +62,19 @@ export class ForgeScreen {
     this.checked.clear();
     this.confirm = false;
     this.scrolls = {}; // a new visit starts at the top (positions are kept only while it stays open)
+    this.undo = null;  // an auto-equip undo belongs to the visit it was made in
     this.scrollKey = null;
     this.el.classList.remove('hidden');
     this.render();
   }
 
-  hide() { this.el.classList.add('hidden'); }
+  hide() { this.undo = null; this.el.classList.add('hidden'); }
 
   // the language changed while it is up
   relabel() { if (this.isOpen) this.render(); }
 
   changed(kind) {
+    if (kind !== 'auto') this.undo = null;
     this.game.forgeChanged();
     this.game.events.emit('forgeAction', { kind });
     this.render();
@@ -88,7 +94,7 @@ export class ForgeScreen {
         <div class="fg-tabs">${[['equip', t('fg.tabEquip')], ['salvage', t('fg.tabSalvage')], ['enhance', t('fg.tabEnhance')]].map(([k, n]) =>
           `<button class="fg-tab${this.tab === k ? ' on' : ''}" data-act="tab" data-v="${k}">${n}</button>`).join('')}</div>
         <span class="fg-sp"></span>
-        ${this.start ? '' : `<span class="fg-gold">${relicIcon('gold', 13)} ${g.dungeon.gold}</span>`}
+        <span class="fg-gold">${relicIcon('gold', 13)} ${g.vault.gold}</span>
         ${g.vault.tokens > 0 ? `<button class="fg-btn fg-token" data-act="token">${tr(this.cfg.legacyToken.label)} ×${g.vault.tokens}</button>` : ''}
         <button class="fg-btn small" data-act="title">${t('fg.toTitle')}</button>
         <button class="fg-btn pri" data-act="depart">${t('toFloor', { floor: floorLabel(this.start ? 1 : g.dungeon.floor + 1) })} ▶</button>
@@ -101,7 +107,7 @@ export class ForgeScreen {
 
   grid(items, { check = false } = {}) {
     if (!items.length) return `<div class="fg-empty">${t('fg.empty')}</div>`;
-    return `<div class="fg-grid">${items.map((it) => itemCell(it, this.cfg, {
+    return `<div class="fg-grid">${sortItems(items, this.sortMode(), this.cfg).map((it) => itemCell(it, this.cfg, {
       cls: `${this.sel === it.id ? 'sel' : ''} ${check && this.checked.has(it.id) ? 'chk' : ''}`, size: 22,
     })).join('')}</div>`;
   }
@@ -143,10 +149,19 @@ export class ForgeScreen {
           <button class="fg-set" data-act="sets"><span>${ws.id ? esc(tr(this.cfg.sets[ws.id].name)) : t('fg.set')}</span><b>${ws.n}/${ws.total}</b></button></div>
       </div>
       <div class="fg-right">
-        ${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: `${c.vault.stash.length}/${this.cfg.stashSize}` })]])}
-        ${this.bag === 'pocket' ? `<div class="fg-note">${t('fg.pocketNote')}</div>` : ''}
+        <div class="fg-bagbar">${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: `${c.vault.stash.length}/${c.vault.stashSlots}` })]])}
+          <span class="fg-auto"><button class="fg-btn" data-act="auto">${t('fg.autoEquip')}</button>${this.undo ? `<button class="fg-btn" data-act="undo">${t('fg.undo')}</button>` : ''}</span></div>
+        ${this.bag === 'pocket' ? `<div class="fg-note">${t('fg.pocketNote')}</div>` : this.stashBuy()}
         <div class="fg-scroll">${this.grid(this.bagItems())}</div>
       </div>`;
+  }
+
+  // stash tab: buy one more place (price grows each time)
+  stashBuy() {
+    const v = this.ctx.vault, s = this.ctx.econ.stash;
+    if (v.stashSlots >= s.maxSlots) return '';
+    const price = stashPrice(this.ctx.econ, v.stashSlots);
+    return `<div class="fg-buyrow"><button class="fg-btn" data-act="buySlot" ${v.gold >= price ? '' : 'disabled'}>${t('fg.buySlot', { n: price })}</button>${v.gold >= price ? '' : `<small class="down">${t('fg.needGold', { n: price - v.gold })}</small>`}</div>`;
   }
 
   // the selected item in a pop-up over the forge; a tap outside it (on the shade) closes it
@@ -209,10 +224,9 @@ export class ForgeScreen {
 
   renderSalvage() {
     const c = this.ctx, pre = salvagePreview(c, [...this.checked]);
-    const table = `<table class="fg-powder"><tr><th>${t('fg.part')}</th>${TIER.map((_, i) => `<th><span class="pw t${i}"></span>${tierLabel(i)}</th>`).join('')}</tr>
-      ${PARTS.map((p) => `<tr><td>${relicIcon(this.cfg.parts[p].icon, 13)} ${tr(this.cfg.parts[p].label)}</td>${[0, 1, 2].map((q) =>
-        `<td>${c.vault.powder[p][q]}${pre.powder[p][q] ? ` <small class="up">+${pre.powder[p][q]}</small>` : ''}</td>`).join('')}</tr>`).join('')}</table>`;
-    const gain = PARTS.flatMap((p) => [0, 1, 2].filter((q) => pre.powder[p][q]).map((q) => `${tr(this.cfg.parts[p].label)} ${tierLabel(q)} ×${pre.powder[p][q]}`)).join(' · ');
+    const table = `<table class="fg-powder"><tr><th></th>${TIER.map((_, i) => `<th><span class="pw t${i}"></span>${tierLabel(i)}</th>`).join('')}</tr>
+      <tr><td>${t('fg.powder')}</td>${[0, 1, 2].map((q) => `<td>${c.vault.powder[q]}${pre.powder[q] ? ` <small class="up">+${pre.powder[q]}</small>` : ''}</td>`).join('')}</tr></table>`;
+    const gain = [0, 1, 2].filter((q) => pre.powder[q]).map((q) => `${tierLabel(q)} ×${pre.powder[q]}`).join(' · ');
     return `
       <div class="fg-left"><div class="fg-box"><div class="fg-h">${t('fg.powderStore')}</div>${table}</div></div>
       <div class="fg-right">
@@ -220,13 +234,21 @@ export class ForgeScreen {
         <div class="fg-selrow"><button class="fg-btn" data-act="checkAll">${t('fg.checkAll')}</button><button class="fg-btn" data-act="clearChecks">${t('fg.clearChecks')}</button><span class="fg-note">${t('fg.salvageNote')}</span></div>
         <div class="fg-scroll">${this.grid(this.bagItems(), { check: true })}</div>
         <div class="fg-detail fg-salv">
-          <div class="fg-salv-sum"><b>${t('fg.selected', { n: pre.count })}</b>${gain ? t('fg.gain', { list: gain }) : ''}</div>
+          <div class="fg-salv-sum"><b>${t('fg.selected', { n: pre.count })}</b>${gain ? t('fg.gain', { list: gain }) : ''}${pre.count ? ` · ${t('fg.goldCost', { n: pre.gold })}` : ''}${pre.count && c.vault.gold < pre.gold ? ` <b class="down">${t('fg.needGold', { n: pre.gold - c.vault.gold })}</b>` : ''}</div>
           <div class="fg-salv-go">
             ${this.confirm ? `<span class="fg-ask">${picked(c, this.checked, (it) => it.token) ? t('fg.tokenWarn') : ''}${picked(c, this.checked, (it) => it.set) ? t('fg.setWarn') : ''}${t('fg.askSalvage')}</span><button class="fg-btn" data-act="salvageNo">${t('no')}</button><button class="fg-btn red" data-act="salvageYes">${t('fg.salvage')}</button>`
-              : `<button class="fg-btn red" data-act="salvage" ${pre.count ? '' : 'disabled'}>${t('fg.salvageGo')}</button>`}
+              : `<button class="fg-btn red" data-act="salvage" ${pre.count && c.vault.gold >= pre.gold ? '' : 'disabled'}>${t('fg.salvageGo')}</button>`}
           </div>
         </div>
       </div>`;
+  }
+
+  // +10: one grade up for gold (legendary is the top)
+  gradeUpButton(it) {
+    const p = gradeUpPreview(this.ctx, it.id);
+    if (p.reason === 'maxGrade') return `<b class="fg-top">${t('fg.maxGrade')}</b>`;
+    const short = p.reason === 'gold' ? `<small class="down">${t('fg.needGold', { n: p.cost - this.ctx.vault.gold })}</small>` : '';
+    return `${short}<button class="fg-btn pri" data-act="gradeUp" ${p.ok ? '' : 'disabled'}>${t('fg.gradeUp', { grade: tr(this.cfg.grades[p.to].label), n: p.cost })}</button>`;
   }
 
   renderEnhance() {
@@ -235,7 +257,7 @@ export class ForgeScreen {
     let left = `<div class="fg-box dim">${t('fg.pickEnhance')}</div>`;
     const f = this.sel != null ? findItem(c, this.sel) : null;
     if (f) {
-      const it = f.item, e = this.cfg.enhance, have = c.vault.powder[it.slot];
+      const it = f.item, e = this.cfg.enhance, have = c.vault.powder;
       const pre = enhancePreview(c, it.id, this.tier, this.count);
       const need = it.enhance < e.max ? e.need[it.enhance] : 0;
       const cur = need ? (it.points / need) * 100 : 100;
@@ -244,13 +266,14 @@ export class ForgeScreen {
         ${itemDetail(it, this.cfg)}
         <div class="fg-enh-lv">+${it.enhance}${pre.ok && pre.to > it.enhance ? ` → <b class="up">+${pre.to}</b>` : ''}${it.enhance >= e.max ? ` <small>${t('fg.maxed')}</small>` : ''}</div>
         <div class="fg-gauge"><i style="width:${cur}%"></i>${pre.ok ? `<i class="add" style="left:${cur}%;width:${Math.max(0, after - cur)}%"></i>` : ''}</div>
-        <div class="fg-h">${t('fg.powderOf', { part: tr(this.cfg.parts[it.slot].label) })}</div>
+        <div class="fg-h">${t('fg.powder')}</div>
         <div class="fg-chips">${[0, 1, 2].map((q) => `<button class="fg-chip${this.tier === q ? ' on' : ''}" data-act="tier" data-v="${q}" ${have[q] ? '' : 'disabled'}>
           <span><span class="pw t${q}"></span>${tierLabel(q)}</span><b>${t('fg.count', { n: have[q] })}</b><small>${t('fg.perOne', { n: e.points[q] })}</small></button>`).join('')}</div>
         <div class="fg-actions">
           <span class="fg-stepper"><button data-act="cnt" data-v="-1">−</button><b>${pre.use || 0}</b><button data-act="cnt" data-v="1">+</button><button data-act="cnt" data-v="99">${t('fg.max')}</button></span>
-          <button class="fg-btn pri" data-act="enhance" ${pre.ok ? '' : 'disabled'}>${t('fg.enhance')}</button>
+          ${it.enhance >= e.max ? this.gradeUpButton(it) : `<button class="fg-btn pri" data-act="enhance" ${pre.ok ? '' : 'disabled'}>${t('fg.enhance')}${pre.gold ? ` · ◆${pre.gold}` : ''}</button>`}
         </div>
+        ${pre.reason === 'gold' ? `<div class="down">${t('fg.needGold', { n: pre.gold - c.vault.gold })}</div>` : ''}
       </div>`;
     }
     return `
@@ -286,7 +309,11 @@ export class ForgeScreen {
     else if (a === 'closePop') { this.sel = null; this.render(); }
     else if (a === 'salvage') { this.confirm = true; this.render(); }
     else if (a === 'salvageNo') { this.confirm = false; this.render(); }
-    else if (a === 'salvageYes') { salvageItems(c, [...this.checked]); this.checked.clear(); this.confirm = false; this.changed('salvage'); }
+    else if (a === 'salvageYes') { const r = salvageItems(c, [...this.checked]); this.confirm = false; if (r.ok) { this.checked.clear(); this.changed('salvage'); } else { this.render(); if (r.reason === 'gold') this.flash(t('fg.needGold', { n: r.gold - c.vault.gold })); } }
+    else if (a === 'auto') { const snap = snapshotGear(c); if (applyAutoEquip(c).changed) { this.undo = snap; this.sel = null; this.changed('auto'); } else this.flash(t('fg.autoNone')); }
+    else if (a === 'undo') { if (this.undo) { restoreGear(c, this.undo); this.undo = null; this.changed('undo'); } }
+    else if (a === 'buySlot') { if (buyStashSlot(c).ok) this.changed('buySlot'); }
+    else if (a === 'gradeUp') { if (gradeUpItem(c, this.sel).ok) this.changed('gradeUp'); }
     else if (a === 'tier') { this.tier = Number(v); this.count = 1; this.render(); }
     else if (a === 'cnt') { this.count = Number(v) === 99 ? 999 : Math.max(1, (enhancePreview(c, this.sel, this.tier, this.count).use || 0) + Number(v)); this.render(); }
     else if (a === 'enhance') { const r = enhanceItem(c, this.sel, this.tier, this.count); if (r.ok) { this.count = 1; this.changed(r.to > r.from ? 'enhanceUp' : 'enhance'); } }
@@ -302,7 +329,7 @@ export class ForgeScreen {
       this.sel = this.sel === id ? null : id;
       this.freshDetail = true; // another item's detail starts at its top
       if (this.tab === 'enhance' && this.sel != null) {
-        const it = findItem(this.ctx, id).item, have = this.ctx.vault.powder[it.slot];
+        const have = this.ctx.vault.powder;
         if (!have[this.tier]) this.tier = have.findIndex((n) => n > 0) >= 0 ? have.findIndex((n) => n > 0) : 0;
         this.count = 1;
       }

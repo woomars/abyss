@@ -1,10 +1,6 @@
 {
   "choices": 3,
   "pickDelay": 0.6,
-  "reroll": {
-    "base": 25,
-    "growth": 0.5
-  },
   "rarity": {
     "common": {
       "weight": 60,

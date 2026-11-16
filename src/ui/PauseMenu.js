@@ -23,6 +23,7 @@ export class PauseMenu {
             <button data-act="shake" class="toggle"></button>
             <button data-act="sound" class="toggle"></button>
             <button data-act="music" class="toggle"></button>
+            <button data-act="sort" class="toggle"></button>
           </div>
           <div class="pm-col">
             <div class="pm-lang"></div>
@@ -58,6 +59,7 @@ export class PauseMenu {
     row('shake', 'pause.shake');
     row('sound', 'pause.sound');
     row('music', 'pause.music');
+    this.el.querySelector('[data-act="sort"]').textContent = t('pause.toggle', { name: t('pause.sort'), state: t(this.settings.sortMode === 'type' ? 'pause.sortType' : 'pause.sortGrade') });
     const lang = this.el.querySelector('.pm-lang');
     if (lang.dataset.lang !== getLang()) { lang.dataset.lang = getLang(); lang.innerHTML = langSwitch('pm-switch'); }
   }
@@ -68,7 +70,11 @@ export class PauseMenu {
     else if (a === 'confirm-no') { this.confirmView.classList.add('hidden'); this.mainView.classList.remove('hidden'); }
     else if (a === 'confirm-yes') { this.onRestart(); this.close(); }
     else if (a === 'debug' && this.onDebug) { this.close(); this.onDebug(); }
-    else if (a === 'shake' || a === 'sound' || a === 'music') {
+    else if (a === 'sort') { // pocket/stash order: grade first <-> part first
+      this.settings.sortMode = this.settings.sortMode === 'type' ? 'grade' : 'type';
+      this.renderToggles();
+      this.onChange(this.settings);
+    } else if (a === 'shake' || a === 'sound' || a === 'music') {
       this.settings[a] = !this.settings[a];
       this.renderToggles();
       this.onChange(this.settings);

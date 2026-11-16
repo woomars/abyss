@@ -5,6 +5,10 @@ import { OLD_BOSS_KEYS } from '../Medals.js';
 export const VAULT_VERSION = 1;
 const PARTS = ['weapon', 'helm', 'armor', 'gloves', 'boots', 'amulet', 'ring'];
 
+// set pieces once put 의 after the set name (질풍의 사냥꾼의 검); now 질풍의 사냥꾼 검
+const OLD_SET_NAME = /^(비전의 장막|질풍의 사냥꾼|무덤의 부름)의 /;
+const renameSetPiece = (it) => { if (it && typeof it.name === 'string' && it.set) it.name = it.name.replace(OLD_SET_NAME, '$1 '); return it; };
+
 function migrateBestiary(b) {
   const out = {};
   for (const [k, r] of Object.entries(b)) {
@@ -115,6 +119,9 @@ export class Vault {
     const obj = (o) => (o && typeof o === 'object' && !Array.isArray(o) ? o : {});
     v.medals = obj(data.medals);
     v.bestiary = migrateBestiary(obj(data.bestiary));
+    v.stash.forEach(renameSetPiece); v.carry.forEach(renameSetPiece);
+    Object.values(v.equipped).forEach(renameSetPiece);
+    if (v.run && Array.isArray(v.run.pocket)) v.run.pocket.forEach(renameSetPiece);
     for (const h of v.lineage.history) if (h && h.bosses) h.bosses = migrateTally(h.bosses);
     v.runStats = data.state === 'run' && data.runStats && typeof data.runStats === 'object' ? data.runStats : null;
     if (v.runStats && v.runStats.bosses) v.runStats.bosses = migrateTally(v.runStats.bosses);

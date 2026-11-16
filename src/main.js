@@ -286,7 +286,7 @@ async function boot() {
   // in development the tuning panel is on by default; ?debug=0 hides it
   if (debugOn) {
     debug = new DebugPanel(ui, {
-      config, game, audio, onLayout: () => layout(),
+      config, game, onLayout: () => layout(),
       onGear: () => { if (forge.isOpen) forge.render(); },
       onOpenChange: (open) => { debugOpen = open; updatePaused(); },
       // debug: the ending with this hero's names (the line goes on as if he had won)

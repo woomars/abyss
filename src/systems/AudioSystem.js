@@ -72,7 +72,7 @@ export class AudioSystem {
     events.on('stormZap', () => this.play('blink', { pitch: 1.8, gain: 0.5 }));
     events.on('quake', () => this.play('roar', { pitch: 2, gain: 0.35 }));
     events.on('setBlast', () => this.play('portal', { pitch: 0.7, gain: 0.8 }));
-    events.on('meteorPull', () => this.play(this.pullVoice())); // 유성 5세트 pull — the candidate picked in the debug panel
+    events.on('meteorPull', () => this.play('pull')); // 유성 5세트: foes drawn into the landing
     events.on('bossExposed', () => { this.play('chime', { pitch: 1.4, gain: 1.2 }); this.play('crush', { pitch: 0.8, gain: 0.6 }); });
     events.on('jumpLand', () => this.play('crush', { pitch: 0.75, gain: 0.8 }));
     events.on('bomberBlast', () => this.play('crush', { pitch: 1.3, gain: 0.7 }));
@@ -80,13 +80,6 @@ export class AudioSystem {
     events.on('evade', () => this.play('blink', { pitch: 1.2, gain: 0.6 }));
     events.on('relicReroll', () => this.play('coins', { gain: 0.8 }));
     events.on('relicPick', () => this.play('chime', { pitch: 1.25, gain: 1.2 }));
-  }
-
-  // which of the pull sound candidates plays (debug panel; to be settled by the owner)
-  pullVoice() {
-    let v = null;
-    try { v = localStorage.getItem('abyss.pullSound'); } catch { v = null; }
-    return VOICES[`pull${v}`] ? `pull${v}` : 'pull1';
   }
 
   // fetch + decode every configured sample (after the AudioContext exists)
@@ -198,6 +191,37 @@ export class AudioSystem {
     this.track(o, t + attack + dur + 0.02);
   }
 
+  // a sound that grows instead of fading: rises to peak over dur, then stops short (reversed feel)
+  rise(peak, dur) {
+    const t = this.ctx.currentTime, gn = this.ctx.createGain();
+    gn.gain.setValueAtTime(0.0001, t);
+    gn.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + dur);
+    gn.gain.linearRampToValueAtTime(0.0001, t + dur + 0.03);
+    gn.connect(this.master);
+    return gn;
+  }
+
+  swell(filterType, f0, f1, q, peak, dur) {
+    const t = this.ctx.currentTime, src = this.ctx.createBufferSource(), f = this.ctx.createBiquadFilter();
+    src.buffer = this.noise; src.loop = true;
+    f.type = filterType; f.Q.value = q;
+    f.frequency.setValueAtTime(f0, t);
+    f.frequency.exponentialRampToValueAtTime(Math.max(f1, 20), t + dur);
+    src.connect(f); f.connect(this.rise(peak, dur));
+    src.start(t);
+    this.track(src, t + dur + 0.05);
+  }
+
+  toneSwell(type, f0, f1, peak, dur) {
+    const t = this.ctx.currentTime, o = this.ctx.createOscillator();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(f1, 1), t + dur);
+    o.connect(this.rise(peak, dur));
+    o.start(t);
+    this.track(o, t + dur + 0.05);
+  }
+
   noiseBurst(filterType, f0, f1, q, peak, dur, attack = 0.002) {
     const t = this.ctx.currentTime;
     const src = this.ctx.createBufferSource();
@@ -278,19 +302,13 @@ const VOICES = {
     a.noiseBurst('bandpass', 300 * p, 2400 * p, 2, 0.2 * g, 0.45, 0.05);
     a.tone('sine', 220 * p, 880 * p, 0.12 * g, 0.45, 0.02);
   },
-  // pull sound candidates (유성 5세트): 1 rushing wind drawn in, 2 low gravity hum, 3 chains yanked
-  pull1: (a, p, g) => {
-    a.noiseBurst('bandpass', 2600 * p, 260 * p, 2.2, 0.26 * g, 0.42, 0.03);
-    a.tone('sine', 900 * p, 180 * p, 0.12 * g, 0.42, 0.02);
-  },
-  pull2: (a, p, g) => {
-    a.tone('sine', 48 * p, 120 * p, 0.5 * g, 0.5, 0.06);
-    a.tone('triangle', 96 * p, 240 * p, 0.12 * g, 0.5, 0.06);
-    a.noiseBurst('lowpass', 200 * p, 900 * p, 0.8, 0.22 * g, 0.5, 0.08);
-  },
-  pull3: (a, p, g) => {
-    a.tone('sawtooth', 260 * p, 820 * p, 0.07 * g, 0.18, 0.01);
-    for (let i = 0; i < 3; i++) setTimeout(() => { if (a.ctx) { a.tone('square', (1700 + i * 200) * p, (1400 + i * 200) * p, 0.04 * g, 0.08); a.noiseBurst('highpass', 3200 * p, 2000 * p, 1, 0.14 * g, 0.06); } }, 60 + i * 70);
+  // 유성 5세트 pull: a reversed rush (noise swelling and rising, cut off as the foes arrive), then a soft
+  // low thump — the "reverse suction whoosh into hit" kind of effect
+  pull: (a, p, g) => {
+    const dur = 0.26;
+    a.swell('bandpass', 350 * p, 3200 * p, 1.4, 0.32 * g, dur);
+    a.toneSwell('sine', 140 * p, 520 * p, 0.09 * g, dur);
+    setTimeout(() => { if (a.ctx) { a.tone('sine', 120 * p, 42, 0.5 * g, 0.16); a.noiseBurst('lowpass', 900 * p, 150, 0.8, 0.18 * g, 0.08); } }, dur * 1000);
   },
   whoosh: (a, p, g) => a.noiseBurst('bandpass', 500 * p, 1700 * p, 2.5, 0.12 * g, 0.12, 0.02),
   hurt: (a, p, g) => {

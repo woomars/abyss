@@ -6,8 +6,7 @@ import { owedPicks, picksTaken } from '../game/SkillGrowth.js';
 // growth cards by name (debug is Korean only)
 const CARD = { spinRadius: '회전 베기 반경', spinCooldown: '회전 베기 쿨타임', rushDistance: '점프 거리', rushCooldown: '점프 쿨타임', waveRange: '질풍 베기 사거리·기절', waveCooldown: '질풍 베기 쿨타임' };
 export class DebugPanel {
-  constructor(root, { config, game, audio = null, onLayout, onFloor = null, onOpenChange = () => {}, onGear = () => {}, onEnding = () => {} }) {
-    this.audio = audio; // to try the pull sound candidates
+  constructor(root, { config, game, onLayout, onFloor = null, onOpenChange = () => {}, onGear = () => {}, onEnding = () => {} }) {
     this.onEnding = onEnding; // debug: play the ending
     this.onGear = onGear; // an item was put on (the HUD / forge refresh)
     this.onOpenChange = onOpenChange; // open panel = the game waits
@@ -27,7 +26,6 @@ export class DebugPanel {
           Array.from({ length: 21 }, (_, i) => `<option value="${i + 1}">지하 ${i + 1}층</option>`).join('')}<option value="100">지하 100층 (시조)</option></select></div>
         <div class="dbtns">장비 지급 <select data-act="grant"><option value="">고르기</option><option value="common">일반</option><option value="uncommon">고급</option><option value="rare">희귀</option><option value="epic">영웅</option><option value="legendary">전설</option><option value="set">세트</option></select></div>
         <div class="dbtns">세트 전체 장착 <select data-act="grantSet"><option value="">고르기</option></select> 강화 <input type="number" class="dsetup" min="0" max="10" step="1" value="0" inputmode="numeric" style="width:44px;user-select:text;-webkit-user-select:text"></div>
-        <div class="dbtns">끌림 소리 <select data-act="pullSound"><option value="1">1 빨려드는 바람</option><option value="2">2 낮은 중력 울림</option><option value="3">3 사슬 당김</option></select> <button data-act="pullTest">듣기</button></div>
         <div class="dbtns">내 레벨 <input type="number" class="dlevel" min="1" step="1" value="1" inputmode="numeric" style="width:56px;user-select:text;-webkit-user-select:text"><button data-act="setLevel">적용</button><span class="dlevel-now"></span></div>
         <div class="dbtns"><button data-act="ending">엔딩 보기</button></div>
         <div class="dsec">특수기술 성장 <span class="dups-note"></span></div>
@@ -38,13 +36,8 @@ export class DebugPanel {
     root.appendChild(this.el);
     this.fpsEl = this.el.querySelector('.fps');
     this.el.querySelector('[data-act="grantSet"]').insertAdjacentHTML('beforeend', Object.entries(config.items.sets).map(([k, s]) => `<option value="${k}">${s.name}</option>`).join(''));
-    try { const v = localStorage.getItem('abyss.pullSound'); if (v) this.el.querySelector('[data-act="pullSound"]').value = v; } catch { /* no storage */ }
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.el.addEventListener('change', (e) => {
-      if (e.target.dataset.act === 'pullSound') {
-        try { localStorage.setItem('abyss.pullSound', e.target.value); } catch { /* no storage */ }
-        if (this.audio) this.audio.play(this.audio.pullVoice());
-      }
       if (e.target.dataset.act === 'grantSet' && e.target.value !== '') {
         this.grantSet(e.target.value, Number(this.el.querySelector('.dsetup').value) || 0);
         e.target.value = '';
@@ -63,7 +56,6 @@ export class DebugPanel {
       const b = e.target.closest('button');
       if (!b) return;
       if (b.dataset.act === 'toggle') this.setOpen(this.el.classList.contains('collapsed'));
-      if (b.dataset.act === 'pullTest' && this.audio) this.audio.play(this.audio.pullVoice());
       if (b.dataset.act === 'ending') { this.setOpen(false); this.onEnding(); }
       if (b.dataset.act === 'setLevel') this.setLevel(Number(this.el.querySelector('.dlevel').value));
       if (b.dataset.act === 'up') this.setUp(b.dataset.card, Number(b.dataset.v));

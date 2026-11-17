@@ -31,7 +31,7 @@ export function describeItem(item, cfg) {
   const g = cfg.grades[item.grade], q = cfg.qualities[item.quality];
   const s = itemStats(item, cfg);
   const keys = [item.base.stat, ...item.affixes.map((a) => a.stat)];
-  const lines = keys.map((k) => formatStat(cfg, k, s[k]));
+  const lines = item.ringSet ? [] : keys.map((k) => formatStat(cfg, k, s[k])); // a set ring has no stats of its own
   const set = item.set ? cfg.sets[item.set] : null;
   return {
     name: (item.enhance ? `+${item.enhance} ` : '') + trItemName(item.name),
@@ -47,5 +47,6 @@ export function describeItem(item, cfg) {
     heirloom: item.legacy && item.legacy.length ? item.legacy[item.legacy.length - 1] : null,
     lostPower: item.lostPower ? tr(item.lostPower) : null,
     token: item.token ? tr(cfg.legacyToken.text) : null,
+    ringSet: item.ringSet && cfg.sets[item.ringSet] ? tr(cfg.sets[item.ringSet].name) : null,
   };
 }

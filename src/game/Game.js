@@ -16,6 +16,7 @@ import { Loot } from './Loot.js';
 import { Loadout } from './items/Loadout.js';
 import { Vault } from './items/Vault.js';
 import { resolveDeath, applyToken } from './items/Forge.js';
+import { cycleKeepers, founderGift } from './items/secrets.js';
 import { skillUps, owedPicks, rollSkillCards } from './SkillGrowth.js';
 import { installMedals, emptyRunStats, backfillMedals, noteEssence, checkTrophies, bossRoster } from './Medals.js';
 import { addXp, xpForKill, levelStats } from './Progress.js';
@@ -81,6 +82,7 @@ export class Game {
     this.tokenScene = false; // the legacy-token scene is open — the world waits
     this.finalAsk = null; // floor 100 lost: the founder's question is up (the world waits)
     this.ropeOffer = null; // the rope's floor list is up (10.4) — the world waits
+    this.founderDeath = null; // the founder's death scene (11.2): { boss, pos, lines, t, line, phase }
     this.finale = null;   // floor 100 won: { family, father, child, sex, item } for the ending
     this.ending = false;  // the ending is playing
     this.tokenFloors = new Set(); // floors that already gave a token this run
@@ -271,6 +273,39 @@ export class Game {
     this.die();
   }
 
+  // the founder falls (11.2): he kneels, his last words pass over his head one by one (the clue changes with
+  // how many times he has fallen), he fades into light, and his gift drops — then the legacy token
+  founderFalls(boss) {
+    const words = this.config.tuning.story.founderWords, n = (this.vault.chronicles || []).length;
+    this.combat.cancel();
+    boss.alive = false; // only the kneeling founder of the scene is drawn
+    if (this.vault.state === 'run' && this.vault.run) { this.vault.run.fell = true; this.saveVault(); } // closed during the scene: the win is kept
+    this.founderDeath = { boss, pos: { x: boss.pos.x, y: boss.pos.y }, lines: words[Math.min(n, words.length - 1)], t: 0, line: -1, phase: 'kneel' };
+    this.events.emit('founderDeath', { pos: { ...this.founderDeath.pos }, lines: this.founderDeath.lines });
+  }
+
+  // a tap: the next line (or out of the kneel)
+  founderSkip() {
+    const d = this.founderDeath, c = this.config.tuning.founder.death;
+    if (!d || !c.skippable) return;
+    if (d.phase === 'kneel') { d.phase = 'words'; d.line = 0; d.t = 0; }
+    else if (d.phase === 'words') { d.line += 1; d.t = 0; if (d.line >= d.lines.length) { d.phase = 'fade'; d.t = 0; } }
+  }
+
+  stepFounderDeath(dt) {
+    const d = this.founderDeath, c = this.config.tuning.founder.death;
+    d.t += dt;
+    if (d.phase === 'kneel' && d.t >= c.kneel) { d.phase = 'words'; d.line = 0; d.t = 0; }
+    else if (d.phase === 'words' && d.t >= c.lineTime + c.lineGap) { d.line += 1; d.t = 0; if (d.line >= d.lines.length) { d.phase = 'fade'; d.t = 0; } }
+    else if (d.phase === 'fade' && d.t >= c.fade) {
+      this.founderDeath = null;
+      const item = founderGift(this.forgeCtx(), this.rng, this.dungeon.floor);
+      this.events.emit('founderGift', { item, pos: { ...d.pos } });
+      this.finalVictory();
+    }
+    this.effects.update(dt, this.player, false);
+  }
+
   // the founder falls: the child is named now (the ending tells it), then the legacy token scene
   finalVictory() {
     const l = this.vault.lineage, sex = this.rng() < 0.5 ? 'son' : 'daughter';
@@ -299,6 +334,7 @@ export class Game {
   // a run saved after the founder fell (the game was closed during the token scene or the ending)
   resumeFinale(run) {
     this.enterLimbo();
+    this.loot.pocket.push(...(run.pocket || [])); // what he carried (set rings, token gear)
     this.finale = { ...run.won, shown: false };
     this.dungeon.floor = run.floor;
     this.startEnding();
@@ -307,8 +343,15 @@ export class Game {
   // the ending is over: the child starts the next cycle as the first of a new line
   startNewCycle() {
     const f = this.finale, l = this.vault.lineage;
-    const record = { given: l.given, family: l.family, generation: l.generation, floor: f.floor || 100 };
-    const { survived } = resolveDeath(this.forgeCtx(), this.rng, record);
+    // only the founder's gifts, legacy-token gear and set rings go on (11.3); gold stays, the rest goes
+    const lo = this.loadout, v = this.vault;
+    for (const s of Object.keys(lo.slots)) if (lo.slots[s] && !cycleKeepers([lo.slots[s]]).length) lo.slots[s] = null;
+    const bag = cycleKeepers([...this.loot.pocket, ...v.stash, ...(v.carry || [])]);
+    this.loot.pocket.length = 0;
+    v.stash.splice(0, v.stash.length, ...bag);
+    v.stashSlots = this.config.tuning.economy.stash.startSlots;
+    v.powder = [0, 0, 0];
+    const survived = [...lo.items(), ...bag];
     const chronicle = newCycle(this.vault, f, { survived: survived.map((i) => i.name) });
     this.finale = null;
     this.ending = false;
@@ -337,6 +380,13 @@ export class Game {
     this.resetHealth();
     this.vault.state = 'run';
     d.enterRoom('boss');
+    if (run.fell) { // closed during his last words: straight on to the gift and the legacy token
+      d.boss.alive = false;
+      d.cleared = true;
+      const item = founderGift(this.forgeCtx(), this.rng, d.floor);
+      this.events.emit('founderGift', { item, pos: { x: d.boss.pos.x, y: d.boss.pos.y } });
+      this.finalVictory();
+    }
   }
 
   // ---- save slot, forge and the family line ----
@@ -751,7 +801,7 @@ export class Game {
 
   // pause menu "포기하기": a dungeon run counts as a death; the practice arena just restarts
   giveUp() {
-    if (this.forge) return; // nothing to give up at a forge
+    if (this.forge || this.founderDeath) return; // nothing to give up at a forge, nor once the founder has fallen
     if (this.mode !== 'dungeon') { this.restart(); return; }
     if (this.over) return;
     this.player.hp = 0;
@@ -775,6 +825,7 @@ export class Game {
     this.enemies.clear();
     this.hazards.clear();
     this.ropeOffer = null;
+    this.founderDeath = null;
     this.player.reset(this.center());
     this.movement.burstTime = Infinity;
     this.combat.reset();
@@ -847,6 +898,7 @@ export class Game {
     if (this.paused) return;
     if (this.offer || this.skillOffer || this.forge || this.tokenScene || this.finalAsk || this.ending || this.ropeOffer) return; // cards / forge / legacy token / floor-100 question / ending
     if (this.over) { this.hpTrail.reset(this.player.hp); this.effects.update(realDt, this.player, false); return; } // dead: both bars empty at once
+    if (this.founderDeath) { this.stepFounderDeath(realDt); return; } // the world holds still for his last words
     const dt = this.hitStop.update(realDt);
     this.time += dt;
     this.player.savePrev();

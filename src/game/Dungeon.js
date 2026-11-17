@@ -593,7 +593,7 @@ export class Dungeon {
         if (this.isFinal) { // floor 100 won: no chest, no exit — the legacy token, then the ending
           g.hazards.clear();
           this.cleared = true;
-          g.finalVictory();
+          g.founderFalls(this.boss); // his death and last words, then the gift, then the legacy token
           return;
         }
         this.clear(this.boss.pos);

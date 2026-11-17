@@ -12,8 +12,8 @@ export function sortItems(items, mode, cfg) {
   return items.slice().sort((a, b) => first[0](a, b) || first[1](a, b) || tail(a, b));
 }
 
-// better gear first: grade, legacy token, strengthening, level, quality
-const score = (cfg, it) => [cfg.gradeOrder.indexOf(it.grade), it.token ? 1 : 0, it.enhance || 0, it.level || 0, it.quality || 0];
+// better gear first: a set ring (the whole set), grade, legacy token, strengthening, level, quality
+const score = (cfg, it) => [it.ringSet ? 1 : 0, cfg.gradeOrder.indexOf(it.grade), it.token ? 1 : 0, it.enhance || 0, it.level || 0, it.quality || 0];
 const better = (cfg) => (a, b) => { const x = score(cfg, a), y = score(cfg, b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return y[i] - x[i]; return a.id - b.id; };
 
 // every item the forge can put on: worn, pocket, stash

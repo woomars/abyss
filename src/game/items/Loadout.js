@@ -47,6 +47,8 @@ export class Loadout {
       if (it.effect) effects.add(it.effect);
       if (it.set) sets[it.set] = (sets[it.set] || 0) + 1;
     }
+    // a set ring (8.5) is the whole set by itself (its own pieces worn too do not add more)
+    for (const it of this.items()) if (it.ringSet && cfg.sets[it.ringSet]) sets[it.ringSet] = Object.keys(cfg.sets[it.ringSet].pieces).length;
     for (const [id, n] of Object.entries(sets)) {
       const bonuses = cfg.sets[id].bonuses;
       for (const [need, b] of Object.entries(bonuses)) {

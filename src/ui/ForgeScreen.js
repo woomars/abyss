@@ -11,6 +11,7 @@ import { captureScroll, restoreScroll } from './scrollKeep.js';
 import { setLabel } from '../game/items/setLabels.js';
 import { canEngrave, engraveCost, engraveChance, hammerSpeeds, engraveItem } from '../game/items/engrave.js';
 import { HammerGame } from './HammerGame.js';
+import { canForgeRing, forgeRing } from '../game/items/secrets.js';
 import { STAT_KEYS } from '../game/Stats.js';
 import { floorLabel } from '../core/floorLabel.js';
 import { t, tr, fullName } from '../i18n/index.js';
@@ -165,15 +166,17 @@ export class ForgeScreen {
   // worn sets: one = name and n/total; several = a row each (most pieces first, three rows, then "외 n종")
   setButton() {
     const sets = this.cfg.sets, worn = this.game.gearSets || {};
+    const rings = new Set(this.ctx.loadout.items().filter((i) => i.ringSet).map((i) => i.ringSet)); // worn as a set ring: 💍
+    const nameOf = (k) => `${rings.has(k) ? '💍' : ''}${esc(tr(sets[k].name))}`;
     const list = Object.keys(sets).filter((k) => worn[k] > 0)
       .map((k) => [k, worn[k], Object.keys(sets[k].pieces).length]).sort((a, b) => b[1] - a[1]);
     const done = list.filter(([, n, total]) => n >= total).length;
     const cls = `fg-set${list.length > 1 ? ' multi' : ''}${done ? ' done' : ''}${done >= 3 ? ' triple' : ''}`;
     if (list.length <= 1) {
       const [k, n, total] = list[0] || [null, 0, Object.keys(Object.values(sets)[0].pieces).length];
-      return `<button class="${cls}" data-act="sets" data-v="${k || ''}"><span>${k ? esc(tr(sets[k].name)) : t('fg.set')}</span><b>${n}/${total}</b></button>`;
+      return `<button class="${cls}" data-act="sets" data-v="${k || ''}"><span>${k ? nameOf(k) : t('fg.set')}</span><b>${n}/${total}</b></button>`;
     }
-    const rows = list.slice(0, 3).map(([k, n, total]) => `<span class="sr${n >= total ? ' ok' : ''}">${esc(tr(sets[k].name))}<b>${n}/${total}</b></span>`).join('');
+    const rows = list.slice(0, 3).map(([k, n, total]) => `<span class="sr${n >= total ? ' ok' : ''}">${nameOf(k)}<b>${n}/${total}</b></span>`).join('');
     return `<button class="${cls}" data-act="sets" data-v="${list[0][0]}">${rows}${list.length > 3 ? `<span class="more">${t('fg.moreSets', { n: list.length - 3 })}</span>` : ''}</button>`;
   }
 
@@ -273,7 +276,7 @@ export class ForgeScreen {
           <div class="fg-delta">${this.deltaLines(it, worn)}</div></div>`;
       }).join('');
       gear = `<div class="fg-h">${t(f.where === 'equipped' ? 'fg.wornItem' : 'fg.pickedItem')}${this.backBtn()}</div>
-        <div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>${cmp}</div>`;
+        <div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>${cmp}</div>${this.ringButton(it)}`;
     }
     const items = `${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: `${c.vault.stash.length}/${c.vault.stashSlots}` })]])}
       ${this.bag === 'stash' ? this.stashBuy() : ''}
@@ -291,6 +294,12 @@ export class ForgeScreen {
       right = f.where === 'pocket' ? `<button class="fg-btn" data-act="store">${t('fg.toStash')}</button>${wear}` : `<button class="fg-btn" data-act="take">${t('fg.toPocket')}</button>${wear}`;
     }
     return { gear: gear || this.doll(), doll: !gear, items, btns: `<span class="fg-act-l">${left}</span><span class="fg-act-r">${right}</span>` };
+  }
+
+  // the hidden set ring (8.5): no word of explanation, only a ring and the set's name
+  ringButton(it) {
+    if (!it.set || !canForgeRing(this.ctx, it.set)) return '';
+    return `<div class="fg-ringrow"><button class="fg-btn fg-ringbtn" data-act="forgeRing" data-v="${it.set}">💍 ${esc(tr(this.cfg.sets[it.set].name))}</button></div>`;
   }
 
   // stash tab: buy one more place (price grows each time)
@@ -489,6 +498,7 @@ export class ForgeScreen {
     const a = b.dataset.act, v = b.dataset.v, c = this.ctx;
     if (a === 'tab') { this.tab = v; this.sel = null; this.checked.clear(); this.confirm = false; if (v === 'enhance' || v === 'engrave') this.bag = 'worn'; else if (this.bag === 'worn') this.bag = 'pocket'; this.render(); }
     else if (a === 'engrave') { const f = findItem(c, this.sel); if (f && (f.item.engraves || 0) >= 1) { this.engAsk = true; this.render(); } else this.startEngrave(); }
+    else if (a === 'forgeRing') { if (forgeRing(c, v)) { this.sel = null; this.game.events.emit('setRing', { set: v }); this.changed('ring'); } }
     else if (a === 'engAskYes') { this.engAsk = false; this.render(); this.startEngrave(); }
     else if (a === 'engAskNo') { this.engAsk = false; this.render(); }
     else if (a === 'engOk') { this.engResult = null; this.render(); }

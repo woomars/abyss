@@ -136,6 +136,7 @@ export default {
 
   'item.scar': '傷跡',
   'item.set': 'セット: {name}',
+  'item.ringSet': '{name}セット5個の効果すべて',
   'item.heir': '受け継いだ相手: {gen} {given}・{family}',
   'item.feat': (p) => `${p.boss ? `${p.at}で${p.boss}を倒して得た${p.part}` : p.at ? `${p.at}で得た${p.part}` : `遠い昔に得た${p.part}`}。彼は${p.floor}まで降りた。`,
   'where.equipped': '装備中',
@@ -330,6 +331,7 @@ export default {
   'final.bossName': '始祖 {name}',
   'final.shadowName': '{name}の影',
   'final.arrive': '百層目 — 始祖が待つ',
+  'final.gift': "始祖の贈り物",
   'final.phase.warrior': '始祖が戦士の力を引き出す',
   'final.phase.mage': '始祖が魔法使いの力を引き出す',
   'final.phase.summoner': '始祖が召喚士の力を引き出す',

@@ -30,7 +30,7 @@ import { FinalAsk, founderTitle } from './ui/FinalAsk.js';
 import { VaultStore } from './systems/VaultStore.js';
 import { Vault } from './game/items/Vault.js';
 import { chooseRotation, stageSize, stageTransform, toStage } from './systems/orientation.js';
-import { initLang, onLangChange, applyI18n, registerNames, t, tr, relicDesc } from './i18n/index.js';
+import { initLang, onLangChange, applyI18n, registerNames, t, tr, trItemName, relicDesc } from './i18n/index.js';
 import { floorLabel } from './core/floorLabel.js';
 
 // the language is decided before anything is drawn (?lang= -> saved -> browser)
@@ -116,6 +116,9 @@ async function boot() {
   const banner = new Banner(ui);
   const ropePicker = new RopePicker(ui, { onPick: (f) => game.chooseRope(f), onCancel: () => game.cancelRope() });
   events.on('ropeOffer', (e) => ropePicker.show(e.floors, e.current));
+  events.on('founderDeath', () => music.play('founder')); // 11.2: from the boss music to his farewell
+  events.on('founderGift', (e) => banner.show(t('final.gift'), trItemName(e.item.name), { kind: 'reward', ms: 2600 }));
+  ui.addEventListener('pointerdown', () => { if (game.founderDeath && !game.paused) game.founderSkip(); });
   events.on('ropeSet', () => setTimeout(() => { if (started && game.mode === 'dungeon' && !game.over) banner.show(t('rope.set'), '', { kind: 'reward', ms: 2400 }); }, 2600)); // after the floor's own banner
   events.on('floorStart', (e) => {
     music.play(e.music, e.track);

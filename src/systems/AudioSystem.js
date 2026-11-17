@@ -65,6 +65,7 @@ export class AudioSystem {
     });
     events.on('hammerBlow', (e) => { this.play('hammer', { pitch: e.good ? 1.25 : 0.75, gain: 1.2 }); if (e.good) setTimeout(() => this.play('chime', { pitch: 1.6, gain: 0.5 }), 60); }); // 각인 hammer
     events.on('engraveResult', (e) => { if (e.success) { this.play('chime', { pitch: 1.2, gain: 1.3 }); this.play('roar', { pitch: 1.5, gain: 0.5 }); } else this.play('crush', { pitch: 0.8, gain: 1.3 }); });
+    events.on('setRing', () => { this.play('roar', { pitch: 1.6, gain: 0.6 }); this.play('chime', { pitch: 0.9, gain: 1.3 }); setTimeout(() => this.play('chime', { pitch: 1.35, gain: 1.2 }), 180); });
     events.on('skillOffer', () => this.play('chime', { pitch: 0.9, gain: 1.1 }));
     events.on('skillUp', () => { this.play('hammer', { pitch: 1.1 }); setTimeout(() => this.play('chime', { pitch: 1.3 }), 120); });
     events.on('trophy', () => { this.play('chime', { pitch: 0.8, gain: 1.3 }); setTimeout(() => this.play('chime', { pitch: 1.2, gain: 1.2 }), 160); });

@@ -81,6 +81,7 @@ export class Renderer {
     this.drawGear(game);
     this.drawLinks(fx);
     this.drawEnemies(game, alpha);
+    if (game.founderDeath) this.drawFounderDeath(game);
     this.drawTelegraphs(game, alpha);
     this.drawAfterimages(fx, game.player);
     this.drawWinds(fx);
@@ -758,6 +759,34 @@ export class Renderer {
 
   // the founder (floor 100): the hero's own arrow-knight shape, giant — a pale gold ghost on page 1,
   // the hero's own colours as the mirror on page 2 (lifted and larger while he leaps)
+  // the founder's death (11.2): kneeling (lower, shorter), a small bubble with his line, fading into light
+  drawFounderDeath(game) {
+    const d = game.founderDeath, c = game.config.tuning.founder.death, ctx = this.ctx;
+    const k = d.phase === 'kneel' ? Math.min(1, d.t / c.kneel) : 1, fade = d.phase === 'fade' ? Math.max(0, 1 - d.t / c.fade) : 1;
+    const x = d.pos.x, y = d.pos.y + 10 * k;
+    ctx.save();
+    ctx.globalAlpha = fade;
+    ctx.translate(x, y); ctx.scale(1, 1 - 0.25 * k); ctx.translate(-x, -y);
+    this.drawFounder({ radius: d.boss.radius, ai: null, airborne: false }, x, y);
+    ctx.restore();
+    if (d.phase === 'fade') {
+      const r = d.boss.radius * (1 + 2 * (1 - fade));
+      ctx.globalAlpha = 0.5 * fade; ctx.fillStyle = '#fff4d0';
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    }
+    if (d.phase === 'words' && d.line >= 0 && d.line < d.lines.length && d.t < c.lineTime) {
+      const text = tr(d.lines[d.line]);
+      ctx.font = c.bubbleFont + 'px system-ui, sans-serif';
+      const w = Math.min(Math.min(560, this.cssW - 24), ctx.measureText(text).width + 16), h = c.bubbleFont + 10, bx = x - w / 2, by = y - d.boss.radius - 40 - h;
+      ctx.globalAlpha = Math.max(0, Math.min(1, d.t / 0.2, (c.lineTime - d.t) / 0.25));
+      ctx.fillStyle = 'rgba(20,16,26,0.85)'; ctx.strokeStyle = 'rgba(255,236,190,0.6)'; ctx.lineWidth = 1;
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(bx, by, w, h, 6); else ctx.rect(bx, by, w, h); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#f0e6cf'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, by + h / 2, w - 10);
+      ctx.globalAlpha = 1;
+    }
+  }
+
   drawFounder(e, x, y) {
     const ctx = this.ctx, mirror = !!(e.ai && e.ai.mirror), r = e.radius * (e.airborne ? 1.25 : 1);
     const d = (e.ai && e.ai.dir) || { x: -1, y: 0 }, lift = e.airborne ? 22 : 0;

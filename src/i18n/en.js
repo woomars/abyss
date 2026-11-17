@@ -138,6 +138,7 @@ export default {
 
   'item.scar': 'Scarred',
   'item.set': 'Set: {name}',
+  'item.ringSet': 'All five {name} set effects',
   'item.heir': 'Inherited from {given} {family} ({gen})',
   'item.feat': (p) => `${p.boss ? `${p.part} won by slaying ${p.boss} at ${p.at}` : p.at ? `${p.part} found at ${p.at}` : `${p.part} found long ago`}. He made it down to ${p.floor}.`,
   'where.equipped': 'Equipped',
@@ -332,6 +333,7 @@ export default {
   'final.bossName': '{name} the Founder',
   'final.shadowName': 'Shadow of {name}',
   'final.arrive': 'The hundredth floor — the Founder awaits',
+  'final.gift': "The Founder's Gift",
   'final.phase.warrior': "The Founder draws on a warrior's strength",
   'final.phase.mage': "The Founder draws on a mage's strength",
   'final.phase.summoner': "The Founder draws on a summoner's strength",

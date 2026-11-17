@@ -38,6 +38,9 @@
     ],
     "ending": [
       "assets/audio/bgm/ending.mp3"
+    ],
+    "founder": [
+      "assets/audio/bgm/story.mp3"
     ]
   },
   "scenes": {

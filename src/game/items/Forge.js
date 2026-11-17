@@ -175,7 +175,7 @@ export function enhanceItem(ctx, id, tier, count) {
 
 // ---- death ----
 export function survivalChance(item, cfg) {
-  if (item.token) return 1; // 유산의 증표: always passes down
+  if (item.token || item.ringSet) return 1; // 유산의 증표 and set rings (8.5): always pass down
   if (item.scar) return 0;
   // set pieces have their own (high) chance; legendary gets its high chance from its grade
   const g = item.set ? cfg.setSurvive : cfg.grades[item.grade].survive;
@@ -202,14 +202,14 @@ export function resolveDeath(ctx, rng, record) {
   const cfg = ctx.cfg, survived = [], lost = [];
   // pocket: lost, except items carrying the legacy token (they go to the stash)
   for (const it of ctx.pocket) {
-    if (it.token) { ctx.vault.stash.push(it); survived.push(it); } else lost.push(it);
+    if (it.token || it.ringSet) { ctx.vault.stash.push(it); survived.push(it); } else lost.push(it);
   }
   ctx.pocket.length = 0;
   for (const s of LOADOUT_SLOTS) {
     const it = ctx.loadout.slots[s];
     if (!it) continue;
     if (rng() < survivalChance(it, cfg)) {
-      if (!it.token) it.scar = true; // the token ignores the once-only rule
+      if (!it.token && !it.ringSet) it.scar = true; // the token (and a set ring) ignores the once-only rule
       (it.legacy = it.legacy || []).push({
         given: record.given, family: record.family, generation: record.generation, floor: record.floor,
         feat: isNotable(it, cfg) ? featText(it, cfg, record) : null,
@@ -240,7 +240,7 @@ export function compareSlots(loadout, item) {
 
 // 분해 "모두 선택": everything shown except legacy-token gear and set pieces (those are picked one by one)
 export function salvageSelectAll(items) {
-  return items.filter((it) => !it.token && !it.set).map((it) => it.id);
+  return items.filter((it) => !it.token && !it.set && !it.ringSet).map((it) => it.id);
 }
 
 // ---- +10 grade-up (one grade higher for gold; back to +0; the new grade's affix count) ----

@@ -147,6 +147,7 @@ export default {
   // items
   'item.scar': '흔적',
   'item.set': '세트: {name}',
+  'item.ringSet': '{name} 세트 5개 효과 모두',
   'item.heir': '물려받음: {gen} {given} {family}',
   'item.feat': (p) => `${p.boss ? `${p.at}에서 ${josa(p.boss, '을', '를')} 쓰러뜨리고 얻은 ${p.part}` : p.at ? `${p.at}에서 얻은 ${p.part}` : `오래전에 얻은 ${p.part}`}. 그는 ${p.floor}까지 내려갔다.`,
   'where.equipped': '착용 중',
@@ -340,6 +341,7 @@ export default {
   'final.bossName': '시조 {name}',
   'final.shadowName': '{name}의 그림자',
   'final.arrive': '백 번째 층 — 시조가 기다린다',
+  'final.gift': "시조의 선물",
   'final.phase.warrior': '시조가 전사의 힘을 꺼낸다',
   'final.phase.mage': '시조가 마법사의 힘을 꺼낸다',
   'final.phase.summoner': '시조가 소환사의 힘을 꺼낸다',

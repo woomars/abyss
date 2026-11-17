@@ -810,3 +810,5 @@ html:lang(ja), html:lang(ja) body { font-family: system-ui, -apple-system, "Hira
 .hm-wrap.shake .hm-panel { animation: hm-shake 0.25s; }
 @keyframes hm-shake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-6px, 3px); } 50% { transform: translate(5px, -4px); } 75% { transform: translate(-3px, 2px); } }
 .fg-engask { display: flex; gap: 10px; }
+.fg-ringrow { display: flex; justify-content: center; margin-top: 10px; }
+.fg-ringbtn { border-color: #c9a0ff; color: #f0e2ff; box-shadow: 0 0 10px rgba(201,160,255,.45); }

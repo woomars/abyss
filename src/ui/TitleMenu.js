@@ -8,7 +8,7 @@ import { LANG_FLAGS } from './langFlags.js';
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const when = (ms) => formatDate(ms);
-const whereText = (s) => (s.final ? t('final.resume') : s.state === 'rest' ? t('where.rest', { floor: floorLabel(s.floor) }) : s.state === 'run' ? (s.saved ? t('where.saved', { floor: floorLabel(s.floor) }) : t('where.run')) : t('where.idle'));
+const whereText = (s) => (s.final ? t('final.resume') : s.state === 'rest' ? t('where.rest', { floor: floorLabel(s.floor) }) : s.state === 'run' ? (s.saved ? t('where.saved', { floor: floorLabel(s.floor) }) : s.auto ? t('where.resume', { floor: floorLabel(s.floor) }) : t('where.run')) : t('where.idle'));
 
 // start screen: three small flag buttons (Korea · USA · Japan), named in their own language
 function flagSwitch() {

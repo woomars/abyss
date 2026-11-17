@@ -99,6 +99,7 @@ export class Vault {
       savedAt: this.savedAt, state: this.state, floor: this.run ? this.run.floor : null,
       cycle: this.cycle, final: !!(this.run && this.run.final), // n회차, and a floor-100 challenge to come back to
       saved: !!(this.run && this.run.saved), // [저장하고 나가기]
+      auto: !!(this.run && this.run.auto), // closed mid-fight: back to that floor's start
     };
   }
 
@@ -132,7 +133,7 @@ export class Vault {
     v.state = ['idle', 'run', 'rest'].includes(data.state) ? data.state : 'idle';
     // a run is kept while resting at a forge, after [저장하고 나가기], or from the arrival on floor 100 (the founder's room)
     const run = data.run && typeof data.run === 'object' ? data.run : null;
-    v.run = run && (data.state === 'rest' || (data.state === 'run' && (run.final || run.saved))) ? run : null; // (saved: [저장하고 나가기])
+    v.run = run && (data.state === 'rest' || (data.state === 'run' && (run.final || run.saved || run.auto))) ? run : null; // (saved: [저장하고 나가기])
     if (v.state === 'rest' && !v.run) v.state = 'idle';
     v.nextId = Number.isFinite(data.nextId) ? data.nextId : 1;
     v.lineage = {

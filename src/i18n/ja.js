@@ -36,6 +36,7 @@ export default {
   'where.rest': '{floor}の鍛冶場で休息中',
   'where.run': '戦闘中に中断',
   'where.saved': '{floor}でセーブ中',
+  'where.resume': '戦闘中に中断 — {floor}の最初から',
   'where.idle': '鍛冶場で出発準備中',
   'where.idleHall': '出陣の準備中',
 
@@ -45,7 +46,9 @@ export default {
   'pause.saveQuit': 'セーブして終了',
   'rope.set': "アリアドネの糸が張られた",
   'rope.title': "アリアドネの糸",
-  'rope.pick': "糸で行く階を選べ",
+  'rope.pick': "左右で階を選び、[移動]を押す",
+  'rope.here': "現在地",
+  'rope.go': "移動",
   'rope.cancel': "やめる",
   'pause.debug': 'デバッグ',
   'pause.sort': '並び順',

@@ -170,6 +170,7 @@ export class Dungeon {
       music = 'rest';
     }
     this.lastAlive = this.remaining;
+    if (kind === 'combat' || kind === 'boss') g.checkpoint(); // where a closed game comes back
     g.events.emit('floorStart', { floor: this.floor, kind, music, track: music === 'stage' ? this.stageTrack : null, title, boss: bossName, bosses: bossNames, final: kind === 'boss' && this.isFinal, founder: this.boss && this.boss.founder ? this.boss.founder : null, variant: this.variant, rush: this.rush ? { n: this.rush.i + 1, total: this.rush.list.length, loop: this.rush.loop } : null });
   }
 
@@ -357,6 +358,7 @@ export class Dungeon {
     const mult = 1 + c.rewards.goldPerFloor * (this.floor - 1);
     const gold = Math.round(randInt(c.rewards.chestGold, g.rng) * mult);
     this.gold += gold;
+    g.checkpoint(this.floor + 1); // a game closed at the cards comes back at the next floor
     g.events.emit('floorStart', { floor: this.floor, kind: 'treasure', music: 'rest', title: '보물방', boss: null });
     g.events.emit('chestOpen', { pos: { x: 0, y: 0 }, gold, heal: 0, big: false });
     if (!g.offerRelics({ goldMult: mult, floor: this.floor, boss: false })) this.advance();

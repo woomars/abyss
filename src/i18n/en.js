@@ -38,6 +38,7 @@ export default {
   'where.rest': 'Resting at the forge · {floor}',
   'where.run': 'Cut off mid-fight',
   'where.saved': 'Saved on {floor}',
+  'where.resume': 'Stopped mid-fight — from the start of {floor}',
   'where.idle': 'Getting ready at the forge',
   'where.idleHall': 'Getting ready to set out',
 
@@ -47,7 +48,9 @@ export default {
   'pause.saveQuit': 'Save & Quit',
   'rope.set': "Ariadne's rope is set",
   'rope.title': "Ariadne's Rope",
-  'rope.pick': "Choose a floor to go to",
+  'rope.pick': "Turn left or right to a floor, then press Go",
+  'rope.here': "You are here",
+  'rope.go': "Go",
   'rope.cancel': "Cancel",
   'pause.debug': 'Debug',
   'pause.sort': 'Sort',

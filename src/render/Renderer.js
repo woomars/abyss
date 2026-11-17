@@ -638,7 +638,7 @@ export class Renderer {
         const reach = r + (e.tcfg.attackRange || 0) + game.player.radius;
         const fade = Math.min(1, e.angerTime / 0.4);
         const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 70);
-        if (e.riposteDir) { // the cone it strikes into: the way the hero went through it (fainter until armed)
+        if (e.riposteDir) { // only the cone it strikes into (aimed at the hero a moment after the blow; fainter until armed)
           const d = Math.atan2(e.riposteDir.y, e.riposteDir.x), half = (e.riposteArc * Math.PI) / 360;
           ctx.beginPath();
           ctx.moveTo(x, y);
@@ -646,20 +646,9 @@ export class Renderer {
           ctx.closePath();
           ctx.fillStyle = `rgba(255,60,40,${(e.riposteArm > 0 ? 0.08 : 0.2) * fade})`;
           ctx.fill();
-        }
-        if (!e.riposteDir) { // no direction (a skill hit): the old ring
-        ctx.setLineDash([6, 5]);
-        ctx.beginPath();
-        ctx.arc(x, y, reach, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255,60,40,${(0.35 + 0.35 * pulse) * fade})`;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.arc(x, y, r * 1.25, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(255,80,50,${0.6 * fade})`;
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
+          ctx.strokeStyle = `rgba(255,70,50,${(0.35 + 0.35 * pulse) * fade})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
         }
       }
       if ((e.isElite || e.mods.enhanced) && !e.isBoss && !e.dying && e.hp < e.maxHp) {

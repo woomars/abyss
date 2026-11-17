@@ -1,4 +1,6 @@
-// Ariadne's rope (10.4): the floors the family's ropes reach, picked from the warp zone; or step back.
+// Ariadne's rope (10.4): where the hero is, and the family's rope floors on a wheel — turn it left or
+// right to the floor wanted, then [이동]. It starts on the floor the hero is on, so a stray tap moves
+// nowhere.
 import { t } from '../i18n/index.js';
 import { floorLabel } from '../core/floorLabel.js';
 
@@ -12,26 +14,39 @@ export class RopePicker {
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.el.addEventListener('click', (e) => {
       const b = e.target.closest('button');
-      if (!b || !this.ready) return; // a moment first: a tap still running into the zone must not pick
-      this.hide();
-      if (b.dataset.floor) this.onPick(Number(b.dataset.floor)); else this.onCancel();
+      if (!b || b.disabled) return;
+      const a = b.dataset.act;
+      if (a === 'prev' || a === 'next') { this.i = (this.i + (a === 'next' ? 1 : -1) + this.list.length) % this.list.length; this.render(); }
+      else if (a === 'go') { this.hide(); this.onPick(this.list[this.i]); }
+      else if (a === 'cancel') { this.hide(); this.onCancel(); }
     });
   }
 
   get isOpen() { return !this.el.classList.contains('hidden'); }
 
-  show(floors) {
+  // floors: the other rope floors; current: the floor the hero is on
+  show(floors, current) {
     this.floors = floors;
-    this.el.innerHTML = `<div class="panel"><h2>${t('rope.title')}</h2><p>${t('rope.pick')}</p>
-      <div class="rp-list">${floors.map((f) => `<button class="primary" data-floor="${f}">${floorLabel(f)}</button>`).join('')}</div>
-      <button>${t('rope.cancel')}</button></div>`;
+    this.current = current;
+    this.list = [...new Set([...floors, current])].sort((a, b) => a - b);
+    this.i = this.list.indexOf(current);
+    this.render();
     this.el.classList.remove('hidden');
-    this.ready = false;
-    clearTimeout(this.readyT);
-    this.readyT = setTimeout(() => { this.ready = true; }, 400);
+  }
+
+  render() {
+    const f = this.list[this.i], here = f === this.current;
+    this.el.innerHTML = `<div class="panel rp-panel"><h2>${t('rope.title')}</h2>
+      <p>${t('rope.here')}: <b>${floorLabel(this.current)}</b></p>
+      <div class="rp-wheel"><button data-act="prev" aria-label="◀">◀</button>
+        <div class="rp-floor${here ? ' here' : ''}"><b>${floorLabel(f)}</b>${here ? `<small>${t('rope.here')}</small>` : ''}</div>
+        <button data-act="next" aria-label="▶">▶</button></div>
+      <p class="rp-dots">${this.list.map((x, k) => `<i class="${k === this.i ? 'on' : ''}${x === this.current ? ' cur' : ''}"></i>`).join('')}</p>
+      <p>${t('rope.pick')}</p>
+      <div class="row"><button data-act="cancel">${t('rope.cancel')}</button><button data-act="go" class="primary" ${here ? 'disabled' : ''}>${t('rope.go')}</button></div></div>`;
   }
 
   hide() { this.el.classList.add('hidden'); }
 
-  relabel() { if (this.isOpen) this.show(this.floors); }
+  relabel() { if (this.isOpen) this.render(); }
 }

@@ -773,4 +773,14 @@ html:lang(ja), html:lang(ja) body { font-family: system-ui, -apple-system, "Hira
 .hl-chrons { grid-template-columns: 1fr; }
 /* Ariadne's rope (10.4) */
 .rope-picker { z-index: 30; }
-.rp-list { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow-y: auto; }
+.rp-panel { min-width: 300px; }
+.rp-wheel { display: flex; align-items: center; gap: 10px; }
+.rp-wheel > button { width: 52px; min-height: 52px; font-size: 18px; }
+.rp-floor { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 64px; border: 1px solid #c9a86a; border-radius: 10px; background: #221a2c; color: #ffe08a; font-size: 20px; }
+.rp-floor.here { border-color: #4a3d5c; color: #9c91ad; }
+.rp-floor small { font-size: 11px; color: #9fe0c8; }
+.rp-dots { display: flex; gap: 6px; justify-content: center; }
+.rp-dots i { width: 8px; height: 8px; border-radius: 50%; background: #3b2f4f; }
+.rp-dots i.cur { background: #5a8a7a; }
+.rp-dots i.on { background: #ffe08a; }
+.panel button:disabled { opacity: 0.4; }

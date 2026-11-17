@@ -36,7 +36,8 @@ export class Enemy {
     this.angerTime = 0; // > 0: a hit made it ready to strike back at anyone entering its reach
     this.riposteCd = 0;
     this.riposteArc = 0;    // width of the riposte cone (deg); 0 = all round
-    this.riposteDir = null; // the way the hero went through it when it was hit
+    this.riposteDir = null; // the riposte cone's way: toward the hero aimDelay after the blow
+    this.riposteAimIn = 0;  // > 0: the cone is not aimed yet
     this.riposteArm = 0;    // > 0: the cone is shown but cannot strike yet
     this.wasInReach = false;
     this.firstHold = 0; // > 0: standing still behind its own first-strike warning (9.2)
@@ -80,6 +81,7 @@ export class Enemy {
     this.lunge = 0;
     this.riposteCd = 0;
     this.firstHold = 0;
+    this.riposteAimIn = 0;
     this.wasInReach = true; // waking up next to the player is not "stepping in"
     if (this.mods.minion) this.minionCd = this.root.minion.attackEvery[0];
     if (this.brain && this.brain.onStun) this.brain.onStun(this);
@@ -92,7 +94,7 @@ export class Enemy {
   }
 
   // noRiposte: a blow that never angers (망령 set wraiths) — no riposte window, no counter
-  // passDir: the way the dashing hero went (the riposte cone opens that way); none = all round
+  // passDir: the way the dashing hero went (a shieldbearer blocks a dash from its front)
   takeHit({ damage, knockDir, knockback, stagger, noRiposte = false, passDir = null }) {
     this.lastBlocked = null;
     if (this.immune) { damage = 0; this.lastBlocked = 'immune'; } // a boss quest: minions or sigils still stand
@@ -133,7 +135,8 @@ export class Enemy {
     if (this.canRiposte && this.stunTime <= 0) {
       this.angerTime = this.riposteWindow;
       this.wasInReach = true; // the strike that angered it does not count as stepping in
-      this.riposteDir = passDir && this.riposteArc > 0 ? { x: passDir.x, y: passDir.y } : null;
+      this.riposteDir = null; // aimed at the hero a moment later (any blow, skills too)
+      this.riposteAimIn = this.riposteArc > 0 ? (this.root.riposteCone && this.root.riposteCone.aimDelay) || 0.2 : 0;
       this.riposteArm = (this.root.riposteCone && this.root.riposteCone.armDelay) || 0;
     }
     this.counterTime = this.stunTime > 0 ? 0 : this.root.counterWindow || 0;
@@ -171,7 +174,7 @@ export class Enemy {
   // is the hero inside the riposte cone (all round when it has no direction)
   inRiposteCone(p) {
     const d = this.riposteDir;
-    if (!d) return true;
+    if (!d) return !(this.riposteArc > 0); // not aimed yet: nothing (no cone at all: all round)
     const a = Math.atan2(p.y - this.pos.y, p.x - this.pos.x) - Math.atan2(d.y, d.x);
     return Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) <= (this.riposteArc * Math.PI) / 360;
   }
@@ -186,6 +189,10 @@ export class Enemy {
     if (this.rearm > 0) { this.rearm -= dt; if (this.rearm <= 0 && this.counterTime > 0) this.canCounter = true; } // next beat of a mixed counter
     if (this.riposteCd > 0) this.riposteCd -= dt;
     if (this.riposteArm > 0) this.riposteArm -= dt;
+    if (this.riposteAimIn > 0) { // the cone takes its way: toward where the hero stands now
+      this.riposteAimIn -= dt;
+      if (this.riposteAimIn <= 0) { const dx = playerPos.x - this.pos.x, dy = playerPos.y - this.pos.y, d = Math.hypot(dx, dy) || 1; this.riposteDir = { x: dx / d, y: dy / d }; }
+    }
     if (this.firstHold > 0) this.firstHold -= dt;
     if (this.stunTime > 0) this.stunTime = Math.max(0, this.stunTime - dt);
     if (this.angerTime > 0) this.angerTime -= dt;

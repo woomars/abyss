@@ -115,7 +115,7 @@ async function boot() {
   // dungeon announcements and music follow the room
   const banner = new Banner(ui);
   const ropePicker = new RopePicker(ui, { onPick: (f) => game.chooseRope(f), onCancel: () => game.cancelRope() });
-  events.on('ropeOffer', (e) => ropePicker.show(e.floors));
+  events.on('ropeOffer', (e) => ropePicker.show(e.floors, e.current));
   events.on('ropeSet', () => setTimeout(() => { if (started && game.mode === 'dungeon' && !game.over) banner.show(t('rope.set'), '', { kind: 'reward', ms: 2400 }); }, 2600)); // after the floor's own banner
   events.on('floorStart', (e) => {
     music.play(e.music, e.track);
@@ -245,7 +245,7 @@ async function boot() {
       if (v.state === 'rest' && v.run) game.restoreRun(v.run);
       else if (v.state === 'run' && v.run && v.run.won) game.resumeFinale(v.run); // closed after the founder fell
       else if (v.state === 'run' && v.run && v.run.final) game.resumeFinal(v.run); // back to the founder, whole
-      else if (v.state === 'run' && v.run && v.run.saved) game.resumeSaved(v.run); // [저장하고 나가기]: that floor again
+      else if (v.state === 'run' && v.run && (v.run.saved || v.run.auto)) game.resumeSaved(v.run); // saved, or closed mid-fight: that floor from its start
       else if (v.state === 'run') {
         // the game was closed in the middle of a fight: that run counts as a death
         game.enterLimbo();

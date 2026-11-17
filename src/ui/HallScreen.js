@@ -56,7 +56,7 @@ export class HallScreen {
     const live = v.state === 'rest' && v.run ? v.run.stats : v.state === 'run' ? v.runStats : null;
     const cur = {
       living: true, given: l.given, family: l.family, generation: l.generation, level: v.progress.level,
-      floor: v.run ? v.run.floor : null, state: v.state, saved: !!(v.run && v.run.saved),
+      floor: v.run ? v.run.floor : null, state: v.state, saved: !!(v.run && v.run.saved), auto: !!(v.run && v.run.auto),
       kills: live ? live.kills : 0, bestCombo: live ? live.bestCombo : 0,
       medals: live && live.medals ? live.medals : [], bosses: live && live.bosses ? live.bosses : {},
       essences: live && live.essences ? live.essences : {},
@@ -112,7 +112,7 @@ export class HallScreen {
 
   renderPerson(p) {
     const fell = p.living
-      ? (p.state === 'rest' ? t('where.rest', { floor: floorLabel(p.floor) }) : p.state === 'run' ? (p.saved ? t('where.saved', { floor: floorLabel(p.floor) }) : t('where.run')) : t('where.idleHall'))
+      ? (p.state === 'rest' ? t('where.rest', { floor: floorLabel(p.floor) }) : p.state === 'run' ? (p.saved ? t('where.saved', { floor: floorLabel(p.floor) }) : p.auto ? t('where.resume', { floor: floorLabel(p.floor) }) : t('where.run')) : t('where.idleHall'))
       : `${t('hall.fell', { floor: floorLabel(p.floor), killer: p.killer ? esc(tr(p.killer)) : '' })}${p.at ? ` <small>${day(p.at)}</small>` : ''}`;
     const medals = (p.medals || []).map((id) => this.medal(id)).filter(Boolean);
     const bosses = Object.values(p.bosses || {});

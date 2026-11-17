@@ -473,9 +473,9 @@ export class Game {
   }
 
   // Ariadne's rope: the list from the warp zone; a pick goes to that floor's start, cancel stays
-  openRope(floors) {
-    this.ropeOffer = { floors: floors.slice() };
-    this.events.emit('ropeOffer', { floors: floors.slice() });
+  openRope(floors, current = this.dungeon.floor) {
+    this.ropeOffer = { floors: floors.slice(), current };
+    this.events.emit('ropeOffer', { floors: floors.slice(), current });
   }
 
   chooseRope(floor) {
@@ -493,9 +493,24 @@ export class Game {
       && (d.roomKind === 'combat' || d.roomKind === 'boss') && d.startFloor !== -1 && !this.ropeOffer && !d.cleared && d.state !== 'fadeOut';
   }
 
+  // a checkpoint at the start of every dungeon floor (and before the next floor, at a treasure room):
+  // a game closed mid-fight comes back there — what was found on that floor is not kept
+  checkpoint(nextFloor = null) {
+    const d = this.dungeon, v = this.vault;
+    if (this.mode !== 'dungeon' || !v || v.state !== 'run' || d.rush || d.startFloor === -1 || d.isFinal) return;
+    const snap = this.snapshotRun();
+    if (nextFloor != null) { // between floors: the memory as it is now, the next floor's start
+      snap.floor = nextFloor;
+      snap.memory = { ...snap.memory, cycleTypes: JSON.parse(JSON.stringify(d.cycleTypes)), lastBoss: { ...d.lastBoss }, bossTypes: null };
+    }
+    v.run = { ...snap, auto: true };
+    this.saveVault();
+  }
+
   saveAndQuit() {
     if (!this.canSaveNow()) return false;
-    this.vault.run = { ...this.snapshotRun(), saved: true };
+    const start = this.vault.run && this.vault.run.auto ? this.vault.run : this.snapshotRun(); // back to the floor's start
+    this.vault.run = { ...start, auto: false, saved: true };
     this.saveVault();
     this.enterLimbo();
     return true;

@@ -39,6 +39,7 @@ export default {
   'where.rest': '{floor} 대장간에서 쉬는 중',
   'where.run': '싸우던 중 중단됨',
   'where.saved': '{floor}에서 저장함',
+  'where.resume': '싸우던 중 중단됨 — {floor} 처음부터',
   'where.idle': '대장간에서 출발 준비',
   'where.idleHall': '출정을 준비하는 중',
 
@@ -49,7 +50,9 @@ export default {
   'pause.saveQuit': '저장하고 나가기',
   'rope.set': "아리아드네의 로프가 설치되었다",
   'rope.title': "아리아드네의 로프",
-  'rope.pick': "로프로 갈 층을 고르세요",
+  'rope.pick': "좌우로 돌려 층을 고른 뒤 [이동]을 누르세요",
+  'rope.here': "현재 위치",
+  'rope.go': "이동",
   'rope.cancel': "그만두기",
   'pause.debug': '디버그',
   'pause.sort': '정렬',

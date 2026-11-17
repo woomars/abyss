@@ -24,9 +24,10 @@ export function essenceLine(relicsCfg, id, e, withStat = true) {
 }
 
 export class HallScreen {
-  constructor(root, { config, onBack }) {
+  constructor(root, { config, onBack, music = null }) {
     this.config = config;
     this.onBack = onBack;
+    this.music = music;
     this.tab = 'all';
     this.open = -1; // the timeline row opened (an ancestor's whole story)
     this.el = document.createElement('div');
@@ -37,15 +38,18 @@ export class HallScreen {
       const b = e.target.closest('[data-act]');
       if (!b) return;
       const a = b.dataset.act;
-      if (a === 'back') { this.hide(); this.onBack(); } else if (a === 'tab') { this.tab = b.dataset.tab; this.open = -1; this.render(); } else if (a === 'pick') { const i = Number(b.dataset.i); this.open = this.open === i ? -1 : i; this.render(true); }
+      if (a === 'back') { const next = this.onNext; this.hide(); if (next) next(); else this.onBack(); } else if (a === 'tab') { this.tab = b.dataset.tab; this.open = -1; this.render(); } else if (a === 'pick') { const i = Number(b.dataset.i); this.open = this.open === i ? -1 : i; this.render(true); }
     });
   }
 
   get isOpen() { return !this.el.classList.contains('hidden'); }
   hide() { this.el.classList.add('hidden'); if (this.strip) { this.strip.stop(); this.strip = null; } }
 
-  show(vault) {
+  // onNext: after the ending — the family's recollection, then on to a new beginning
+  show(vault, { onNext = null } = {}) {
     this.vault = vault;
+    this.onNext = onNext;
+    if (this.music) this.music.play('chronicle');
     backfillMedals(vault, this.config.medals); // older saves (view only; the game does it again on load)
     this.tab = 'all';
     this.open = -1;
@@ -99,7 +103,7 @@ export class HallScreen {
         <div class="hl-head">
           <div class="hl-title">${t('hall.title')} <small>${t('title.house', { family: esc(trPerson(v.lineage.family, 'family')) })}</small></div>
           <div class="hl-tabs">${tab('all', t('hall.tabAll'))}${tab('ancestors', t('hall.tabAncestors', { n: people.length }))}${tab('essence', t('hall.tabEssence', { n: kinds }))}${tab('medals', t('hall.tabMedals', { a: got, b: list.length }))}${tab('trophies', t('hall.tabTrophies', { a: reached, b: trophies.length }))}${tab('bosses', t('hall.tabBosses', { a: slain, b: roster.length }))}${chron.length ? tab('chronicle', t('hall.tabChronicle', { n: chron.length })) : ''}</div>
-          <button class="tm-btn small" data-act="back">${t('back')}</button>
+          <button class="tm-btn small${this.onNext ? ' primary' : ''}" data-act="back">${this.onNext ? t('hall.next') : t('back')}</button>
         </div>
         <div class="hl-body tl">${body}</div>
       </div>`;

@@ -21,6 +21,7 @@ import { TitleMenu } from './ui/TitleMenu.js';
 import { HeirScreen } from './ui/HeirScreen.js';
 import { ForgeScreen } from './ui/ForgeScreen.js';
 import { RopePicker } from './ui/RopePicker.js';
+import { DepartureScene } from './ui/DepartureScene.js';
 import { LegacyScene } from './ui/LegacyScene.js';
 import { HallScreen } from './ui/HallScreen.js';
 import { StoryScreen, autoStory } from './ui/StoryScreen.js';
@@ -189,8 +190,14 @@ async function boot() {
     music,
     onDone: (replay) => {
       if (replay) { if (!started) music.play('base'); return; }
-      game.startNewCycle(); // the child is now the first of a new line: off to the start forge
-      game.beginRun();
+      // the family's recollection, then a new beginning (each can be skipped), then the start forge
+      hall.show(game.vault, {
+        onNext: () => {
+          game.startNewCycle(); // the child is now the first of a new line
+          const l = game.vault.lineage;
+          departure.show({ family: l.family, child: l.given, cycle: game.vault.cycle }, () => game.beginRun());
+        },
+      });
     },
   });
   events.on('endingStart', (f) => {
@@ -227,7 +234,8 @@ async function boot() {
     updatePaused();
   };
   // 선조의 전당 (from 이어하기 -> a family)
-  const hall = new HallScreen(ui, { config, onBack: () => {} });
+  const hall = new HallScreen(ui, { config, music, onBack: () => { if (!started) music.play('base'); } });
+  const departure = new DepartureScene(ui);
   // opening story (plays by itself only when there is nothing to continue) and the controls guide
   const story = new StoryScreen(ui, { music, onDone: () => music.play('base'), toLocal: (x, y) => toLocal(x, y), story: () => config.tuning.story });
   const guide = new ControlsGuide(ui);
@@ -331,7 +339,7 @@ async function boot() {
   onLangChange(() => {
     applyI18n(ui);
     hud.relabel(); skillButtons.relabel(); menu.renderToggles(); gameOver.relabel(); picker.relabel();
-    title.relabel(); forge.relabel(); ropePicker.relabel(); hall.relabel(); heir.relabel(); legacy.relabel(); story.relabel(); guide.relabel(); ending.relabel(); finalAsk.relabel();
+    title.relabel(); forge.relabel(); ropePicker.relabel(); departure.relabel(); hall.relabel(); heir.relabel(); legacy.relabel(); story.relabel(); guide.relabel(); ending.relabel(); finalAsk.relabel();
     layout(); // button sizes may change: refresh the stroke exclusion zones
   });
   // back to the game: a touch outside the open debug panel closes it

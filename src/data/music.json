@@ -40,7 +40,10 @@
       "assets/audio/bgm/ending.mp3"
     ],
     "founder": [
-      "assets/audio/bgm/story.mp3"
+      "assets/audio/bgm/founder.mp3"
+    ],
+    "chronicle": [
+      "assets/audio/bgm/sergequadrado-nostalgic-piano-13070.mp3"
     ]
   },
   "scenes": {

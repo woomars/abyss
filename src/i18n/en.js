@@ -383,7 +383,7 @@ export default {
   'guide.2.title': "Quick swipe · Rush",
   'guide.2.body': "A short, fast swipe is a rush attack. Enemies within reach are hit by an automatic chain.",
   'guide.3.title': "Combo",
-  'guide.3.body': "Link quick swipes and keep hitting within 0.8 s to build a combo. Every 5 combo raises your attack multiplier.",
+  'guide.3.body': "Link quick swipes and keep hitting within 0.8 s to build a combo. Every 5 combo adds +0.5 to your attack multiplier (x2 at 10 combo).",
   'guide.4.title': "Beware counters",
   'guide.4.body': "A struck enemy soon shows a red cone pointing where you are. Dashing back in through that cone gets you struck and breaks the chain. Come in from outside the cone, or chain on to another enemy.",
   'guide.5.title': "Bosses",
@@ -405,7 +405,7 @@ export default {
   'title.quit': "Quit",
   'title.layout': "Buttons",
   'guide.7.title': "Jump",
-  'guide.7.body': "Press Jump to aim at the farthest foe in reach (or the way you were running), or hold and drag to set the direction and distance; release to leap. Nothing can hit you in the air. The landing deals little damage, but foes in the middle of the circle are always stunned, and the rest may be. You stiffen briefly after landing (you can be hit then). Leap over screen-wide boss attacks or hide behind pillars.",
+  'guide.7.body': "Tap to leap at the farthest foe, drag to pick the spot. Nothing hits you in the air, and foes in the middle of the landing are stunned. Jump over boss waves that sweep the floor.",
   'guide.8.title': "Engraving",
   'guide.8.body': "At the forge, [Engrave] puts a set name on a legendary of a set part. Press three times as the red band meets the gold ring; good blows raise the chance. Now and then the band suddenly speeds up or slows down, so watch it to the end.",
   // boss quests

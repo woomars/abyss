@@ -42,6 +42,7 @@ export class Enemy {
     this.riposteArm = 0;    // > 0: the cone is shown but cannot strike yet
     this.wasInReach = false;
     this.firstHold = 0; // > 0: standing still behind its own first-strike warning (9.2)
+    this.aggressive = true; // 선공몹: attacks on its own; a calm one (false) waits until it is hit (EnemyManager)
     this.minionCd = this.mods.minion ? this.root.minion.attackEvery[0] * 0.5 : 0;
     this.brain = AI[this.tcfg.ai] || null;
     // melee types with a rhythm mix the beats of their counters (stage from the floor)
@@ -100,6 +101,7 @@ export class Enemy {
   // passDir: the way the dashing hero went (a shieldbearer blocks a dash from its front)
   takeHit({ damage, knockDir, knockback, stagger, noRiposte = false, passDir = null }) {
     this.lastBlocked = null;
+    this.aggressive = true; // struck: a calm mob turns on the hero
     if (this.immune) { damage = 0; this.lastBlocked = 'immune'; } // a boss quest: minions or sigils still stand
     else if (this.guard > 0) { // a warrior's guard soaks blows until it breaks; what is left over goes through
       const soak = Math.min(this.guard, damage);
@@ -246,7 +248,7 @@ export class Enemy {
       const mc = this.mods.minion ? this.root.minion : null;
       if (mc) this.minionCd -= dt;
       const fs = !mc && game ? this.root.firstStrike : null;
-      if (fs && d - this.radius - playerRadius <= (this.tcfg.attackRange || 0) + fs.reach && this.firstStrike(dt, game, dx / (d || 1), dy / (d || 1), fs)) {
+      if (fs && this.aggressive && d - this.radius - playerRadius <= (this.tcfg.attackRange || 0) + fs.reach && this.firstStrike(dt, game, dx / (d || 1), dy / (d || 1), fs)) {
         // a warned cone at the hero, on its own (9.2)
       } else if (mc && this.minionCd <= 0 && d - this.radius - playerRadius <= mc.engageRange) {
         // minion: show the swing whether or not the player is in reach yet, then leap and strike

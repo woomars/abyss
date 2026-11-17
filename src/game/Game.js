@@ -204,7 +204,8 @@ export class Game {
     const m = enemy.mods, gen = (m.split || 0) + 1;
     for (const side of [-1, 1]) {
       const pos = { x: enemy.pos.x + side * sm.spread, y: enemy.pos.y + side * sm.spread * 0.3 };
-      this.enemies.spawnAt('slime', pos, { ...m, hp: m.hp * sm.shrink, attack: m.attack * sm.shrink, size: (m.size || 1) * sm.shrink, speed: m.speed * sm.speedUp, split: gen, noReward: true });
+      const kid = this.enemies.spawnAt('slime', pos, { ...m, hp: m.hp * sm.shrink, attack: m.attack * sm.shrink, size: (m.size || 1) * sm.shrink, speed: m.speed * sm.speedUp, split: gen, noReward: true });
+      kid.aggressive = true; // its parent was struck down: the halves come at the hero
     }
     this.events.emit('slimeSplit', { pos: { x: enemy.pos.x, y: enemy.pos.y }, radius: enemy.radius });
   }

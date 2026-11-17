@@ -16,7 +16,7 @@ export const shieldbearerAI = {
     s.bash -= dt;
     const dx = p.x - e.pos.x, dy = p.y - e.pos.y, d = Math.hypot(dx, dy) || 1;
     const gap = d - e.radius - game.player.radius;
-    if (s.bash <= 0 && gap <= (e.tcfg.attackRange || 0) + BASH_REACH) {
+    if (s.bash <= 0 && e.aggressive && gap <= (e.tcfg.attackRange || 0) + BASH_REACH) {
       s.bash = BASH_EVERY;
       s.hold = BASH_WARN;
       game.hazards.cone({ x: e.pos.x, y: e.pos.y, dir: { x: dx / d, y: dy / d }, radius: e.radius + (e.tcfg.attackRange || 0) + BASH_REACH, arcDeg: BASH_ARC, delay: BASH_WARN, damage: e.attack, owner: e, anchor: true });

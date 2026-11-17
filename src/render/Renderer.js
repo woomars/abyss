@@ -203,32 +203,38 @@ export class Renderer {
     if (s.twin) this.drawBlade(x, y, r, s.start + Math.PI - s.swept, s, -1); // 폭풍 5세트: the other blade, turning back
   }
 
-  // one spinning blade at angle a with its trail behind it (turn: +1 clockwise, -1 the other way)
+  // one spinning blade at angle a (turn: +1 clockwise, -1 the other way). The sword itself reaches the inner
+  // circle (no stun there, a faint sweep); the outer ring — where the spin stuns — is swept by a blue blade
+  // wave (검기) that turns with the sword
   drawBlade(x, y, r, a, s, turn) {
     const ctx = this.ctx;
+    const inner = Math.min(r, (s.def && s.def.innerRadius) || r * 0.5);
     const trail = Math.min(1.4, s.swept) * turn;
     const steps = 6;
     for (let i = 0; i < steps; i++) {
-      const a0 = a - trail * (i + 1) / steps, a1 = a - trail * i / steps;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.arc(x, y, r, Math.min(a0, a1), Math.max(a0, a1));
-      ctx.closePath();
-      ctx.fillStyle = `rgba(255,214,150,${0.32 * (1 - i / steps)})`;
-      ctx.fill();
+      const a0 = a - trail * (i + 1) / steps, a1 = a - trail * i / steps, lo = Math.min(a0, a1), hi = Math.max(a0, a1), k = 1 - i / steps;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, inner, lo, hi); ctx.closePath(); // the sword's own sweep
+      ctx.fillStyle = `rgba(235,230,220,${0.14 * k})`; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, r, lo, hi); ctx.arc(x, y, inner, hi, lo, true); ctx.closePath(); // the blade wave
+      ctx.fillStyle = `rgba(110,200,255,${0.42 * k})`; ctx.fill();
     }
-    ctx.beginPath();
-    ctx.arc(x, y, r, Math.min(a - trail, a), Math.max(a - trail, a));
-    ctx.strokeStyle = 'rgba(255,240,210,0.9)';
-    ctx.lineWidth = 4;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x + Math.cos(a) * 18, y + Math.sin(a) * 18);
-    ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
-    ctx.strokeStyle = s.pause > 0 ? '#ffffff' : '#ffd28a';
-    ctx.lineWidth = s.pause > 0 ? 7 : 5;
+    const shimmer = 0.75 + 0.25 * Math.sin(s.swept * 18);
     ctx.lineCap = 'round';
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, r, Math.min(a - trail, a), Math.max(a - trail, a)); // the wave's outer edge
+    ctx.strokeStyle = `rgba(190,235,255,${0.9 * shimmer})`; ctx.lineWidth = 4; ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, inner, Math.min(a - trail, a), Math.max(a - trail, a)); // where the stun zone starts
+    ctx.strokeStyle = 'rgba(120,200,255,0.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+    const c = Math.cos(a), sn = Math.sin(a), px = -sn, py = c;
+    ctx.beginPath(); ctx.moveTo(x + c * inner, y + sn * inner); ctx.lineTo(x + c * r, y + sn * r); // the wave's leading front
+    ctx.strokeStyle = `rgba(170,230,255,${shimmer})`; ctx.lineWidth = s.pause > 0 ? 7 : 5; ctx.shadowColor = '#6ec8ff'; ctx.shadowBlur = 10; ctx.stroke(); ctx.shadowBlur = 0;
+    // the sword: grip, guard, a blade tapering to its point at the inner circle
+    const g0 = 6, g1 = 13, tip = Math.max(g1 + 8, inner), w = 4.5;
+    const P = (d, o) => [x + c * d + px * o, y + sn * d + py * o];
+    ctx.beginPath(); ctx.moveTo(...P(g0, 0)); ctx.lineTo(...P(g1, 0)); ctx.strokeStyle = '#6b4a2e'; ctx.lineWidth = 4; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(...P(g1, -7)); ctx.lineTo(...P(g1, 7)); ctx.strokeStyle = '#c9a86a'; ctx.lineWidth = 3.5; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(...P(g1 + 1, -w)); ctx.lineTo(...P(tip - 8, -w)); ctx.lineTo(...P(tip, 0)); ctx.lineTo(...P(tip - 8, w)); ctx.lineTo(...P(g1 + 1, w)); ctx.closePath();
+    ctx.fillStyle = s.pause > 0 ? '#ffffff' : '#dfe4ee'; ctx.fill();
+    ctx.strokeStyle = '#8a93a6'; ctx.lineWidth = 1; ctx.stroke();
   }
 
   // how high the hero is in the jump (0 on the ground): an arc over the jump's length

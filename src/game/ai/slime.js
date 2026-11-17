@@ -17,7 +17,7 @@ export const slimeAI = {
     }
     s.cd -= dt;
     const dx = p.x - e.pos.x, dy = p.y - e.pos.y, d = Math.hypot(dx, dy) || 1;
-    if (s.cd <= 0 && d - e.radius - game.player.radius <= LEAP_RANGE) {
+    if (s.cd <= 0 && e.aggressive && d - e.radius - game.player.radius <= LEAP_RANGE) {
       s.cd = LEAP_EVERY;
       s.leap = { t: CROUCH + FLY, dir: { x: dx / d, y: dy / d }, dist: Math.max(0, d - e.radius * 0.5) };
       game.hazards.circle({ x: p.x, y: p.y, radius: e.radius * 1.4, delay: CROUCH + FLY, damage: e.attack, owner: e });

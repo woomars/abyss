@@ -20,7 +20,7 @@ export const shamanAI = {
         game.events.emit('shamanBubble', { pos: { x: m.pos.x, y: m.pos.y }, radius: m.radius });
       }
     }
-    if (s.curse <= 0) {
+    if (s.curse <= 0 && e.aggressive) {
       s.curse = CURSE_EVERY;
       game.hazards.pool({ x: p.x, y: p.y, radius: 70, delay: 0.8, duration: 3, tick: 0.5, damage: e.attack * 0.5, owner: e, style: 'curse' });
     }

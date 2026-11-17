@@ -27,6 +27,12 @@ export class EnemyManager {
       const floor = (this.game && this.game.dungeon && this.game.dungeon.floor) || 1;
       e.riposteArc = Math.min(rc.maxAngle, rc.angle[0] + ((e.id * 0.618034) % 1) * (rc.angle[1] - rc.angle[0]) + Math.max(0, floor - 1) * rc.perFloor);
     }
+    // 선공몹: a share of each common type (by 20-floor cycle) attacks first; the rest wait to be hit
+    const ag = this.cfg.aggro && this.cfg.aggro.byType && this.cfg.aggro.byType[type];
+    if (ag && !e.isBoss && !e.mods.minion) {
+      const floor = (this.game && this.game.dungeon && this.game.dungeon.floor) || 1;
+      e.aggressive = ((e.id * 0.7548777) % 1) < ag[Math.min(ag.length - 1, Math.floor((floor - 1) / 20))]; // from its id: the game rng is not drawn
+    }
     e.pos = this.arena.resolveCircle(e.pos, e.radius).pos;
     e.prevPos = { x: e.pos.x, y: e.pos.y };
     this.list.push(e);

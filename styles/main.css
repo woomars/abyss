@@ -431,13 +431,14 @@ html, body {
 .fg-sv i { font-style: normal; font-size: 10px; font-weight: 700; margin-left: 3px; }
 .fg-sv b.gold { color: #f0d890; }
 .fg-warn { color: #ffb0a0; font-size: 11.5px; padding: 3px 4px 5px; }
-.fg-doll { flex: 1; min-height: 0; position: relative; display: grid; gap: 4px;
-  grid-template-columns: 1fr 1fr 1fr; grid-template-rows: repeat(4, 1fr);
-  grid-template-areas: "amulet helm ring1" "weapon armor gloves" "weapon armor ring2" ". boots setb"; min-height: 230px; }
-.fs-set { grid-area: setb; display: flex; align-items: flex-end; justify-content: flex-end; z-index: 1; }
+/* the doll fits its panel at any height (no scrolling): the slot size follows the panel height (cqh) */
+.fg-doll { flex: 1; min-height: 0; position: relative; display: grid; gap: 2px; container-type: size;
+  grid-template-columns: 1fr 1fr 1fr; grid-template-rows: repeat(4, minmax(0, 1fr));
+  grid-template-areas: "amulet helm ring1" "weapon armor gloves" "weapon armor ring2" "setb boots ."; }
+.fs-set { grid-area: setb; display: flex; align-items: flex-end; justify-content: flex-start; z-index: 1; min-height: 0; }
 .fg-sil { grid-area: 1 / 2 / 5 / 3; margin: 6px 14%; border-radius: 40px 40px 14px 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); }
-.fg-slot { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; z-index: 1; }
-.fg-slot .icell, .fg-slot-empty { width: 44px; height: 44px; }
+.fg-slot { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; z-index: 1; min-height: 0; }
+.fg-slot .icell, .fg-slot-empty { width: 44px; height: 44px; width: clamp(28px, calc(25cqh - 17px), 44px); height: clamp(28px, calc(25cqh - 17px), 44px); }
 .fg-slot-empty { display: flex; align-items: center; justify-content: center; border: 2px dashed #3a3346; border-radius: 8px; color: #4a4258; background: rgba(10, 8, 14, 0.6); }
 .fg-slot-name { font-size: 10px; color: #9c91ad; }
 .fs-weapon { grid-area: weapon; } .fs-helm { grid-area: helm; } .fs-armor { grid-area: armor; } .fs-gloves { grid-area: gloves; }
@@ -480,7 +481,23 @@ html, body {
 .fg-cmp { border-left: 1px solid #2a2234; padding-left: 8px; }
 .fg-grow { display: flex; justify-content: space-between; gap: 6px; }
 .fg-cmp-h { font-size: 10px; color: #9c91ad; }
-.fg-delta { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; font-size: 11px; }
+.fg-delta { display: flex; flex-direction: column; gap: 0; margin-top: 3px; font-size: 11px; }
+.fg-delta.wide { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 10px; margin-top: 4px; padding-top: 3px; border-top: 1px solid #2a2234; }
+.fg-delta.wide > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* short screens (a phone in a browser with its bars): thinner strips so the panels keep their room */
+@media (max-height: 330px) { .fg-body { top: 44px; bottom: 5px; } .fg-stats, .fg-btns, .fg-gain { height: 42px; } .fg-col { gap: 5px; } .fg-chip { padding-top: 2px; padding-bottom: 2px; } }
+/* a picked item's details fit the gear panel without scrolling: text follows the panel height (cqh) */
+.fg-gear:not(.dollmode) { container-type: size; }
+.fg-gear:not(.dollmode) .fg-h { margin: 0 0 2px; }
+.fg-gear:not(.dollmode) .fg-h .fg-btn.small { min-height: 26px; }
+.fg-gear:not(.dollmode) .idetail .iline, .fg-gear:not(.dollmode) .fg-delta { font-size: clamp(9px, 5cqh, 11.5px); line-height: 1.24; }
+.fg-gear:not(.dollmode) .fg-pieces { margin: 2px 0 4px; }
+.fg-gear:not(.dollmode) .fg-piece { padding: 3px 2px; font-size: clamp(9px, 5cqh, 11px); }
+.fg-gear:not(.dollmode) .fg-piece svg { width: clamp(14px, 9cqh, 22px); height: clamp(14px, 9cqh, 22px); }
+.fg-gear:not(.dollmode) .fg-bonuses { gap: 1px; }
+.fg-gear:not(.dollmode) .fg-bonus { font-size: clamp(9px, 5.4cqh, 12px); line-height: 1.3; }
+.fg-gear:not(.dollmode) .idetail .ieffect, .fg-gear:not(.dollmode) .idetail .iset, .fg-gear:not(.dollmode) .idetail .iheir { font-size: clamp(9px, 4.8cqh, 11px); line-height: 1.25; }
+.fg-gear:not(.dollmode) .idetail .iname { font-size: clamp(11px, 5.8cqh, 13px); }
 .idetail .iname { font-weight: 800; font-size: 13px; }
 .idetail .isub { font-size: 10.5px; color: #9c91ad; margin-bottom: 2px; }
 .idetail .iline { font-size: 11.5px; color: #c9bfd8; }
@@ -529,8 +546,8 @@ html, body {
 .fg-piece small { display: block; font-size: 10px; color: #9c91ad; }
 button.fg-piece.own { cursor: pointer; border: 1px solid #c9a86a; border-radius: 8px; background: rgba(60, 44, 20, 0.5); color: inherit; font: inherit; }
 .fg-buyrow { display: flex; gap: 8px; align-items: center; }
-.fg-setlist { display: flex; flex-direction: column; gap: 5px; }
-.fg-setrow { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; padding: 5px 8px; border: 1px solid #2c2338; border-radius: 7px; background: #140f1a; color: #e8e3d6; font: inherit; text-align: left; }
+.fg-setlist { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+.fg-setrow { display: flex; align-items: center; gap: 8px; width: 100%; flex: 1 1 0; min-height: 0; max-height: 40px; padding: 0 8px; border: 1px solid #2c2338; border-radius: 7px; background: #140f1a; color: #e8e3d6; font: inherit; text-align: left; }
 .fg-setrow.sel { border-color: #fff; }
 .fg-setrow small { color: #9c91ad; }
 .fg-dots { margin-left: auto; display: flex; gap: 3px; }

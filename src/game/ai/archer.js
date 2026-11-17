@@ -34,7 +34,7 @@ export const archerAI = {
     s.cd -= dt;
     const v = game.viewRect();
     const onScreen = e.pos.x > v.x && e.pos.x < v.x + v.w && e.pos.y > v.y && e.pos.y < v.y + v.h;
-    if (s.cd <= 0 && d <= t.range && onScreen) {
+    if (s.cd <= 0 && e.aggressive && d <= t.range && onScreen) {
       s.aim = t.windup;
       s.aimDir = this.leadDir(e, game);
       return { x: 0, y: 0 };

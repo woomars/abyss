@@ -270,13 +270,17 @@ export class ForgeScreen {
     let gear;
     if (f) {
       const it = f.item;
-      const cmp = f.where === 'equipped' ? '' : compareSlots(lo, it).map((target) => { // a ring is set beside both worn rings
+      // one slot to compare: the change goes under both items in two columns (fits without scrolling);
+      // a ring (two worn rings) keeps a change list under each
+      const targets = f.where === 'equipped' ? [] : compareSlots(lo, it), one = targets.length === 1;
+      const cmp = targets.map((target) => {
         const worn = lo.slots[target];
         return `<div class="fg-cmp">${worn ? `<div class="fg-cmp-h">${t('fg.wornIn', { slot: slotLabel(target) })}</div>${itemDetail(worn, this.cfg)}` : `<div class="fg-cmp-h">${t('fg.slotEmpty', { slot: slotLabel(target) })}</div>`}
-          <div class="fg-delta">${this.deltaLines(it, worn)}</div></div>`;
+          ${one ? '' : `<div class="fg-delta">${this.deltaLines(it, worn)}</div>`}</div>`;
       }).join('');
+      const delta = one ? `<div class="fg-delta wide">${this.deltaLines(it, lo.slots[targets[0]])}</div>` : '';
       gear = `<div class="fg-h">${t(f.where === 'equipped' ? 'fg.wornItem' : 'fg.pickedItem')}${this.backBtn()}</div>
-        <div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>${cmp}</div>${this.ringButton(it)}`;
+        <div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>${cmp}</div>${delta}${this.ringButton(it)}`;
     }
     const items = `${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: `${c.vault.stash.length}/${c.vault.stashSlots}` })]])}
       ${this.bag === 'stash' ? this.stashBuy() : ''}

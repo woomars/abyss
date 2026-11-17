@@ -14,7 +14,7 @@ export const spearmanAI = {
     if (s.hold > 0) { s.hold -= dt; return { x: 0, y: 0 }; } // thrusting: plant the feet
     const dx = p.pos.x - e.pos.x, dy = p.pos.y - e.pos.y, d = Math.hypot(dx, dy) || 1;
     s.cd -= dt;
-    if (s.cd <= 0 && d - e.radius - p.radius <= t.thrust.radius - 20) {
+    if (s.cd <= 0 && e.aggressive && d - e.radius - p.radius <= t.thrust.radius - 20) {
       const beat = s.rhythm.next();
       const delay = teleTime(e.root, t.thrust.windup, beat.tele);
       game.hazards.cone({ x: e.pos.x, y: e.pos.y, dir: { x: dx / d, y: dy / d }, radius: t.thrust.radius + e.radius, arcDeg: t.thrust.arcDeg, delay, damage: e.attack, owner: e, anchor: true });

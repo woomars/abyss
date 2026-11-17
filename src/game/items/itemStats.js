@@ -9,6 +9,11 @@ export function enhanceBonus(cfg, level) {
 // the item's multipliers: base gets grade and level, everything gets quality and enhancement
 export function itemStats(item, cfg) {
   const s = zeroStats();
+  if (item.ringSet) { // a set ring: nothing of its own but what its enhance levels add (sets.json ring)
+    const rt = cfg.ringTable;
+    if (rt) for (const [k, v] of Object.entries(rt.perLevel)) s[k] += v * (item.enhance || 0);
+    return s;
+  }
   const q = cfg.qualities[item.quality].mult, e = 1 + enhanceBonus(cfg, item.enhance);
   const lvl = 1 + cfg.perLevel * (item.level - 1);
   const fixed = (k) => cfg.affixes[k] && cfg.affixes[k].fixed;
@@ -31,11 +36,12 @@ export function describeItem(item, cfg) {
   const g = cfg.grades[item.grade], q = cfg.qualities[item.quality];
   const s = itemStats(item, cfg);
   const keys = [item.base.stat, ...item.affixes.map((a) => a.stat)];
-  const lines = item.ringSet ? [] : keys.map((k) => formatStat(cfg, k, s[k])); // a set ring has no stats of its own
+  const ringKeys = item.ringSet && cfg.ringTable && item.enhance > 0 ? Object.keys(cfg.ringTable.perLevel) : [];
+  const lines = item.ringSet ? ringKeys.map((k) => formatStat(cfg, k, s[k])) : keys.map((k) => formatStat(cfg, k, s[k])); // a set ring: only its enhance bonus
   const set = item.set ? cfg.sets[item.set] : null;
   return {
     name: (item.enhance ? `+${item.enhance} ` : '') + trItemName(item.name),
-    gradeLabel: tr(g.label), gradeColor: g.color, qualityLabel: tr(q.label), qualityColor: q.color,
+    gradeLabel: tr(item.ringSet ? '초월' : g.label), gradeColor: item.ringSet ? '#ff5ad8' : g.color, // set rings are Transcendent qualityLabel: tr(q.label), qualityColor: q.color,
     partLabel: tr(cfg.parts[item.slot].label), icon: cfg.parts[item.slot].icon,
     lines,
     effectText: item.effect ? tr(cfg.effects[item.effect].label) : null,

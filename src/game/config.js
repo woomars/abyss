@@ -38,6 +38,7 @@ export function applyTuning(config) {
   }
   if (t.sets) {
     config.items.setTables = t.sets; // the set steps Loadout adds up (번개·폭풍·유성·망령)
+    if (t.sets.ring) { config.items.ringTable = t.sets.ring; if (t.economy) t.economy.ringGoldMult = t.sets.ring.goldMult; } // the set ring's enhance bonus and price
     if (t.sets.meteor) config.items.effects.meteorPull = t.sets.meteor.full; // 유성 5세트 pull (read by SkillSystem.land)
     // 번개 / 망령 stat rows: the set's effect stays, its stats come from the table
     const statRows = (setId, rows) => {

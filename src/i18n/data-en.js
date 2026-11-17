@@ -150,6 +150,7 @@ export default {
     "분열 점액": "Splitting Slime",
     "주술사": "Shaman",
     // set rings (Phase 6, 8.5)
+    "초월": "Transcendent",
     "번개 반지": "Lightning Ring",
     "폭풍 반지": "Storm Ring",
     "유성 반지": "Meteor Ring",

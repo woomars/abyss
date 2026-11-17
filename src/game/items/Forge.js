@@ -62,7 +62,7 @@ export function takeItem(ctx, id) {
 // ---- gold (the family purse, ctx.vault.gold; prices in ctx.econ = tuning/economy.json) ----
 // strengthening from item.enhance up to toLevel: base x grade multiplier x the step reached, per step
 export function enhanceGold(econ, item, toLevel) {
-  const e = econ.enhance, m = e.gradeMult[item.grade] || 1;
+  const e = econ.enhance, m = (e.gradeMult[item.grade] || 1) * (item.ringSet && econ.ringGoldMult ? econ.ringGoldMult : 1);
   let g = 0;
   for (let k = item.enhance + 1; k <= toLevel; k++) g += Math.round(e.base * m * k);
   return g;
@@ -109,7 +109,7 @@ export function salvageItems(ctx, ids) {
 }
 
 // ---- legacy token ----
-export function canTakeToken(item) { return !!item && !item.token; }
+export function canTakeToken(item) { return !!item && !item.token && !item.ringSet; } // a set ring never needs one
 
 export function applyToken(ctx, id) {
   const f = findItem(ctx, id);
@@ -126,7 +126,7 @@ export function tokenCandidates(ctx) {
   for (const s of LOADOUT_SLOTS) if (ctx.loadout.slots[s]) out.push({ item: ctx.loadout.slots[s], where: 'equipped' });
   for (const it of ctx.vault.stash) out.push({ item: it, where: 'stash' });
   for (const it of ctx.pocket) out.push({ item: it, where: 'pocket' });
-  return out;
+  return out.filter((o) => !o.item.ringSet);
 }
 
 // ---- strengthen ----

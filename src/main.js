@@ -283,6 +283,12 @@ async function boot() {
     game.strokes.setExcludedRects(rects.map(rectToStage));
     updatePaused();
   };
+  // a debug jump leaves every screen and plays as a throwaway family
+  const debugReady = () => {
+    gameOver.hide();
+    title.hide(); forge.hide(); heir.hide(); hall.hide(); story.hide(); guide.hide();
+    if (slot != null || !started) enterSlot(null, new Vault({ family: '시험', given: '기사' }));
+  };
   // in development the tuning panel is on by default; ?debug=0 hides it
   if (debugOn) {
     debug = new DebugPanel(ui, {
@@ -295,16 +301,16 @@ async function boot() {
         ending.show({ father: l.given || '기사', child: '브란', sex: 'son', heroSex: l.sex || null, item: w ? w.name : null, family: l.family }, { replay: true });
       },
       // jump straight to a floor (or the practice arena) to test bosses
+      onBoss: (type) => { debugReady(); game.startRun(4); game.dungeon.startBossRoom(type); }, // debug: one chosen boss
       onFloor: (floor) => {
-        gameOver.hide();
-        title.hide(); forge.hide(); heir.hide(); hall.hide(); story.hide(); guide.hide();
-        if (slot != null || !started) enterSlot(null, new Vault({ family: '시험', given: '기사' })); // debug runs use a throwaway family
+        debugReady();
         if (floor === -2) { game.startRun(4); game.dungeon.enterForge(); return; }
         if (floor === -3) { // debug: a legacy token right now
           if (!game.forge) { game.startRun(4); game.dungeon.enterForge(); }
           game.vault.tokens += 1; legacy.show(); return;
         }
         if (floor === -4) { game.startRun(4); game.dungeon.startBossRush(); return; } // debug: every boss in turn, full hp after each
+        if (floor === -5) { game.startRun(5); game.dungeon.startAllEnemies(); return; } // debug: every common enemy at once
         if (floor > 0) game.startRun(floor);
         else if (floor === -1) { game.startRun(3); game.dungeon.enterTreasure(); }
         else { game.startPractice(); music.play(config.music.scenes.play); banner.show(t('hud.practice')); }

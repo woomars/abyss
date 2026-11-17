@@ -173,6 +173,32 @@ export class Dungeon {
     this.enterRoom('boss');
   }
 
+  // ---- debug: every common enemy in one fight room (floor 5 strength; no waves after them) ----
+  startAllEnemies() {
+    const g = this.game, types = g.config.enemies.types;
+    this.start(5);
+    g.enemies.clear();
+    for (const [k, t] of Object.entries(types)) {
+      if (t.rank === 'boss' || k === 'sigil' || k === 'clone') continue;
+      g.enemies.spawnAt(k, this.spawnPoint(), { ...this.info.mods });
+    }
+    this.waveIndex = this.waveCount;
+    this.lastAlive = this.remaining;
+  }
+
+  // ---- debug: a fight with one chosen boss (on its tier's boss floor of the first cycle) ----
+  startBossRoom(type) {
+    const g = this.game, tier = g.config.enemies.types[type].tier;
+    const band = this.cfg.bands.find((b) => b.kind === 'boss' && b.boss && b.boss.tier === tier);
+    this.reset();
+    this.floor = band.from;
+    this.startFloor = -1; // never a record
+    this.info = floorInfo(this.floor, this.cfg);
+    this.forceBoss = type;
+    this.enterRoom('boss');
+    this.forceBoss = null;
+  }
+
   // ---- debug: endless boss room ----
   // every boss in codex order (mid, region, great), then around again one loop deeper; the hero is
   // healed to full after each kill; no chest, exit or drops

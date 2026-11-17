@@ -868,6 +868,19 @@ export class Renderer {
         ctx.fill();
         continue;
       }
+      if (h.kind === 'arrow' && h.style === 'dagger') { // assassin's thrown dagger
+        ctx.save();
+        ctx.translate(h.x, h.y);
+        ctx.rotate(Math.atan2(h.dir.y, h.dir.x));
+        ctx.scale(1.6, 1.6);
+        ctx.fillStyle = '#e8ecf4';
+        ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-2, -3); ctx.lineTo(-2, 3); ctx.closePath(); ctx.fill(); // blade
+        ctx.strokeStyle = '#8a92a8'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = '#c9a86a'; ctx.fillRect(-4, -5, 2, 10); // guard
+        ctx.fillStyle = '#5a3a2a'; ctx.fillRect(-10, -1.5, 6, 3); // grip
+        ctx.restore();
+        continue;
+      }
       if (h.kind === 'arrow') {
         ctx.strokeStyle = '#f2e3c0';
         ctx.lineWidth = 3;

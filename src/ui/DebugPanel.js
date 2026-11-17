@@ -3,11 +3,13 @@
 import { heroSheet } from './debugSheet.js';
 import { owedPicks, picksTaken } from '../game/SkillGrowth.js';
 import { TuningEditor } from './TuningEditor.js';
+import { bossRoster } from '../game/Medals.js';
 
 // growth cards by name (debug is Korean only)
 const CARD = { spinRadius: '회전 베기 반경', spinCooldown: '회전 베기 쿨타임', rushDistance: '점프 거리', rushCooldown: '점프 쿨타임', waveRange: '질풍 베기 사거리·기절', waveCooldown: '질풍 베기 쿨타임' };
 export class DebugPanel {
-  constructor(root, { config, game, onLayout, onFloor = null, onOpenChange = () => {}, onGear = () => {}, onEnding = () => {} }) {
+  constructor(root, { config, game, onLayout, onFloor = null, onBoss = null, onOpenChange = () => {}, onGear = () => {}, onEnding = () => {} }) {
+    this.onBoss = onBoss; // debug: a fight with the chosen boss
     this.onEnding = onEnding; // debug: play the ending
     this.onGear = onGear; // an item was put on (the HUD / forge refresh)
     this.onOpenChange = onOpenChange; // open panel = the game waits
@@ -24,8 +26,9 @@ export class DebugPanel {
       <div class="dhead"><button data-act="toggle">닫기</button><button data-act="view" data-v="tools" class="on">도구</button><button data-act="view" data-v="tune">튜닝</button><span class="fps">-- fps</span></div>
       <div class="dtune" hidden></div>
       <div class="dbody">
-        <div class="dbtns">방 이동 <select data-act="floor"><option value="">고르기</option><option value="0">연습장</option><option value="-1">보물방</option><option value="-2">대장간</option><option value="-3">증표 받기</option><option value="-4">보스 연전 (끝없는 보스방)</option>${
+        <div class="dbtns">방 이동 <select data-act="floor"><option value="">고르기</option><option value="0">연습장</option><option value="-1">보물방</option><option value="-2">대장간</option><option value="-3">증표 받기</option><option value="-4">보스 연전 (끝없는 보스방)</option><option value="-5">모든 적 방 (일반 적 전부)</option>${
           Array.from({ length: 21 }, (_, i) => `<option value="${i + 1}">지하 ${i + 1}층</option>`).join('')}<option value="100">지하 100층 (시조)</option></select></div>
+        <div class="dbtns">보스와 싸우기 <select data-act="boss"><option value="">고르기</option></select></div>
         <div class="dbtns">장비 지급 <select data-act="grant"><option value="">고르기</option><option value="common">일반</option><option value="uncommon">고급</option><option value="rare">희귀</option><option value="epic">영웅</option><option value="legendary">전설</option><option value="set">세트</option></select></div>
         <div class="dbtns">세트 전체 장착 <select data-act="grantSet"><option value="">고르기</option></select> 강화 <input type="number" class="dsetup" min="0" max="10" step="1" value="0" inputmode="numeric" style="width:44px;user-select:text;-webkit-user-select:text"></div>
         <div class="dbtns">내 레벨 <input type="number" class="dlevel" min="1" step="1" value="1" inputmode="numeric" style="width:56px;user-select:text;-webkit-user-select:text"><button data-act="setLevel">적용</button><span class="dlevel-now"></span></div>
@@ -40,6 +43,8 @@ export class DebugPanel {
     // [튜닝]: the tuning tables as forms (apply / default / save all)
     this.tuning = new TuningEditor(this.el.querySelector('.dtune'), { config, onApplied: () => { game.refreshBonus(); game.applyMaxHp(true); this.onGear(); } });
     this.el.querySelector('[data-act="grantSet"]').insertAdjacentHTML('beforeend', Object.entries(config.items.sets).map(([k, s]) => `<option value="${k}">${s.name}</option>`).join(''));
+    const TIER = { mid: '중간', region: '지역', great: '대형' }, AI = { warrior: '전사', mage: '마법사', ranged: '원거리', summoner: '소환사', assassin: '암살자', golem: '골렘' };
+    this.el.querySelector('[data-act="boss"]').insertAdjacentHTML('beforeend', bossRoster(config.dungeon, config.enemies).map((b) => `<option value="${b.key}">${TIER[b.tier]} · ${AI[b.type] || b.type} · ${b.name}</option>`).join(''));
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.el.addEventListener('change', (e) => {
       if (e.target.dataset.act === 'grantSet' && e.target.value !== '') {
@@ -49,6 +54,11 @@ export class DebugPanel {
       if (e.target.dataset.act === 'grant' && e.target.value !== '') {
         this.grant(e.target.value);
         e.target.value = '';
+      }
+      if (e.target.dataset.act === 'boss' && e.target.value !== '' && this.onBoss) {
+        this.onBoss(e.target.value);
+        e.target.value = '';
+        this.setOpen(false);
       }
       if (e.target.dataset.act === 'floor' && e.target.value !== '' && this.onFloor) {
         this.onFloor(Number(e.target.value));

@@ -78,7 +78,7 @@ export class ForgeScreen {
     this.render();
   }
 
-  hide() { this.undo = null; this.stopHammer(); this.engResult = null; this.el.classList.add('hidden'); }
+  hide() { this.undo = null; this.stopHammer(); this.engResult = null; this.engAsk = false; this.el.classList.add('hidden'); }
 
   stopHammer() { if (this.hammer) { this.hammer.destroy(); this.hammer = null; } }
 
@@ -126,7 +126,8 @@ export class ForgeScreen {
         </div>
       </div>
       ${v.tint ? `<div class="fg-redtint" style="--a:${v.tint.toFixed(3)}"></div>` : ''}
-      ${this.engResult ? this.engResultView() : ''}`;
+      ${this.engResult ? this.engResultView() : ''}
+      ${this.engAsk ? this.engAskView() : ''}`;
     if (this.hammer) this.el.appendChild(this.hammer.el); // a redraw must not lose the hammer
     this.scrollKey = `${this.tab}:${this.bag}`;
     restoreScroll(this.el, this.scrolls[this.scrollKey]);
@@ -432,6 +433,14 @@ export class ForgeScreen {
     this.changed('engrave');
   }
 
+  // from the second try on, the smith warns first (one more press to go on)
+  engAskView() {
+    const f = findItem(this.ctx, this.sel), n = Math.min(5, ((f && f.item.engraves) || 0) + 1);
+    return `<div class="fg-engres-shade"></div><div class="fg-engres bad">
+      <div class="fg-engres-h">${t('fg.engNth', { n: (f && f.item.engraves || 0) + 1 })}</div><div>${t(`fg.engWarn${n}`)}</div>
+      <div class="fg-engask"><button class="fg-btn" data-act="engAskNo">${t('fg.engAskNo')}</button><button class="fg-btn red" data-act="engAskYes">${t('fg.engAskYes')}</button></div></div>`;
+  }
+
   engResultView() {
     const r = this.engResult; // only whether it worked
     return `<div class="fg-engres-shade"></div><div class="fg-engres ${r.success ? 'ok' : 'bad'}">
@@ -479,7 +488,9 @@ export class ForgeScreen {
     if (!b || b.disabled) return;
     const a = b.dataset.act, v = b.dataset.v, c = this.ctx;
     if (a === 'tab') { this.tab = v; this.sel = null; this.checked.clear(); this.confirm = false; if (v === 'enhance' || v === 'engrave') this.bag = 'worn'; else if (this.bag === 'worn') this.bag = 'pocket'; this.render(); }
-    else if (a === 'engrave') this.startEngrave();
+    else if (a === 'engrave') { const f = findItem(c, this.sel); if (f && (f.item.engraves || 0) >= 1) { this.engAsk = true; this.render(); } else this.startEngrave(); }
+    else if (a === 'engAskYes') { this.engAsk = false; this.render(); this.startEngrave(); }
+    else if (a === 'engAskNo') { this.engAsk = false; this.render(); }
     else if (a === 'engOk') { this.engResult = null; this.render(); }
     else if (a === 'bag') { this.bag = v; this.render(); }
     else if (a === 'depart') this.onDepart();

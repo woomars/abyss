@@ -79,6 +79,7 @@ export class Vault {
     this.trophies = {}; // trophyId -> { given, family, generation, floor, at } (family milestones)
     this.skillUps = {}; // special-attack growth cards chosen: cardId -> count (earned every 10 levels)
     this.cycle = 1;       // how many times the story has gone round (floor-100 endings + 1)
+    this.engraveBags = {};    // 각인 shuffle bags by chance ("90": { win, lose } balls left of 100)
     this.ropes = [];          // Ariadne's rope floors the family has set (21, 41, 61, 81); a new cycle clears them
     this.waveInterval = null; // seconds between timed waves (21층~), measured and kept by the family (C5)
     this.chronicles = []; // 지난 연대기: one summary per line that reached floor 100 (Cycle.newCycle)
@@ -107,7 +108,7 @@ export class Vault {
     return {
       version: VAULT_VERSION, stash: this.stash, powder: this.powder, stashSlots: this.stashSlots, phase6: true, seen: this.seen, equipped: this.equipped,
       state: this.state, run: this.run, nextId: this.nextId, lineage: this.lineage, progress: this.progress, savedAt: this.savedAt, lastFloor: this.lastFloor, carry: this.carry, tokens: this.tokens, gold: this.gold,
-      medals: this.medals, bestiary: this.bestiary, runStats: this.runStats, medalsFilled: this.medalsFilled, essence: this.essence, trophies: this.trophies, skillUps: this.skillUps, cycle: this.cycle, chronicles: this.chronicles, waveInterval: this.waveInterval, ropes: this.ropes,
+      medals: this.medals, bestiary: this.bestiary, runStats: this.runStats, medalsFilled: this.medalsFilled, essence: this.essence, trophies: this.trophies, skillUps: this.skillUps, cycle: this.cycle, chronicles: this.chronicles, waveInterval: this.waveInterval, ropes: this.ropes, engraveBags: this.engraveBags,
     };
   }
 
@@ -170,6 +171,7 @@ export class Vault {
     v.trophies = obj(data.trophies);
     v.skillUps = nums(data.skillUps);
     v.cycle = Number.isFinite(data.cycle) && data.cycle >= 1 ? Math.floor(data.cycle) : 1;
+    v.engraveBags = data.engraveBags && typeof data.engraveBags === 'object' ? data.engraveBags : {};
     v.ropes = Array.isArray(data.ropes) ? data.ropes.filter((f) => Number.isInteger(f) && f > 1) : [];
     v.waveInterval = Number.isFinite(data.waveInterval) && data.waveInterval > 0 ? data.waveInterval : null;
     v.chronicles = Array.isArray(data.chronicles) ? data.chronicles.filter((c) => c && typeof c === 'object') : [];

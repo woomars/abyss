@@ -405,7 +405,7 @@ export class ForgeScreen {
         <div class="fg-engbox"><div class="fg-engrow"><span>${t('fg.engChance')}</span><b>${pct(base)}</b></div>
           <div class="fg-engsub">${t('fg.engHammer', { lo: pct(engraveChance(ecfg, it, 0)), hi: pct(engraveChance(ecfg, it, 3)) })}</div>
           <div class="fg-engrow"><span>${t('fg.engCost')}</span><b class="gold">◆ ${cost}</b></div>
-          <div class="fg-engsub">${t('fg.engRandom')}</div><div class="fg-warn">${it.token ? t('fg.tokenWarn') : ''}${t('fg.engFail')}</div></div></div>`;
+          <div class="fg-engsub">${t('fg.engRandom')}</div><div class="fg-warn">${t(it.token ? 'fg.engTokenSafe' : 'fg.engFail')}</div></div></div>`;
     const btns = `<span class="fg-act-l"></span><span class="fg-act-r">${short ? `<small class="down">${t('fg.needGold', { n: cost - c.vault.gold })}</small>` : ''}<button class="fg-btn red" data-act="engrave" ${short ? 'disabled' : ''}>${t('fg.engGo', { n: cost })}</button></span>`;
     return { gear, doll: false, items, btns, tint: (1 - base) * ecfg.redTint }; // the likelier the break, the redder the forge
   }
@@ -433,12 +433,9 @@ export class ForgeScreen {
   }
 
   engResultView() {
-    const r = this.engResult;
-    const head = r.success ? t('fg.engSuccess', { set: esc(tr(this.cfg.sets[r.set].name)) }) : t('fg.engBroke');
-    const powder = r.powder ? [0, 1, 2].filter((q) => r.powder[q]).map((q) => `${t('fg.powderOf', { part: tierLabel(q) })} +${r.powder[q]}`).join(' · ') : '';
+    const r = this.engResult; // only whether it worked
     return `<div class="fg-engres-shade"></div><div class="fg-engres ${r.success ? 'ok' : 'bad'}">
-      <div class="fg-engres-h">${head}</div><div>${esc(r.name)}</div>
-      <div class="fg-engsub">${t('fg.engFinal', { hits: r.hits, p: pct(r.chance) })}</div>${powder ? `<div>${powder}</div>` : ''}
+      <div class="fg-engres-h">${t(r.success ? 'fg.engWin' : 'fg.engLose')}</div>
       <button class="fg-btn pri" data-act="engOk">${t('fg.engOk')}</button></div>`;
   }
 

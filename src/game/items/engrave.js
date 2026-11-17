@@ -1,7 +1,9 @@
 // 각인 (Phase 6, 8.6): a set name engraved on a legendary of a set part. Gold first; the chance falls
 // with each try on the same item (tuning/engrave.json chance) and the hammer's three blows add to it.
 // Success: a set name at random (a different one if it already had one); its own effect stays.
-// Failure: the item is gone, and a generous heap of powder is left.
+// Failure: the item is gone, and a generous heap of powder is left (gear with a legacy token stays).
+// The roll is a shuffle bag: for each chance (in whole %) a bag of 100 balls with that many winners,
+// drawn without putting back and refilled when empty — so 90% wins exactly 90 of every 100 tries.
 import { findItem, powderOf } from './Forge.js';
 
 const pick = (list, i) => list[Math.min(i, list.length - 1)];
@@ -30,6 +32,19 @@ export function hammerSpeeds(ecfg, item, rng) {
   return [0, 1, 2].map(() => { const r = rng(); return r < normal ? s.normal : r < normal + (1 - normal) / 2 ? s.fast : s.slow; });
 }
 
+// one ball from the bag of this chance (bags: { "90": { win, lose } } — kept by the family)
+export function drawBag(bags, chance, rng) {
+  const pct = Math.round(chance * 100);
+  if (pct <= 0) return false;
+  if (pct >= 100) return true;
+  const k = String(pct);
+  let b = bags[k];
+  if (!b || b.win + b.lose <= 0) b = bags[k] = { win: pct, lose: 100 - pct };
+  const won = rng() * (b.win + b.lose) < b.win;
+  if (won) b.win -= 1; else b.lose -= 1;
+  return won;
+}
+
 export const judgeHit = (press, target, tol) => Math.abs(press - target) <= tol + 1e-9;
 
 // the whole try: pays, rolls, and engraves or breaks; { ok, success, chance, set, powder }
@@ -40,7 +55,8 @@ export function engraveItem(ctx, ecfg, id, hits, rng) {
   if (ctx.vault.gold < cost) return { ok: false, reason: 'gold' };
   ctx.vault.gold -= cost;
   const chance = engraveChance(ecfg, it, hits);
-  if (rng() < chance) {
+  if (!ctx.vault.engraveBags) ctx.vault.engraveBags = {};
+  if (drawBag(ctx.vault.engraveBags, chance, rng)) {
     const sets = Object.keys(ctx.cfg.sets).filter((k) => k !== it.set);
     it.set = sets[Math.floor(rng() * sets.length) % sets.length];
     if (!it.legendary) it.name = ctx.cfg.sets[it.set].pieces[it.slot]; // a set piece is named after its new set; a unique keeps its name
@@ -48,6 +64,7 @@ export function engraveItem(ctx, ecfg, id, hits, rng) {
     ctx.vault.markSeen(it);
     return { ok: true, success: true, chance, set: it.set, cost };
   }
+  if (it.token) return { ok: true, success: false, chance, kept: true, cost }; // a legacy token keeps it whole
   // broken: off the hero, out of the bag or the stash, into powder
   if (f.where === 'equipped') ctx.loadout.unequip(f.slot);
   else {

@@ -75,7 +75,7 @@ export function salvageGold(econ, items) {
 
 // ---- salvage ----
 // powder is by quality only (일반 · 상급 · 최상급), any part
-function powderOf(ctx, item, into) {
+export function powderOf(ctx, item, into) {
   const cfg = ctx.cfg;
   into[item.quality] += cfg.grades[item.grade].powder;
   if (item.invested > 0) into[0] += Math.floor((item.invested * ctx.econ.dismantle.powderRefund) / cfg.enhance.points[0]); // rounded down: never more than 90% back

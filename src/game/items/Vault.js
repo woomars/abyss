@@ -22,7 +22,7 @@ const fixLegend = (it) => {
 };
 const renameSetPiece = (it) => {
   fixLegend(it);
-  if (!it || !it.set || !SET_NAMES[it.set]) return it;
+  if (!it || !it.set || !SET_NAMES[it.set] || it.legendary) return it; // an engraved unique keeps its own name
   if (PART_NAMES[it.slot]) it.name = `${SET_NAMES[it.set]} ${PART_NAMES[it.slot]}`;
   it.grade = 'legendary';
   return it;

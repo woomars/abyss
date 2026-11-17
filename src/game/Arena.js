@@ -7,6 +7,29 @@ export class Arena {
   get height() { return this.cfg.height; }
   get pillars() { return this.cfg.pillars; }
 
+  // a rock that stands for a while (golem boulder): a pillar until its time runs out
+  addTemp(rect, time) {
+    (this.temps || (this.temps = [])).push({ rect, t: time });
+    this.cfg.pillars.push(rect);
+  }
+
+  update(dt) {
+    if (!this.temps) return;
+    for (let i = this.temps.length - 1; i >= 0; i--) {
+      const tp = this.temps[i];
+      tp.t -= dt;
+      if (tp.t <= 0) { this.dropTemp(tp); this.temps.splice(i, 1); }
+    }
+  }
+
+  // every rock goes (a new room)
+  clearTemps() {
+    for (const tp of this.temps || []) this.dropTemp(tp);
+    this.temps = [];
+  }
+
+  dropTemp(tp) { const k = this.cfg.pillars.indexOf(tp.rect); if (k >= 0) this.cfg.pillars.splice(k, 1); }
+
   // does a pillar stand between a and b (the segment crosses a pillar rectangle)? Liang–Barsky clip.
   blocks(a, b) {
     const dx = b.x - a.x, dy = b.y - a.y;

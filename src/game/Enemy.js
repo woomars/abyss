@@ -35,7 +35,11 @@ export class Enemy {
     this.lunge = 0; // minion strike: steps this far toward the player when the windup ends
     this.angerTime = 0; // > 0: a hit made it ready to strike back at anyone entering its reach
     this.riposteCd = 0;
+    this.riposteArc = 0;    // width of the riposte cone (deg); 0 = all round
+    this.riposteDir = null; // the way the hero went through it when it was hit
+    this.riposteArm = 0;    // > 0: the cone is shown but cannot strike yet
     this.wasInReach = false;
+    this.firstHold = 0; // > 0: standing still behind its own first-strike warning (9.2)
     this.minionCd = this.mods.minion ? this.root.minion.attackEvery[0] * 0.5 : 0;
     this.brain = AI[this.tcfg.ai] || null;
     // melee types with a rhythm mix the beats of their counters (stage from the floor)
@@ -75,6 +79,7 @@ export class Enemy {
     this.windupMax = 0;
     this.lunge = 0;
     this.riposteCd = 0;
+    this.firstHold = 0;
     this.wasInReach = true; // waking up next to the player is not "stepping in"
     if (this.mods.minion) this.minionCd = this.root.minion.attackEvery[0];
     if (this.brain && this.brain.onStun) this.brain.onStun(this);
@@ -87,7 +92,8 @@ export class Enemy {
   }
 
   // noRiposte: a blow that never angers (망령 set wraiths) — no riposte window, no counter
-  takeHit({ damage, knockDir, knockback, stagger, noRiposte = false }) {
+  // passDir: the way the dashing hero went (the riposte cone opens that way); none = all round
+  takeHit({ damage, knockDir, knockback, stagger, noRiposte = false, passDir = null }) {
     this.lastBlocked = null;
     if (this.immune) { damage = 0; this.lastBlocked = 'immune'; } // a boss quest: minions or sigils still stand
     else if (this.guard > 0) { // a warrior's guard soaks blows until it breaks; what is left over goes through
@@ -95,8 +101,17 @@ export class Enemy {
       this.guard -= soak; damage -= soak;
       if (damage <= 0) this.lastBlocked = 'guard';
     }
+    if (this.front && damage > 0) { // a golem's guarded front: a blow from there does little (quest backWeak)
+      const a = Math.atan2(-knockDir.y, -knockDir.x) - this.ai.face;
+      if (Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) <= (this.front.arc * Math.PI) / 360) { damage *= this.front.mul; this.lastBlocked = 'guard'; }
+    }
     if (this.shieldOn) damage *= this.tcfg.shieldMul != null ? this.tcfg.shieldMul : 0.4; // a summoner shielded by its minions
     if (!this.targetable) return { killed: false };
+    if (this.tcfg.shieldArc && passDir && this.stunTime <= 0 && this.ai && this.ai.face != null) { // a shieldbearer's front
+      const a = Math.atan2(-knockDir.y, -knockDir.x) - this.ai.face;
+      if (Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) <= (this.tcfg.shieldArc * Math.PI) / 360) { this.lastBlocked = 'guard'; this.flashTime = 0.08; return { killed: false, blocked: true }; }
+    }
+    if (this.bubble && damage > 0) { this.bubble = false; damage = 0; this.lastBlocked = 'immune'; } // a shaman's bubble stops one blow
     this.hp -= damage;
     this.flashTime = 0.08;
     const k = knockback * (1 - this.tcfg.knockbackResist) * this.root.knockbackDecay;
@@ -118,6 +133,8 @@ export class Enemy {
     if (this.canRiposte && this.stunTime <= 0) {
       this.angerTime = this.riposteWindow;
       this.wasInReach = true; // the strike that angered it does not count as stepping in
+      this.riposteDir = passDir && this.riposteArc > 0 ? { x: passDir.x, y: passDir.y } : null;
+      this.riposteArm = (this.root.riposteCone && this.root.riposteCone.armDelay) || 0;
     }
     this.counterTime = this.stunTime > 0 ? 0 : this.root.counterWindow || 0;
     this.canCounter = this.counterTime > 0;
@@ -132,12 +149,31 @@ export class Enemy {
     const inReach = this.inReach(playerPos, playerRadius);
     const entered = inReach && !this.wasInReach;
     this.wasInReach = inReach;
-    if (!entered || !dashing || this.angerTime <= 0 || this.riposteCd > 0 || this.hidden) return;
+    if (!entered || !dashing || this.angerTime <= 0 || this.riposteCd > 0 || this.hidden || this.riposteArm > 0) return;
+    if (!this.inRiposteCone(playerPos)) return;
     this.riposteCd = (this.root.riposte && this.root.riposte.cooldown) || 0.6;
     this.strikeTime = 0.18;
     this.windupTime = 0;
     if (onStrike) onStrike(this, true, true);
     if (onAttack) onAttack(this, true);
+  }
+
+  // plain melee: now and then strike first — a warned cone toward the hero (dies with it, see Hazards)
+  firstStrike(dt, game, ux, uy, fs) {
+    const cycle = (game.dungeon && game.dungeon.info && game.dungeon.info.cycle) || 0;
+    const per = fs.chancePerSec[Math.min(cycle, fs.chancePerSec.length - 1)];
+    if (game.rng() >= per * dt) return false;
+    game.hazards.cone({ x: this.pos.x, y: this.pos.y, dir: { x: ux, y: uy }, radius: this.radius + (this.tcfg.attackRange || 0) + fs.reach, arcDeg: fs.cone, delay: fs.warn, damage: this.attack, owner: this, anchor: true });
+    this.firstHold = fs.warn;
+    return true;
+  }
+
+  // is the hero inside the riposte cone (all round when it has no direction)
+  inRiposteCone(p) {
+    const d = this.riposteDir;
+    if (!d) return true;
+    const a = Math.atan2(p.y - this.pos.y, p.x - this.pos.x) - Math.atan2(d.y, d.x);
+    return Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) <= (this.riposteArc * Math.PI) / 360;
   }
 
   // game: the Game (brains read the player, hazards, view); null in plain melee tests
@@ -149,6 +185,8 @@ export class Enemy {
     if (this.counterTime > 0) this.counterTime -= dt;
     if (this.rearm > 0) { this.rearm -= dt; if (this.rearm <= 0 && this.counterTime > 0) this.canCounter = true; } // next beat of a mixed counter
     if (this.riposteCd > 0) this.riposteCd -= dt;
+    if (this.riposteArm > 0) this.riposteArm -= dt;
+    if (this.firstHold > 0) this.firstHold -= dt;
     if (this.stunTime > 0) this.stunTime = Math.max(0, this.stunTime - dt);
     if (this.angerTime > 0) this.angerTime -= dt;
     if (!this.dying && this.canRiposte && this.stunTime <= 0) this.updateRiposte(playerPos, playerRadius, onAttack, onStrike, game ? game.combat.inCombat : true);
@@ -181,6 +219,8 @@ export class Enemy {
         if (onStrike) onStrike(this, hit);
         if (hit && onAttack) onAttack(this);
       }
+    } else if (this.firstHold > 0) {
+      // its first strike is on the floor: hold still until it lands
     } else if (this.canCounter && this.counterTime > 0 && this.inReach(playerPos, playerRadius)) {
       const base = this.tcfg.attackWindup || 0.2;
       this.startWindup(this.rhythm && this.beat ? teleTime(this.root, base, this.beat.tele) : base);
@@ -189,7 +229,10 @@ export class Enemy {
       const d = Math.hypot(dx, dy);
       const mc = this.mods.minion ? this.root.minion : null;
       if (mc) this.minionCd -= dt;
-      if (mc && this.minionCd <= 0 && d - this.radius - playerRadius <= mc.engageRange) {
+      const fs = !mc && game ? this.root.firstStrike : null;
+      if (fs && d - this.radius - playerRadius <= (this.tcfg.attackRange || 0) + fs.reach && this.firstStrike(dt, game, dx / (d || 1), dy / (d || 1), fs)) {
+        // a warned cone at the hero, on its own (9.2)
+      } else if (mc && this.minionCd <= 0 && d - this.radius - playerRadius <= mc.engageRange) {
         // minion: show the swing whether or not the player is in reach yet, then leap and strike
         const [a, b] = mc.attackEvery;
         this.minionCd = a + ((this.id * 0.61) % 1) * (b - a);

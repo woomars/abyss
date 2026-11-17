@@ -22,6 +22,11 @@ export class EnemyManager {
 
   spawnAt(type, pos, mods = null) {
     const e = new Enemy(this.nextId++, type, this.cfg, pos, mods);
+    const rc = this.cfg.riposteCone;
+    if (rc) { // the riposte cone: its own width (from its id, so the game rng is not drawn), wider the deeper the floor (9.1)
+      const floor = (this.game && this.game.dungeon && this.game.dungeon.floor) || 1;
+      e.riposteArc = Math.min(rc.maxAngle, rc.angle[0] + ((e.id * 0.618034) % 1) * (rc.angle[1] - rc.angle[0]) + Math.max(0, floor - 1) * rc.perFloor);
+    }
     e.pos = this.arena.resolveCircle(e.pos, e.radius).pos;
     e.prevPos = { x: e.pos.x, y: e.pos.y };
     this.list.push(e);

@@ -1,9 +1,11 @@
 // The founder (floor 100): the family's first knight, risen as the last boss. One hp bar, two pages.
-// Page 1: he fights as every boss type in turn — warrior, mage, summoner, ranged — switching as his hp
+// Page 1: he fights as every boss type in turn — warrior, mage, summoner, ranged, assassin, golem — switching as his hp
 // falls past each phase's `from` share (tcfg.phases); each phase brings its patterns, way of moving and
 // quest. Page 2 (the last phase, ai 'mirror'): he becomes the hero's mirror — the hero's own moves
 // (chain dashes, 회전 베기, 점프, 질풍 베기) on the hero's own cooldowns, for the hero's own damage.
-import { bossCore, keepBand } from './bossCore.js';
+import { bossCore, keepBand, appear } from './bossCore.js';
+import { assassinAI } from './assassin.js';
+import { golemFront, turnFace } from './golem.js';
 
 export function founderPhase(e) {
   const ph = e.tcfg.phases, f = e.hp / e.maxHp;
@@ -40,9 +42,14 @@ function enter(e, game, i) {
   s.quest = p.quest || null;
   s.exposedFor = p.exposed || 0;
   s.keep = p.keep || null;
-  // what the last phase left behind: its guard and its sigils go; minions stay and fight on
+  // what the last phase left behind: its guard, sigils, clones, smoke and stone front go; minions stay and fight on
   e.guard = 0;
-  for (const m of game.enemies.all()) if (m.alive && !m.dying && m.type === 'sigil') { m.alive = false; m.hp = 0; }
+  for (const m of game.enemies.all()) if (m.alive && !m.dying && (m.type === 'sigil' || m.type === 'clone')) { m.alive = false; m.hp = 0; }
+  e.hidden = false;
+  s.vanish = null;
+  s.smoke = 4;
+  e.front = null;
+  if (p.ai === 'golem') { s.face = Math.atan2(game.player.pos.y - e.pos.y, game.player.pos.x - e.pos.x); golemFront(e); }
   if (p.ai === 'mirror') {
     const m = e.tcfg.mirror;
     s.mirror = { reveal: m.reveal, act: null, atk: m.attackEvery, cd: { spin: 1.5, jump: 2.5, wave: 2 } };
@@ -149,16 +156,31 @@ export const founderAI = {
   },
   onStun(e) {
     if (e.ai.mirror) { e.ai.mirror.act = null; e.airborne = false; return; }
+    e.hidden = false;
+    e.ai.vanish = null;
     bossCore.onStun(e);
   },
   update(e, dt, game) {
     const i = founderPhase(e);
     if (i !== e.ai.phase) enter(e, game, i);
     if (e.ai.mirror) return mirrorUpdate(e, dt, game);
+    const ph = e.tcfg.phases[e.ai.phase];
+    if (e.ai.vanish) { // assassin phase: in the smoke until he steps out of his shadow
+      e.ai.vanish.t -= dt;
+      if (e.ai.vanish.t <= 0) { appear(e, game, e.ai.vanish.to); e.ai.vanish = null; }
+      return { x: 0, y: 0 };
+    }
+    if (ph.ai === 'golem') turnFace(e, dt, game);
     return bossCore.update(e, dt, game, founderAI);
   },
-  move(e, game, v) {
+  move(e, game, v, dt) {
     const p = e.tcfg.phases[e.ai.phase] || e.tcfg.phases[0];
+    if (p.ai === 'assassin') return assassinAI.move(e, game, v, dt);
+    if (p.ai === 'golem') { // slow, straight at the hero
+      if (v.d < e.radius + game.player.radius + (e.tcfg.stopDistance || 20)) return { x: 0, y: 0 };
+      const sp = e.speed * (p.speedMul || 1);
+      return { x: v.x * sp, y: v.y * sp };
+    }
     if (p.ai === 'warrior') {
       if (v.d < e.radius + game.player.radius + (e.tcfg.stopDistance || 20)) return { x: 0, y: 0 };
       return { x: v.x * e.speed, y: v.y * e.speed };

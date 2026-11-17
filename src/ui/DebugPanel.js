@@ -2,6 +2,7 @@
 // set the special-attack growth cards, play the ending; and the hero's numbers (with the gear's share).
 import { heroSheet } from './debugSheet.js';
 import { owedPicks, picksTaken } from '../game/SkillGrowth.js';
+import { TuningEditor } from './TuningEditor.js';
 
 // growth cards by name (debug is Korean only)
 const CARD = { spinRadius: '회전 베기 반경', spinCooldown: '회전 베기 쿨타임', rushDistance: '점프 거리', rushCooldown: '점프 쿨타임', waveRange: '질풍 베기 사거리·기절', waveCooldown: '질풍 베기 쿨타임' };
@@ -20,7 +21,8 @@ export class DebugPanel {
     this.el = document.createElement('div');
     this.el.className = 'debug interactive collapsed';
     this.el.innerHTML = `
-      <div class="dhead"><button data-act="toggle">닫기</button><span class="fps">-- fps</span></div>
+      <div class="dhead"><button data-act="toggle">닫기</button><button data-act="view" data-v="tools" class="on">도구</button><button data-act="view" data-v="tune">튜닝</button><span class="fps">-- fps</span></div>
+      <div class="dtune" hidden></div>
       <div class="dbody">
         <div class="dbtns">방 이동 <select data-act="floor"><option value="">고르기</option><option value="0">연습장</option><option value="-1">보물방</option><option value="-2">대장간</option><option value="-3">증표 받기</option><option value="-4">보스 연전 (끝없는 보스방)</option>${
           Array.from({ length: 21 }, (_, i) => `<option value="${i + 1}">지하 ${i + 1}층</option>`).join('')}<option value="100">지하 100층 (시조)</option></select></div>
@@ -35,6 +37,8 @@ export class DebugPanel {
       </div>`;
     root.appendChild(this.el);
     this.fpsEl = this.el.querySelector('.fps');
+    // [튜닝]: the tuning tables as forms (apply / default / save all)
+    this.tuning = new TuningEditor(this.el.querySelector('.dtune'), { config, onApplied: () => { game.refreshBonus(); game.applyMaxHp(true); this.onGear(); } });
     this.el.querySelector('[data-act="grantSet"]').insertAdjacentHTML('beforeend', Object.entries(config.items.sets).map(([k, s]) => `<option value="${k}">${s.name}</option>`).join(''));
     this.el.addEventListener('pointerdown', (e) => e.stopPropagation());
     this.el.addEventListener('change', (e) => {
@@ -56,10 +60,22 @@ export class DebugPanel {
       const b = e.target.closest('button');
       if (!b) return;
       if (b.dataset.act === 'toggle') this.setOpen(this.el.classList.contains('collapsed'));
+      if (b.dataset.act === 'view') this.view(b.dataset.v);
       if (b.dataset.act === 'ending') { this.setOpen(false); this.onEnding(); }
       if (b.dataset.act === 'setLevel') this.setLevel(Number(this.el.querySelector('.dlevel').value));
       if (b.dataset.act === 'up') this.setUp(b.dataset.card, Number(b.dataset.v));
     });
+  }
+
+  // [도구] the helpers and numbers; [튜닝] the tables (a wider panel)
+  view(v) {
+    const tune = v === 'tune';
+    this.el.classList.toggle('wide', tune);
+    this.el.querySelector('.dbody').hidden = tune;
+    this.el.querySelector('.dtune').hidden = !tune;
+    for (const b of this.el.querySelectorAll('[data-act="view"]')) b.classList.toggle('on', b.dataset.v === v);
+    if (tune) this.tuning.show();
+    this.onLayout();
   }
 
   rect() {

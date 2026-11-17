@@ -159,7 +159,7 @@ export class CombatController {
     const dir = d > 1e-6 ? { x: dx / d, y: dy / d } : { x: this.inputDir.x, y: this.inputDir.y };
     const hits = slashHits(p.pos, dir, this.enemies.targetable(), { radius: this.slashRadius, arcDeg: c.slashArcDeg, maxTargets: c.maxTargets });
     if (!hits.includes(t)) hits.unshift(t);
-    this.applySlash(dir, hits, this.chainIndex, this.chainIndex >= this.chainCount);
+    if (this.applySlash(dir, hits, this.chainIndex, this.chainIndex >= this.chainCount)) return; // bounced off a shield
     if (this.dashFrom) this.events.emit('dashHit', { from: this.dashFrom, to: { x: p.pos.x, y: p.pos.y }, target: t });
     // slash through: continue a little past the target
     this.linkPoint = { x: t.pos.x + dir.x * c.overshoot, y: t.pos.y + dir.y * c.overshoot };
@@ -167,9 +167,11 @@ export class CombatController {
     this._state = 'link';
   }
 
+  // returns true when a shield stopped the dash (the chain is over)
   applySlash(dir, hits, chainIndex, last) {
     const c = this.cfg, b = this.bonus();
     const p = this.player;
+    let blocked = null;
     this.events.emit('slash', { pos: { x: p.pos.x, y: p.pos.y }, dir, radius: this.slashRadius, arcDeg: c.slashArcDeg, chainIndex, strong: last });
     for (const e of hits) {
       const crit = this.rng() < c.critChance + b.crit;
@@ -180,12 +182,20 @@ export class CombatController {
       let kdx = e.pos.x - p.pos.x, kdy = e.pos.y - p.pos.y;
       const kd = Math.hypot(kdx, kdy);
       const knockDir = kd > 1e-6 ? { x: kdx / kd, y: kdy / kd } : dir;
-      const { killed } = e.takeHit({ damage, knockDir, knockback: c.knockback[kind] * (1 + b.knockback), stagger: c.stagger[kind] });
+      const { killed, blocked: shield } = e.takeHit({ damage, knockDir, knockback: c.knockback[kind] * (1 + b.knockback), stagger: c.stagger[kind], passDir: dir });
+      if (shield) blocked = e;
       this.excludeIds.add(e.id);
       const pos = { x: e.pos.x, y: e.pos.y };
       this.events.emit('hit', { enemy: e, damage, crit, strong, chainIndex, pos, dir: knockDir });
       if (killed) this.events.emit('kill', { enemy: e, pos, dir: knockDir, crit });
     }
+    if (!blocked || !this.inCombat || blocked !== this.target) return false;
+    // a shield from the front: the hero bounces back and the chain breaks (9.7)
+    const back = { x: p.pos.x - dir.x * 50, y: p.pos.y - dir.y * 50 };
+    p.pos = this.movement.arena ? this.movement.arena.resolveCircle(back, p.radius).pos : back;
+    this.events.emit('shieldBlock', { pos: { x: blocked.pos.x, y: blocked.pos.y } });
+    this.interrupt();
+    return true;
   }
 
   updateLink(dt) {

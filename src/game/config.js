@@ -63,6 +63,34 @@ export function applyTuning(config) {
     config.items.sets.galeHunter.bonuses = b;
     config.items.sets.galeHunter.angles = g.angles;
   }
+  // boss floors (tuning/bosses.json): which floors, their tier, the forge after and the treasure room before them
+  if (t.bosses && t.bosses.schedule) {
+    const s = t.bosses.schedule;
+    config.dungeon.bossSchedule = s;
+    config.dungeon.treasureAfter = s.treasureAfter;
+    config.dungeon.forgeAfter = s.forgeAfter;
+  }
+  if (t.bosses && t.bosses.double) config.dungeon.doubleBoss = t.bosses.double; // two bosses from floor 61
+  // the founder (tuning/founder.json): floor 100 and every number of the fight
+  if (t.founder && config.enemies.types.founder) {
+    const f = t.founder, s = f.stats, r = f.rhythm, m = f.movement, q = f.quests;
+    config.dungeon.final = { floor: f.floor.floor, boss: 'founder', hp: f.floor.hpMult, attack: f.floor.attackMult };
+    Object.assign(config.enemies.types.founder, {
+      hp: s.hp, attack: s.attack, speed: s.speed, radius: s.radius, knockbackResist: s.knockbackResist, staggerResist: s.staggerResist,
+      cooldown: r.cooldown, openingDelay: r.openingDelay, retryDelay: r.retryDelay, enrageAt: r.enrageAt, enrage: r.enrage,
+      stopDistance: m.stopDistance, attackRange: m.attackRange, keep: m.keep, basics: f.basics,
+      guardFrac: q.guardFrac, sigils: q.sigils, shieldMul: q.shieldMul, summonRing: q.summonRing, summonZones: q.summonZones,
+      clones: q.clones, frontMul: q.frontMul, frontArc: q.frontArc,
+      phases: f.phases.list, mirror: f.mirror, patterns: f.patterns,
+    });
+  }
+  // ranged bosses' rotating lines (tuning/bosses.json): the warning is every lines pattern's windup
+  if (t.bosses && t.bosses.rotatingLines) {
+    config.enemies.rotatingLines = t.bosses.rotatingLines;
+    for (const ty of Object.values(config.enemies.types)) for (const p of Object.values(ty.patterns || {})) if (p.kind === 'lines') p.windup = t.bosses.rotatingLines.warn;
+  }
+  // depth pressure (tuning/pressure.json): the riposte cone and melee first strikes
+  if (t.pressure) { config.enemies.riposteCone = t.pressure.riposte; config.enemies.firstStrike = t.pressure.firstStrike; config.dungeon.mobs = t.pressure.mobs; }
   // essences: the amount one card adds (점프의 정수 changes with the jump in stage 3)
   if (t.essence) for (const [id, e] of Object.entries(t.essence)) if (e && e.add != null && config.relics.list[id]) { config.relics.list[id].add = e.add; if (e.stat) config.relics.list[id].stat = e.stat; }
   return config;

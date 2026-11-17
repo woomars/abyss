@@ -541,6 +541,33 @@ export class Renderer {
         ctx.fill();
         ctx.strokeStyle = e.mods.enhanced ? '#ffcf5a' : '#cdb8ff';
         ctx.stroke();
+      } else if (ai === 'shieldbearer') { // a square skeleton behind a silver shield arc where it looks
+        ctx.fillRect(x - size / 2 + wob, y - size / 2, size, size);
+        ctx.strokeRect(x - size / 2 + wob, y - size / 2, size, size);
+        if (e.ai && e.ai.face != null) {
+          const half = (e.tcfg.shieldArc * Math.PI) / 360;
+          ctx.strokeStyle = e.stunTime > 0 ? 'rgba(200,200,210,0.35)' : '#d8dce8'; ctx.lineWidth = 5;
+          ctx.beginPath(); ctx.arc(x + wob, y, r * 1.3, e.ai.face - half, e.ai.face + half); ctx.stroke();
+        }
+      } else if (ai === 'slime') { // a wobbling blob, flat while it crouches
+        const crouch = e.ai && e.ai.leap && e.ai.leap.t > 0.2;
+        const t = performance.now() / 300 + e.id;
+        ctx.beginPath(); ctx.ellipse(x + wob, y + (crouch ? r * 0.2 : 0), r * (1.05 + 0.05 * Math.sin(t)) * (crouch ? 1.15 : 1), r * (0.85 - 0.05 * Math.sin(t)) * (crouch ? 0.7 : 1), 0, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+      } else if (ai === 'shaman') { // a small robe with a glowing staff
+        ctx.beginPath(); ctx.moveTo(x + wob, y - r * 1.2); ctx.lineTo(x + wob + r * 0.9, y + r); ctx.lineTo(x + wob - r * 0.9, y + r); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = '#c8b090'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x + wob + r, y + r); ctx.lineTo(x + wob + r * 1.3, y - r * 1.3); ctx.stroke();
+        ctx.fillStyle = '#d8a0ff'; ctx.beginPath(); ctx.arc(x + wob + r * 1.3, y - r * 1.4, 3.5, 0, Math.PI * 2); ctx.fill();
+      } else if (ai === 'clone') { // an assassin's decoy: see-through; the real one breathes
+        const k = e.real ? 1 + 0.05 * Math.sin(performance.now() / 260) : 1;
+        ctx.globalAlpha = a * 0.7;
+        ctx.beginPath();
+        ctx.moveTo(x + wob, y - r * 1.2 * k); ctx.lineTo(x + wob + r * 0.8 * k, y); ctx.lineTo(x + wob, y + r * k); ctx.lineTo(x + wob - r * 0.8 * k, y); ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#a090c0';
+        ctx.stroke();
       } else if (ai === 'sigil') { // a turning magic circle
         const sp = e.ai ? e.ai.spin : 0;
         ctx.save(); ctx.translate(x, y); ctx.rotate(sp);
@@ -574,6 +601,11 @@ export class Renderer {
         ctx.fillRect(x - size / 2 + wob, y - size / 2, size, size);
         ctx.strokeRect(x - size / 2 + wob, y - size / 2, size, size);
       }
+      if (e.bubble && !e.dying) { // a shaman's bubble: one blow stopped
+        ctx.beginPath(); ctx.arc(x, y, r * 1.45, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(190,150,255,0.8)'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = 'rgba(190,150,255,0.12)'; ctx.fill();
+      }
       ctx.globalAlpha = 1;
       // archer aim line: thin while tracking, bright once locked
       if (ai === 'archer' && e.ai.aim > 0 && !e.dying) {
@@ -601,6 +633,15 @@ export class Renderer {
         const reach = r + (e.tcfg.attackRange || 0) + game.player.radius;
         const fade = Math.min(1, e.angerTime / 0.4);
         const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 70);
+        if (e.riposteDir) { // the cone it strikes into: the way the hero went through it (fainter until armed)
+          const d = Math.atan2(e.riposteDir.y, e.riposteDir.x), half = (e.riposteArc * Math.PI) / 360;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.arc(x, y, reach, d - half, d + half);
+          ctx.closePath();
+          ctx.fillStyle = `rgba(255,60,40,${(e.riposteArm > 0 ? 0.08 : 0.2) * fade})`;
+          ctx.fill();
+        }
         ctx.setLineDash([6, 5]);
         ctx.beginPath();
         ctx.arc(x, y, reach, 0, Math.PI * 2);
@@ -626,6 +667,14 @@ export class Renderer {
 
   // boss: heavy octagon body with horns; glows red when enraged
   drawBossBody(e, x, y, fill) {
+    if (e.hidden) { // in the smoke (assassin): only a faint puff where it was
+      const ctx = this.ctx;
+      ctx.beginPath();
+      ctx.arc(x, y, e.radius * 1.1, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(40,30,50,0.25)';
+      ctx.fill();
+      return;
+    }
     const ctx = this.ctx, r = e.radius;
     if (e.ai && e.ai.enraged) {
       const pulse = 0.25 + Math.sin(performance.now() / 120) * 0.1;
@@ -649,12 +698,21 @@ export class Renderer {
       ctx.stroke();
     }
     const shape = e.tcfg.shape || 'horned';
+    if (e.front && e.ai) { // a guarded front (golem): a stone shield arc where it looks
+      const half = (e.front.arc * Math.PI) / 360, rr = e.radius;
+      ctx.strokeStyle = 'rgba(160,200,235,0.85)'; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(x, y, rr * 1.2, e.ai.face - half, e.ai.face + half); ctx.stroke();
+    }
     if (shape === 'knight') { this.drawFounder(e, x, y); return; }
     ctx.beginPath();
     if (shape === 'robed') { // mage: tall robe with a hood point
       ctx.moveTo(x, y - r * 1.25); ctx.lineTo(x + r * 0.95, y + r); ctx.lineTo(x - r * 0.95, y + r); ctx.closePath();
     } else if (shape === 'hooded') { // ranged: round cloak
       ctx.arc(x, y, r * 0.95, 0, Math.PI * 2);
+    } else if (shape === 'golem') { // golem: a block of stone
+      ctx.rect(x - r * 0.9, y - r * 0.9, r * 1.8, r * 1.8);
+    } else if (shape === 'cloaked') { // assassin: a narrow hooded diamond
+      ctx.moveTo(x, y - r * 1.2); ctx.lineTo(x + r * 0.8, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.8, y); ctx.closePath();
     } else { // warrior / summoner: armoured octagon
       for (let i = 0; i < 8; i++) {
         const a = Math.PI / 8 + (i * Math.PI) / 4;
@@ -683,6 +741,9 @@ export class Renderer {
     } else if (shape === 'hooded') { // bow arc
       ctx.strokeStyle = '#d8c8a0'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.arc(x, y, r * 1.25, -0.9, 0.9); ctx.stroke();
+    } else if (shape === 'cloaked') { // two blades
+      ctx.strokeStyle = '#d8dce8'; ctx.lineWidth = 3;
+      for (const sgn of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + sgn * r * 0.7, y + r * 0.2); ctx.lineTo(x + sgn * r * 1.25, y - r * 0.5); ctx.stroke(); }
     } else if (shape === 'crowned') { // bone crown
       for (let i = -2; i <= 2; i++) {
         ctx.beginPath();
@@ -820,6 +881,41 @@ export class Renderer {
         ctx.fill();
         continue;
       }
+      if (h.kind === 'pool') {
+        const on = h.t >= h.delay, curse = h.style === 'curse';
+        const fadeOut = on ? Math.min(1, (h.delay + h.duration - h.t) / 0.4) : Math.min(1, h.t / Math.max(0.01, h.delay));
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2);
+        ctx.fillStyle = curse ? `rgba(150,60,200,${(on ? 0.28 : 0.1) * fadeOut})` : `rgba(120,40,20,${(on ? 0.4 : 0.12) * fadeOut})`;
+        ctx.fill();
+        ctx.strokeStyle = curse ? `rgba(200,120,255,${0.6 * fadeOut})` : `rgba(255,110,60,${0.6 * fadeOut})`;
+        ctx.lineWidth = on ? 2 : 1;
+        ctx.setLineDash(on ? [] : [6, 6]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        continue;
+      }
+      if (h.kind === 'beam') {
+        const on = h.t >= h.delay;
+        ctx.save();
+        this.clipCover(h, hz.arena);
+        ctx.translate(h.x, h.y);
+        ctx.rotate(h.angle);
+        if (!on) {
+          ctx.setLineDash([12, 8]);
+          ctx.strokeStyle = `rgba(255,90,60,${0.3 + 0.5 * Math.min(1, h.t / h.delay)})`;
+          ctx.lineWidth = Math.max(2, h.width * 0.3);
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(h.length, 0); ctx.stroke();
+          ctx.setLineDash([]);
+        } else {
+          ctx.fillStyle = 'rgba(255,90,60,0.45)';
+          ctx.fillRect(0, -h.width / 2, h.length, h.width);
+          ctx.fillStyle = 'rgba(255,230,190,0.8)';
+          ctx.fillRect(0, -h.width / 6, h.length, h.width / 3);
+        }
+        ctx.restore();
+        continue;
+      }
       const k = Math.min(1, h.t / h.delay);
       const flash = h.kind !== 'ring' && h.done;
       ctx.save();
@@ -920,7 +1016,8 @@ export class Renderer {
     this.drawCombo(game.effects.combo, game.comboMult());
     if (game.mode === 'dungeon') {
       const bt = game.bossTrail && game.bossTrailOf === game.dungeon.boss ? game.bossTrail : null;
-      this.drawBossBar(game.dungeon.boss, bt ? bt.trail : null, bt ? bt.red : null);
+      const d = game.dungeon, bars = d.bosses && d.bosses.length > 1 ? d.bosses.filter((b) => b.alive) : [d.boss];
+      bars.forEach((b, i) => this.drawBossBar(b, b === d.boss && bt ? bt.trail : null, b === d.boss && bt ? bt.red : null, i * 34));
       this.drawExitArrow(game.dungeon);
       const f = game.dungeon.fade;
       if (f > 0) {
@@ -1087,11 +1184,11 @@ export class Renderer {
     ctx.fillRect(0, 0, w, h);
   }
 
-  drawBossBar(boss, trail = null, red = null) {
+  drawBossBar(boss, trail = null, red = null, dy = 0) {
     if (!boss || !boss.alive) return;
     const ctx = this.ctx;
     const w = Math.min(420, this.cssW * 0.42), h = 10;
-    const x = (this.cssW - w) / 2, y = 58;
+    const x = (this.cssW - w) / 2, y = 58 + dy;
     const k = Math.max(0, (red != null ? Math.min(boss.hp, red) : boss.hp) / boss.maxHp);
     const enraged = boss.ai && boss.ai.enraged;
     ctx.textAlign = 'center';
@@ -1118,7 +1215,8 @@ export class Renderer {
         ctx.fillStyle = '#20242c'; ctx.fillRect(x, y + h + 2, w, 5);
         ctx.fillStyle = '#d8c070'; ctx.fillRect(x, y + h + 2, w * (boss.guard / boss.guardMax), 5);
         ctx.fillStyle = '#e8d9a8'; ctx.fillText(t('boss.guard'), this.cssW / 2, y + h + 9);
-      } else if (boss.immune) { ctx.fillStyle = '#9fd8ff'; ctx.fillText(t(q === 'minions' ? 'boss.immuneMinions' : 'boss.immuneSigils'), this.cssW / 2, y + h + 4); }
+      } else if (boss.immune) { ctx.fillStyle = '#9fd8ff'; ctx.fillText(t(q === 'minions' ? 'boss.immuneMinions' : q === 'clones' ? 'boss.immuneClones' : 'boss.immuneSigils'), this.cssW / 2, y + h + 4); }
+      else if (q === 'backWeak') { ctx.fillStyle = '#a8c8e8'; ctx.fillText(t('boss.backWeak'), this.cssW / 2, y + h + 4); }
       ctx.textBaseline = 'bottom';
     }
     // enrage threshold tick

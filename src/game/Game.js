@@ -84,7 +84,7 @@ export class Game {
     this.ending = false;  // the ending is playing
     this.tokenFloors = new Set(); // floors that already gave a token this run
     this.loot = new Loot(config.items, this);
-    events.on('kill', (e) => { this.loot.onKill(e.enemy); this.gainXp(e.enemy); });
+    events.on('kill', (e) => { this.loot.onKill(e.enemy); this.gainXp(e.enemy); this.splitSlime(e.enemy); });
     events.on('roomCleared', () => { this.loot.magnet(); this.offerSkillGrowth(); });
     events.on('kill', (e) => {
       // hp is precious: lifesteal only works on mid-boss-class kills and up
@@ -135,6 +135,7 @@ export class Game {
   startPractice() {
     this.mode = 'practice';
     this.enemies.autoSpawn = true;
+    this.arena.clearTemps();
     this.arena.cfg = this.config.movement.arena;
     this.camera.setBounds(null);
     this.dungeon.reset();
@@ -150,6 +151,7 @@ export class Game {
     this.enemies.clear();
     this.loot.clearGround();
     this.hazards.clear();
+    this.arena.clearTemps();
     this.arena.cfg = room.arena;
     this.player.reset(room.start);
     this.movement.burstTime = Infinity;
@@ -192,8 +194,20 @@ export class Game {
     p.hp = Math.min(p.hp, max);
   }
 
+  // a splitting slime falls in two, twice (9.7): smaller, weaker, quicker, and worth nothing
+  splitSlime(enemy) {
+    const sm = this.config.dungeon.mobs && this.config.dungeon.mobs.slime;
+    if (!sm || !enemy || !enemy.tcfg || enemy.tcfg.ai !== 'slime' || (enemy.mods.split || 0) >= sm.splits) return;
+    const m = enemy.mods, gen = (m.split || 0) + 1;
+    for (const side of [-1, 1]) {
+      const pos = { x: enemy.pos.x + side * sm.spread, y: enemy.pos.y + side * sm.spread * 0.3 };
+      this.enemies.spawnAt('slime', pos, { ...m, hp: m.hp * sm.shrink, attack: m.attack * sm.shrink, size: (m.size || 1) * sm.shrink, speed: m.speed * sm.speedUp, split: gen, noReward: true });
+    }
+    this.events.emit('slimeSplit', { pos: { x: enemy.pos.x, y: enemy.pos.y }, radius: enemy.radius });
+  }
+
   gainXp(enemy) {
-    if (this.mode !== 'dungeon' || !enemy || this.over) return;
+    if (this.mode !== 'dungeon' || !enemy || this.over || (enemy.mods && enemy.mods.noReward)) return;
     const cfg = this.config.progress;
     const n = addXp(cfg, this.vault.progress, xpForKill(cfg, enemy, this.dungeon.floor));
     if (n > 0) {
@@ -760,6 +774,7 @@ export class Game {
     }
     this.enemies.update(dt, this.player.pos, this.viewRect(), this.combat.inputDir, this.player.radius);
     this.hazards.update(dt, this.player);
+    this.arena.update(dt); // golem boulders crumble
     if (this.mode === 'dungeon') { this.dungeon.update(dt); this.loot.update(dt); }
     this.updateTrails(realDt);
     this.camera.update(dt, this.player);

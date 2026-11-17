@@ -24,7 +24,7 @@ export class Loot {
 
   onKill(enemy) {
     const g = this.game;
-    if (g.mode !== 'dungeon' || !enemy || enemy.mods.minion) return;
+    if (g.mode !== 'dungeon' || !enemy || enemy.mods.minion || enemy.mods.noReward) return; // (split slimes give nothing)
     const d = this.cfg.drops;
     if (this.game.dungeon && this.game.dungeon.rush) return; // debug boss rush: no drops
     if (enemy.isBoss) { this.dropAt(enemy.pos, { boss: true, minGrade: d.boss.minGrade, count: d.boss.count, bossName: enemy.tcfg.name }); return; }

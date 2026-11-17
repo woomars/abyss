@@ -145,6 +145,25 @@ export default {
     // enemies and bosses
     '해골 전사': 'Skeleton Warrior', '오크 전사': 'Orc Warrior', '고블린 궁수': 'Goblin Archer', '망령': 'Wraith',
     '오크 대장': 'Orc Warchief', '마법진': 'Sigil', '폭탄병': 'Bomber', '해골 창병': 'Skeleton Spearman', '심연의 수문장': 'Gatekeeper of the Abyss',
+    // common mobs (Phase 6)
+    "해골 방패병": "Skeleton Shieldbearer",
+    "분열 점액": "Splitting Slime",
+    "주술사": "Shaman",
+    // bosses (Phase 6: assassins)
+    "그림자 칼잡이": "Shade Cutter",
+    "독니 자객": "Fang Cutthroat",
+    "밤의 처형자": "Night Executioner",
+    "안개 살수": "Mist Slayer",
+    "천 개의 얼굴": "The Thousand Faces",
+    "심연의 그림자": "Shade of the Abyss",
+    "분신": "Shadow Clone",
+    // bosses (Phase 6: golems)
+    "바위 골렘": "Stone Golem",
+    "이끼 골렘": "Moss Golem",
+    "용암 골렘": "Magma Golem",
+    "수정 골렘": "Crystal Golem",
+    "산을 짊어진 자": "Mountain Bearer",
+    "고대 수호상": "Ancient Warden",
     // bosses (Phase 5)
     "뼈 도살자": "Bone Butcher",
     "저주 마녀": "Hex Witch",

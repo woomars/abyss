@@ -116,7 +116,7 @@ async function boot() {
   events.on('floorStart', (e) => {
     music.play(e.music, e.track);
     if (e.final) banner.show(founderTitle(e.founder), t('final.arrive'), { kind: 'boss', ms: 2800 });
-    else if (e.kind === 'boss') banner.show(tr(e.boss), e.rush ? `보스 연전 ${e.rush.n}/${e.rush.total}${e.rush.loop ? ` · ${e.rush.loop + 1}바퀴` : ''} · ${floorLabel(e.floor)}` : `${floorLabel(e.floor)} ${tr(game.dungeon.info.band.title)}`, { kind: 'boss', ms: 2400 }); // the rush line is a debug screen (Korean only)
+    else if (e.kind === 'boss') banner.show(e.bosses ? e.bosses.map((n) => tr(n)).join(' · ') : tr(e.boss), e.rush ? `보스 연전 ${e.rush.n}/${e.rush.total}${e.rush.loop ? ` · ${e.rush.loop + 1}바퀴` : ''} · ${floorLabel(e.floor)}` : `${floorLabel(e.floor)} ${tr(game.dungeon.info.band.title)}`, { kind: 'boss', ms: 2400 }); // the rush line is a debug screen (Korean only)
     else if (e.kind === 'treasure') { /* the card screen says it all */ }
     else if (e.variant) banner.show(`${floorLabel(e.floor)} · ${t(`room.${e.variant}`)}`, t(`room.${e.variant}Sub`), { kind: e.variant === 'elite' ? 'boss' : 'reward', ms: 2200 });
     else banner.show(e.kind === 'combat' ? floorLabel(e.floor) : tr(e.title));

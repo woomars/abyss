@@ -41,6 +41,22 @@ export class Hazards {
   }
 
   // shockwave: telegraph for `delay`, then a band of `thickness` grows from 0 to maxRadius at `speed`
+  // a patch of ground that stays (cracks, curses): after delay it hurts every tick while the player
+  // stands in it, for duration. Once laid it outlives its caster.
+  pool({ x, y, radius, delay = 0, duration, tick, damage, owner = null, style = 'crack' }) {
+    const h = { kind: 'pool', x, y, radius, delay, duration, tick, damage, t: 0, next: 0, owner, style };
+    this.list.push(h);
+    return h;
+  }
+
+  // a line that sweeps from its caster: angle (rad) is turned by the pattern each step; a warning for
+  // delay, then it hurts for duration (once per 0.5 s). Pillars shield; a dead or stunned caster drops it.
+  beam({ owner, angle, length, width, delay, duration, damage }) {
+    const h = { kind: 'beam', owner, x: owner.pos.x, y: owner.pos.y, angle, dir: { x: Math.cos(angle), y: Math.sin(angle) }, length, width, radius: length, delay, duration, damage, t: 0, cd: 0 };
+    this.list.push(h);
+    return h;
+  }
+
   ring({ x, y, delay, speed, maxRadius, thickness, damage }) {
     this.list.push({ kind: 'ring', x, y, delay, speed, maxRadius, thickness, damage, t: 0, r: 0, hit: false });
   }
@@ -79,6 +95,22 @@ export class Hazards {
           if (h.damage > 0 && this.inside(h, player.pos, pr) && !this.covered(h, player.pos)) this.hit(h, player);
         }
         if (h.done && h.t >= h.delay + ((this.cfg && this.cfg.hazardFlash) || 0.15)) remove = true;
+      } else if (h.kind === 'pool') {
+        const o = h.owner;
+        if (o && h.t < h.delay && (!o.alive || o.dying || o.stunTime > 0)) { this.list.splice(i, 1); continue; }
+        if (h.t >= h.delay) {
+          h.next -= dt;
+          if (h.next <= 0 && this.inside(h, player.pos, pr)) { h.next = h.tick; this.hit(h, player); }
+          if (h.t >= h.delay + h.duration) remove = true;
+        }
+      } else if (h.kind === 'beam') {
+        const o = h.owner;
+        if (!o.alive || o.dying || o.stunTime > 0) { this.list.splice(i, 1); continue; }
+        h.x = o.pos.x; h.y = o.pos.y;
+        h.dir = { x: Math.cos(h.angle), y: Math.sin(h.angle) };
+        if (h.cd > 0) h.cd -= dt;
+        if (h.t >= h.delay && h.cd <= 0 && this.inside(h, player.pos, pr) && !this.covered(h, player.pos)) { h.cd = 0.5; this.hit(h, player); }
+        if (h.t >= h.delay + h.duration) remove = true;
       } else if (h.kind === 'ring') {
         if (h.t >= h.delay) {
           h.r = (h.t - h.delay) * h.speed;
@@ -94,7 +126,7 @@ export class Hazards {
   // attacks that spread out from their source (rings, bands, zone rings, cones, lanes) stop at pillars:
   // a player whose centre is in a pillar's shadow is safe. Circles dropped onto a spot are not blocked.
   covered(h, p) {
-    if (h.kind === 'circle' || !this.arena || !this.arena.blocks) return false;
+    if (h.kind === 'circle' || h.kind === 'pool' || !this.arena || !this.arena.blocks) return false;
     return this.arena.blocks({ x: h.x, y: h.y }, p);
   }
 
@@ -102,13 +134,13 @@ export class Hazards {
   inside(h, p, pr) {
     const dx = p.x - h.x, dy = p.y - h.y, d = Math.hypot(dx, dy);
     if (h.kind === 'annulus') return d >= h.r0 - pr && d <= h.r1 + pr;
-    if (h.kind === 'line') { // distance from the segment
+    if (h.kind === 'line' || h.kind === 'beam') { // distance from the segment
       const along = dx * h.dir.x + dy * h.dir.y;
       if (along < -pr || along > h.length + pr) return false;
       return Math.abs(dx * h.dir.y - dy * h.dir.x) <= h.width / 2 + pr;
     }
     if (d > h.radius + pr) return false;
-    if (h.kind === 'circle') return true;
+    if (h.kind === 'circle' || h.kind === 'pool') return true;
     if (d <= pr) return true; // standing on the origin
     const half = (h.arcDeg * Math.PI / 180) / 2;
     const diff = Math.abs(wrapAngle(Math.atan2(dy, dx) - Math.atan2(h.dir.y, h.dir.x)));

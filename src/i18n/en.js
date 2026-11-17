@@ -379,6 +379,8 @@ export default {
   // boss quests
   'boss.immuneMinions': "Invulnerable — defeat every minion",
   'boss.immuneSigils': "Invulnerable — break every sigil",
+  'boss.immuneClones': "Invulnerable — strike the real clone (it breathes)",
+  'boss.backWeak': "Its front is shielded — strike its back",
   'boss.guard': "Shield — keep striking to break it",
   'boss.exposed': "Opening! Strike now",
   'fx.immune': "IMMUNE",

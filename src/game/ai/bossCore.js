@@ -28,9 +28,31 @@ export function freeSpot(game, c, min, max, radius) {
   return null;
 }
 
+// a spot behind or beside the player (seen from the boss), free of walls and pillars; null if none
+export function behindSpot(e, game, dist) {
+  const p = game.player.pos, ar = game.arena;
+  const base = Math.atan2(p.y - e.pos.y, p.x - e.pos.x), pad = e.radius + 20;
+  for (let i = 0; i < 12; i++) {
+    const a = base + (game.rng() * 2 - 1) * (Math.PI / 2); // straight behind .. either side
+    const q = { x: p.x + Math.cos(a) * dist, y: p.y + Math.sin(a) * dist };
+    if (q.x < pad || q.y < pad || q.x > ar.width - pad || q.y > ar.height - pad) continue;
+    if (ar.resolveCircle(q, e.radius).hitWall) continue;
+    return q;
+  }
+  return freeSpot(game, p, dist * 0.8, dist * 1.4, e.radius);
+}
+
+// out of the smoke at a spot (assassin)
+export function appear(e, game, to) {
+  const from = { x: e.pos.x, y: e.pos.y };
+  e.pos = { x: to.x, y: to.y }; e.prevPos = { x: to.x, y: to.y };
+  e.hidden = false;
+  game.events.emit('bossBlink', { enemy: e, from, to: { x: to.x, y: to.y } });
+}
+
 function shoot(e, game, dir, p) {
   const off = e.radius + 6;
-  game.hazards.arrow({ x: e.pos.x + dir.x * off, y: e.pos.y + dir.y * off, dir: { x: dir.x, y: dir.y }, speed: p.speed, radius: p.radius, damage: p.damage * e.mods.attack, range: p.range, style: 'bolt', home: (p.home || 0) * e.ai.k, homeTime: p.homeTime || 0 });
+  game.hazards.arrow({ x: e.pos.x + dir.x * off, y: e.pos.y + dir.y * off, dir: { x: dir.x, y: dir.y }, speed: p.speed, radius: p.radius, damage: p.damage * e.mods.attack, range: p.range, style: p.style || 'bolt', home: (p.home || 0) * e.ai.k, homeTime: p.homeTime || 0 });
 }
 
 // a string of straight moves/shots: do one, mark the next lane at the player, wait, do it again
@@ -130,16 +152,124 @@ const EXEC = {
       for (let i = 0; i < n; i++) shoot(e, g, rot(dir, ((i / Math.max(1, n - 1) - 0.5) * p.arcDeg * Math.PI) / 180), p);
     },
   },
-  // a long thin line, then one very fast shot along it
-  snipe: {
-    cast(e, g, p, w, dir) { g.hazards.line({ x: e.pos.x, y: e.pos.y, dir, length: p.range, width: 10, delay: w }); },
-    // shot after shot: each fast shot follows a fresh aiming line
+  // rotating lines (ranged, 9.4): a fan of lines from the boss sweeps after the player; it turns back
+  // only turnDelay after the player went the other way, and its tip outruns a walking player
+  lines: {
+    cast(e, g, p, w, dir) {
+      const rl = g.config.enemies.rotatingLines, n = p.count || rl.count, spread = ((p.spread || rl.spread) * Math.PI) / 180;
+      const aim = n % 2 ? 0 : spread / 2; // an even fan would leave the hero in its middle gap: put a line on him
+      const center = Math.atan2(dir.y, dir.x) + aim, active = p.active || rl.active;
+      const beams = [];
+      for (let i = 0; i < n; i++) beams.push(g.hazards.beam({ owner: e, angle: center + (i - (n - 1) / 2) * spread, length: p.length, width: p.width, delay: w, duration: active, damage: p.damage * e.mods.attack }));
+      e.ai.lines = { beams, center, spread, n, aim, spin: 0, flip: 0 };
+    },
     fire(e, g, p) {
-      const shot = () => { shoot(e, g, e.ai.dir, p); return null; };
-      const mark = () => { const v = toward(e, g.player.pos); g.hazards.line({ x: e.pos.x, y: e.pos.y, dir: { x: v.x, y: v.y }, length: p.range, width: 10, delay: p.repeatWindup || 0.45 }); return { x: v.x, y: v.y }; };
-      shoot(e, g, e.ai.dir, p);
-      if (!p.repeat) return null;
-      return chained(e, g, p, () => null, shot, mark);
+      const rl = g.config.enemies.rotatingLines, L = e.ai.lines;
+      let t = p.active || rl.active;
+      const turnDelay = p.turnDelay != null ? p.turnDelay : rl.turnDelay, tip = p.tipSpeed || rl.tipSpeed;
+      return {
+        update(dt) {
+          t -= dt;
+          if (t <= 0 || !L) { e.ai.lines = null; return null; }
+          const hero = g.config.movement.cruiseSpeed * (1 + ((g.bonusStats && g.bonusStats.speed) || 0));
+          const far = Math.max(80, Math.hypot(g.player.pos.x - e.pos.x, g.player.pos.y - e.pos.y));
+          const step = ((tip * hero) / far) * dt; // faster than the hero walks, where the hero is
+          const want = Math.atan2(g.player.pos.y - e.pos.y, g.player.pos.x - e.pos.x) + L.aim;
+          const diff = Math.atan2(Math.sin(want - L.center), Math.cos(want - L.center));
+          const side = Math.abs(diff) < 1e-6 ? 0 : Math.sign(diff);
+          if (L.spin === 0) L.spin = side;
+          else if (side !== 0 && side !== L.spin) { L.flip += dt; if (L.flip >= turnDelay) { L.spin = side; L.flip = 0; } } else L.flip = 0;
+          if (L.spin === side && Math.abs(diff) <= step) L.center = want; else L.center += L.spin * step;
+          L.beams.forEach((b, i) => { b.angle = L.center + (i - (L.n - 1) / 2) * L.spread; });
+          return { x: 0, y: 0 };
+        },
+      };
+    },
+  },
+  // assassin: its shadow falls behind or beside the player, then it steps out there with a quick cut
+  shadowStrike: {
+    cast(e, g, p, w) {
+      const to = behindSpot(e, g, p.behind) || { x: e.pos.x, y: e.pos.y };
+      g.hazards.circle({ x: to.x, y: to.y, radius: e.radius, delay: w, damage: 0 }); // the shadow
+      const v = toward({ pos: to }, g.player.pos);
+      g.hazards.cone({ x: to.x, y: to.y, dir: { x: v.x, y: v.y }, radius: p.radius + e.radius * 0.5, arcDeg: p.arcDeg, delay: w, damage: p.damage * e.mods.attack });
+      e.hidden = true;
+      e.ai.strikeAt = to;
+      g.events.emit('bossSmoke', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } });
+    },
+    fire(e, g) { if (e.ai.strikeAt) appear(e, g, e.ai.strikeAt); e.ai.strikeAt = null; },
+  },
+  // assassin: it and its clones mark lanes at the player from three sides, then all dash at once
+  cloneCharge: {
+    cast(e, g, p, w, dir) {
+      const c = g.player.pos, lanes = [{ from: { x: e.pos.x, y: e.pos.y }, dir }];
+      const d0 = Math.max(220, Math.hypot(c.x - e.pos.x, c.y - e.pos.y)), base = Math.atan2(e.pos.y - c.y, e.pos.x - c.x);
+      for (let i = 1; i <= (p.clones || 2); i++) {
+        const a = base + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * ((p.spread || 110) * Math.PI) / 180;
+        const from = g.arena.resolveCircle({ x: c.x + Math.cos(a) * d0, y: c.y + Math.sin(a) * d0 }, e.radius).pos;
+        const v = toward({ pos: from }, c);
+        lanes.push({ from, dir: { x: v.x, y: v.y } });
+      }
+      for (const l of lanes) g.hazards.line({ x: l.from.x, y: l.from.y, dir: l.dir, length: p.length, width: p.width, delay: w, damage: p.damage * e.mods.attack });
+      e.ai.dir = { ...lanes[0].dir };
+      e.ai.cloneLanes = lanes.slice(1).map((l) => ({ from: l.from, to: { x: l.from.x + l.dir.x * p.length, y: l.from.y + l.dir.y * p.length } }));
+    },
+    fire(e, g, p) {
+      g.events.emit('cloneDash', { enemy: e, lanes: e.ai.cloneLanes || [] });
+      const d = { ...e.ai.dir }, sp = p.length / p.dashTime;
+      let t = p.dashTime;
+      return { update(dt) { t -= dt; return t > 0 ? { x: d.x * sp, y: d.y * sp } : null; } };
+    },
+  },
+  // assassin, whole room: clones cross the room one after another along marked lanes; find the gaps
+  crossing: {
+    hold: (p, e) => (p.count + e.ai.extra - 1) * p.gap,
+    cast(e, g, p, w) {
+      const ar = g.arena, n = p.count + e.ai.extra;
+      for (let k = 0; k < n; k++) {
+        const across = k % 2 === 0, span = across ? ar.height : ar.width, at = span * (0.12 + 0.76 * g.rng());
+        const lane = across ? { x: 0, y: at, dir: { x: 1, y: 0 }, length: ar.width } : { x: at, y: 0, dir: { x: 0, y: 1 }, length: ar.height };
+        g.hazards.line({ ...lane, width: p.width, delay: w + k * p.gap, damage: p.damage * e.mods.attack });
+      }
+    },
+  },
+  // golem: a slam where the player stands that leaves the ground cracked (it keeps hurting a while)
+  crackSlam: {
+    cast(e, g, p, w) {
+      const c = g.player.pos;
+      g.hazards.circle({ x: c.x, y: c.y, radius: p.radius, delay: w, damage: p.damage * e.mods.attack });
+      g.hazards.pool({ x: c.x, y: c.y, radius: p.radius * 0.85, delay: w, duration: p.crack.duration, tick: p.crack.tick, damage: p.crack.damage * e.mods.attack, owner: e, style: 'crack' });
+    },
+  },
+  // golem: a boulder thrown at the player; where it lands it stands as a pillar for a while (it never
+  // lands on anyone — then it only hurts)
+  boulder: {
+    cast(e, g, p, w) {
+      const c = g.player.pos;
+      g.hazards.circle({ x: c.x, y: c.y, radius: p.radius, delay: w, damage: p.damage * e.mods.attack });
+      e.ai.boulderAt = { x: c.x, y: c.y };
+    },
+    fire(e, g, p) {
+      const q = e.ai.boulderAt;
+      e.ai.boulderAt = null;
+      if (!q) return;
+      const half = p.size / 2, rect = { x: q.x - half, y: q.y - half, w: p.size, h: p.size };
+      const hits = (o, r) => { const cx = Math.max(rect.x, Math.min(o.x, rect.x + rect.w)), cy = Math.max(rect.y, Math.min(o.y, rect.y + rect.h)); return Math.hypot(o.x - cx, o.y - cy) < r + 6; };
+      if (hits(g.player.pos, g.player.radius)) return;
+      for (const m of g.enemies.all()) if (m.alive && !m.dying && hits(m.pos, m.radius)) return;
+      if (rect.x < 0 || rect.y < 0 || rect.x + rect.w > g.arena.width || rect.y + rect.h > g.arena.height) return;
+      g.arena.addTemp(rect, p.last);
+      g.events.emit('boulderLand', { pos: { x: q.x, y: q.y }, size: p.size });
+    },
+  },
+  // golem, whole room: falling rocks everywhere but a few safe cells
+  earthquake: {
+    cast(e, g, p, w) {
+      const ar = g.arena, cells = [];
+      for (let y = p.cell / 2; y < ar.height; y += p.cell) for (let x = p.cell / 2; x < ar.width; x += p.cell) cells.push({ x, y });
+      const safe = new Set();
+      while (safe.size < Math.min(p.safe, cells.length)) safe.add(Math.floor(g.rng() * cells.length) % cells.length);
+      cells.forEach((c, i) => { if (!safe.has(i)) g.hazards.circle({ x: c.x, y: c.y, radius: p.cell * 0.72, delay: w + g.rng() * 0.25, damage: p.damage * e.mods.attack }); });
     },
   },
   summon: { cast() {}, fire(e, g, p) { bossCore.summon(e, g, p); } },
@@ -248,7 +378,26 @@ export const bossCore = {
 
   mods(e) { return e.ai.enraged ? e.tcfg.enrage : CALM; },
 
-  minions(e, game) { return game.enemies.all().filter((m) => m !== e && m.alive && !m.dying && !m.isBoss && m.type !== 'sigil').length; },
+  minions(e, game) { return game.enemies.all().filter((m) => m !== e && m.alive && !m.dying && !m.isBoss && m.type !== 'sigil' && m.type !== 'clone').length; },
+
+  // an assassin's clones still standing
+  clones(e, game) { return game.enemies.all().filter((m) => m.type === 'clone' && m.cloneOf === e && m.alive && !m.dying); },
+
+  // clones around the player, one of them real (assassin quest)
+  spawnClones(e, game) {
+    const n = ((e.tcfg.clones && e.tcfg.clones.count) || 3) + e.ai.extra, made = [];
+    const info = game.dungeon && game.dungeon.info, base = e.root.types.clone;
+    for (let i = 0; i < n; i++) {
+      const q = freeSpot(game, game.player.pos, 220, 420, e.radius) || freeSpot(game, e.pos, 80, 300, e.radius);
+      if (!q) continue;
+      const c = game.enemies.spawnAt('clone', q, { ...(info ? info.mods : {}), minion: true, noReward: true, size: e.radius / base.radius });
+      c.hp = c.maxHp = 1;
+      c.cloneOf = e;
+      made.push(c);
+      game.events.emit('minionSpawn', { pos: q, zone: 'near' });
+    }
+    if (made.length) made[Math.floor(game.rng() * made.length) % made.length].real = true;
+  },
 
   pick(e, game) {
     const t = e.tcfg, n = this.minions(e, game);
@@ -359,6 +508,7 @@ export const bossCore = {
 
   raiseGuard(e, game) {
     const t = e.tcfg, s = e.ai, q = this.questOf(e);
+    if (q === 'backWeak') return; // a golem is never untouchable: its front is guarded instead
     s.qphase = 'guarded';
     if (q === 'minions') {
       const p = Object.values(t.patterns).find((x) => x.kind === 'summon');
@@ -375,21 +525,23 @@ export const bossCore = {
     } else if (q === 'guard') {
       e.guardMax = e.maxHp * (t.guardFrac || 0.12);
       e.guard = e.guardMax;
-    }
+    } else if (q === 'clones') this.spawnClones(e, game);
     if (q) game.events.emit('bossGuard', { enemy: e, quest: q, pos: { x: e.pos.x, y: e.pos.y } });
   },
 
   quest(e, dt, game) {
     const t = e.tcfg, s = e.ai, q = this.questOf(e);
-    if (!q) { e.immune = false; return; }
+    if (!q || q === 'backWeak') { e.immune = false; return; }
     if (s.qphase === 'guarded') {
-      const done = q === 'minions' ? this.minions(e, game) === 0 : q === 'sigils' ? this.sigils(e, game).length === 0 : !(e.guard > 0);
+      const done = q === 'minions' ? this.minions(e, game) === 0 : q === 'sigils' ? this.sigils(e, game).length === 0
+        : q === 'clones' ? !this.clones(e, game).some((c) => c.real) : !(e.guard > 0);
       e.immune = !done && q !== 'guard';
       if (done) {
         s.qphase = 'exposed';
         s.qt = s.exposedFor || t.exposed || 5;
         e.immune = false;
         e.guard = 0;
+        if (q === 'clones') for (const c of this.clones(e, game)) { c.dying = true; c.deathTimer = e.root.deathTime; } // the fakes go up in smoke
         game.events.emit('bossExposed', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } });
       }
     } else {

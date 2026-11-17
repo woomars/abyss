@@ -3,7 +3,12 @@ export function floorInfo(n, cfg) {
   const len = cfg.cycleLength;
   const cycle = Math.floor((n - 1) / len);
   const base = ((n - 1) % len) + 1;
-  const band = cfg.bands.find((b) => base >= b.from && base <= b.to) || cfg.bands[cfg.bands.length - 1];
+  // boss floors and their tier come from the schedule (tuning/bosses.json); the band of that tier gives
+  // its title, music and multipliers. Other floors take the fight band they fall in.
+  const sch = cfg.bossSchedule, at = sch ? sch.floors.indexOf(base) : -1;
+  const band = at >= 0
+    ? cfg.bands.find((b) => b.kind === 'boss' && b.boss && b.boss.tier === sch.tiers[at])
+    : cfg.bands.find((b) => (!sch || b.kind !== 'boss') && base >= b.from && base <= b.to) || cfg.bands[cfg.bands.length - 1];
   const mods = {
     hp: (1 + cfg.perFloor.hp * (base - 1)) * (1 + cfg.perLoop.hp * cycle),
     attack: (1 + cfg.perFloor.attack * (base - 1)) * (1 + cfg.perLoop.attack * cycle),
@@ -21,7 +26,7 @@ export function floorInfo(n, cfg) {
     kind: band.kind,
     music: band.music,
     boss: band.boss || null,
-    treasureAfter: cfg.treasureAfter.includes(base),
+    treasureAfter: (cfg.treasureAfter || []).includes(base),
   };
 }
 

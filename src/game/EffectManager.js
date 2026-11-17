@@ -32,6 +32,12 @@ export class EffectManager {
     events.on('playerHit', (e) => this.onPlayerHit(e));
     events.on('chainBroken', (e) => this.text(e.pos.x, e.pos.y - 52, t('fx.chainBroken')));
     events.on('evade', (e) => this.text(e.pos.x, e.pos.y - 52, t('fx.evade')));
+    events.on('cloneDash', (e) => { for (const l of e.lanes) this.onLink({ from: l.from, to: l.to, chainIndex: 2 }); }); // an assassin's clones dash with it
+    events.on('bossSmoke', (e) => this.ring(e.pos.x, e.pos.y, e.enemy.radius * 0.6, e.enemy.radius * 1.6, '#5a4a6a'));
+    events.on('boulderLand', (e) => { this.ring(e.pos.x, e.pos.y, 10, e.size, '#c8b89a'); for (const d of [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) this.spark(e.pos.x, e.pos.y, d, 3, 220, '#a89878', 4, 0.35); });
+    events.on('shieldBlock', (e) => this.ring(e.pos.x, e.pos.y, 10, 46, '#d8dce8'));
+    events.on('slimeSplit', (e) => this.ring(e.pos.x, e.pos.y, e.radius * 0.5, e.radius * 1.8, '#7fd07a'));
+    events.on('shamanBubble', (e) => this.ring(e.pos.x, e.pos.y, e.radius, e.radius * 1.5, '#c8a0ff'));
     events.on('minionSpawn', (e) => { this.ring(e.pos.x, e.pos.y, 4, 42, '#a070ff'); this.ring(e.pos.x, e.pos.y, 20, 8, '#e0c8ff'); });
     events.on('stun', (e) => this.ring(e.pos.x, e.pos.y, e.enemy.radius, e.enemy.radius + 26, '#ffe08a'));
     events.on('stormZap', (e) => { this.onLink({ ...e, chainIndex: 4 }); this.ring(e.to.x, e.to.y, 6, 34, '#9fd8ff'); });

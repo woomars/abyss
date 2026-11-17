@@ -1,7 +1,9 @@
 // Room template + rng -> arena (walls, pillars), player start (left) and exit (right) (pure).
-export function buildRoom(kind, cfg, rng) {
+// scale: the room grows or shrinks around the same layout (two bosses: a larger room)
+export function buildRoom(kind, cfg, rng, scale = 1) {
   const list = cfg.rooms[kind];
-  const t = list[Math.floor(rng() * list.length) % list.length];
+  const t0 = list[Math.floor(rng() * list.length) % list.length];
+  const t = scale === 1 ? t0 : { ...t0, w: t0.w * scale, h: t0.h * scale, pillars: t0.pillars.map((p) => ({ x: p.x * scale, y: p.y * scale, w: p.w, h: p.h })) };
   const flip = rng() < 0.5; // mirror top/bottom for variety
   const pillars = t.pillars.map((p) => ({ x: p.x, y: flip ? t.h - p.y - p.h : p.y, w: p.w, h: p.h }));
   return {

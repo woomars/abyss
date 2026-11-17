@@ -1,6 +1,6 @@
 import { floorInfo, pickWeighted, randInt } from './floorPlan.js';
 import { bossKey } from './Medals.js';
-import { pickBoss, bossLevel } from './bossPick.js';
+import { pickBoss, pickPair, bossLevel } from './bossPick.js';
 import { bossRoster } from './Medals.js';
 import { buildRoom } from './RoomBuilder.js';
 import { floorLabel } from '../core/floorLabel.js';
@@ -33,6 +33,7 @@ export class Dungeon {
     this.rush = null; // debug boss rush: every boss in turn, full hp after each
     this.forceBoss = null;
     this.lastBoss = {}; // tier -> boss met last in this run (not twice in a row)
+    this.cycleTypes = { cycle: -1, list: [] }; // attack types met in this 20-floor cycle (no type twice)
     this.stageTrack = null; // combat-floor music: one track per 20-floor cycle (music.playlists.stage)
     this.stageCycle = null;
     this.floor = 0;
@@ -44,6 +45,7 @@ export class Dungeon {
     this.exit = { x: 0, y: 0, r: 0, open: false };
     this.chest = null;
     this.boss = null;
+    this.bosses = [];
     this.waveIndex = 0;
     this.waveCount = 0;
     this.sinceKill = 0;
@@ -72,7 +74,7 @@ export class Dungeon {
   // build a room, move the player there (behind the fade) and populate it
   enterRoom(kind) {
     const g = this.game, c = this.cfg;
-    const room = buildRoom(kind, c, g.rng);
+    const room = buildRoom(kind, c, g.rng, this.isDouble(kind) ? c.doubleBoss.roomScale : 1);
     this.room = room;
     this.roomKind = kind;
     g.loadRoom(room);
@@ -83,13 +85,14 @@ export class Dungeon {
     this.exitIn = Infinity; // seconds until the exit appears after the room is won
     this.chest = null;
     this.boss = null;
+    this.bosses = [];
     this.waveIndex = 0;
     this.waveCount = 0;
     this.sinceKill = 0;
     this.state = 'fadeIn';
     this.fade = 1;
     const info = this.info;
-    let title = floorLabel(this.floor), music = info.music, bossName = null;
+    let title = floorLabel(this.floor), music = info.music, bossName = null, bossNames = null;
     if (kind === 'combat') {
       // from floor 5 on, some combat floors are an elite room or a trap room
       const v = c.variants;
@@ -109,17 +112,32 @@ export class Dungeon {
       // one of this tier's bosses unlocked by the loop, at random (not the one met last time)
       const b = info.boss, types = g.config.enemies.types;
       const fin = this.isFinal ? c.final : null; // floor 100: the founder, every time
-      const type = fin ? fin.boss : this.forceBoss || b.type || pickBoss(types, b.tier, info.cycle, g.rng, this.lastBoss[b.tier] || null);
-      if (!fin) this.lastBoss[b.tier] = type;
-      const tcfg = types[type];
-      const level = bossLevel(b.tier || tcfg.tier, info.cycle, g.config.enemies);
-      const pos = { x: room.center.x + room.arena.width * 0.18, y: room.center.y };
-      const k = fin ? { hp: fin.hp || 1, attack: fin.attack || 1 } : { hp: 1, attack: 1 };
-      this.boss = g.enemies.spawnAt(type, pos, { hp: info.mods.hp * b.hp * k.hp, attack: info.mods.attack * b.attack * k.attack, speed: info.mods.speed, level });
-      if (b.patterns && !fin) this.boss.patterns = b.patterns.slice();
-      bossName = tcfg.name;
-      if (fin) this.boss.founder = g.founderOf(); // who he is: the family's first knight (or the hero's own shadow)
-      else this.boss.bossInfo = { key: bossKey(type), name: tcfg.name, title: info.band.title }; // for the family's bestiary
+      if (this.cycleTypes.cycle !== info.cycle) this.cycleTypes = { cycle: info.cycle, list: [], pairs: [] };
+      let list;
+      if (this.isDouble(kind)) { // floor 61 on: two bosses whose pair of types is new in this cycle (9.5)
+        const pair = pickPair(types, b.tier, info.cycle, g.rng, this.cycleTypes.pairs);
+        this.cycleTypes.pairs.push(pair[2]);
+        list = [pair[0], pair[1]];
+      } else {
+        const type = fin ? fin.boss : this.forceBoss || b.type || pickBoss(types, b.tier, info.cycle, g.rng, this.lastBoss[b.tier] || null, this.cycleTypes.list);
+        if (!fin) { this.lastBoss[b.tier] = type; this.cycleTypes.list.push(types[type].ai); }
+        list = [type];
+      }
+      const k = fin ? { hp: fin.hp || 1, attack: fin.attack || 1 } : { hp: list.length > 1 ? c.doubleBoss.hp : 1, attack: 1 };
+      list.forEach((type, i) => {
+        const tcfg = types[type];
+        const level = bossLevel(b.tier || tcfg.tier, info.cycle, g.config.enemies);
+        const dy = list.length > 1 ? (i ? 1 : -1) * room.arena.height * 0.18 : 0;
+        const pos = { x: room.center.x + room.arena.width * 0.18, y: room.center.y + dy };
+        const boss = g.enemies.spawnAt(type, pos, { hp: info.mods.hp * b.hp * k.hp, attack: info.mods.attack * b.attack * k.attack, speed: info.mods.speed, level });
+        if (b.patterns && !fin) boss.patterns = b.patterns.slice();
+        if (fin) boss.founder = g.founderOf(); // who he is: the family's first knight (or the hero's own shadow)
+        else boss.bossInfo = { key: bossKey(type), name: tcfg.name, title: info.band.title }; // for the family's bestiary
+        this.bosses.push(boss);
+      });
+      this.boss = this.bosses[0];
+      bossNames = list.map((type) => types[type].name);
+      bossName = bossNames.join(' · ');
       title = `${floorLabel(this.floor)} ${info.band.title} — ${bossName}`;
     } else if (kind === 'treasure') {
       this.chest = { x: room.center.x, y: room.center.y, r: c.chestRadius, opened: false, big: false };
@@ -127,7 +145,21 @@ export class Dungeon {
       music = 'rest';
     }
     this.lastAlive = this.remaining;
-    g.events.emit('floorStart', { floor: this.floor, kind, music, track: music === 'stage' ? this.stageTrack : null, title, boss: bossName, final: kind === 'boss' && this.isFinal, founder: this.boss && this.boss.founder ? this.boss.founder : null, variant: this.variant, rush: this.rush ? { n: this.rush.i + 1, total: this.rush.list.length, loop: this.rush.loop } : null });
+    g.events.emit('floorStart', { floor: this.floor, kind, music, track: music === 'stage' ? this.stageTrack : null, title, boss: bossName, bosses: bossNames, final: kind === 'boss' && this.isFinal, founder: this.boss && this.boss.founder ? this.boss.founder : null, variant: this.variant, rush: this.rush ? { n: this.rush.i + 1, total: this.rush.list.length, loop: this.rush.loop } : null });
+  }
+
+  // two bosses on this floor (61 on, not floor 100 or the debug rush)
+  isDouble(kind) {
+    const d = this.cfg.doubleBoss;
+    const pinned = this.info && this.info.boss && this.info.boss.type; // a boss pinned on the band (tests, debug) comes alone
+    return kind === 'boss' && !!d && !this.isFinal && !this.rush && !this.forceBoss && !pinned && this.floor >= d.fromFloor;
+  }
+
+  // every boss of the room has fallen; while one still stands it is the one on the bar
+  bossesDown() {
+    const up = (this.bosses.length ? this.bosses : [this.boss]).filter((b) => b.alive && !b.dying);
+    if (up.length && up[0] !== this.boss) this.boss = up[0];
+    return up.length === 0;
   }
 
   // floor 100 (dungeon.final): the founder's room
@@ -172,6 +204,7 @@ export class Dungeon {
     if (r.i >= r.list.length) { r.i = 0; r.loop += 1; }
     r.wait = 1.4;
     this.boss = null;
+    this.bosses = [];
   }
 
   // spike tiles of a trap room: two groups rising in turn, away from the start
@@ -253,8 +286,20 @@ export class Dungeon {
     this.enterRoom(this.info.kind);
   }
 
+  // the wave mix: the band's mobs, with each cycle's new mob taking its share (9.7, pressure.json mobs)
+  mobMix() {
+    const base = this.info.band.mix, m = this.cfg.mobs;
+    const add = m ? m.added.filter((a) => a.cycle <= this.info.cycle) : [];
+    const w = add.reduce((s, a) => s + a.weight, 0);
+    if (!w) return base;
+    const total = Object.values(base).reduce((a, b) => a + b, 0), out = {};
+    for (const [k, v] of Object.entries(base)) out[k] = (v / total) * (1 - w);
+    for (const a of add) out[a.type] = (out[a.type] || 0) + a.weight;
+    return out;
+  }
+
   spawnWave() {
-    const g = this.game, c = this.cfg, band = this.info.band, rng = g.rng;
+    const g = this.game, c = this.cfg, band = this.info.band, rng = g.rng, mix = this.mobMix();
     this.waveIndex += 1;
     const room = Math.max(0, c.maxAlive - this.remaining);
     let n = Math.min(randInt(band.waves.size, rng), room);
@@ -263,7 +308,7 @@ export class Dungeon {
       const group = Math.min(n, randInt(c.spawn.groupSize, rng));
       const center = this.spawnPoint();
       for (let i = 0; i < group; i++) {
-        const type = pickWeighted(band.mix, rng);
+        const type = pickWeighted(mix, rng);
         const mods = { ...this.info.mods };
         if (this.variant === 'elite' || (band.enhancedChance && rng() < band.enhancedChance)) {
           mods.hp *= c.enhanced.hp; mods.attack *= c.enhanced.attack; mods.size = c.enhanced.size; mods.enhanced = true; mods.riposte = !!c.enhanced.riposte;
@@ -391,7 +436,7 @@ export class Dungeon {
       if (this.roomKind === 'combat') {
         if (this.waveIndex < this.waveCount && alive <= this.info.band.waves.nextAt) this.spawnWave();
         else if (this.waveIndex >= this.waveCount && alive === 0) this.clear();
-      } else if (this.roomKind === 'boss' && this.boss && !this.boss.targetable) {
+      } else if (this.roomKind === 'boss' && this.boss && this.bossesDown()) { // (a boss in the smoke is only hidden)
         // the boss falls: its minions fall with it
         const bp = this.boss.pos;
         for (const e of g.enemies.all()) {

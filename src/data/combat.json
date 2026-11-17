@@ -41,6 +41,6 @@
   "combo": {
     "step": 0.5,
     "every": 5,
-    "cap": 100
+    "cap": 30
   }
 }

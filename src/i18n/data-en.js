@@ -41,7 +41,7 @@ export default {
     "천둥 망치": "Thunder Maul",
     "특수기 기절 시간 +50%": "Skill stuns last 50% longer",
     "광란의 목걸이": "Frenzy Pendant",
-    "콤보 5마다 공격력이 2% 더 오른다": "Attack rises 2% more every 5 combo",
+    "콤보 5마다 공격력이 20% 더 오른다": "Attack rises 20% more every 5 combo",
     "그림자 갑주": "Shadow Mail",
     "돌진을 시작할 때 0.25초 무적 (2초마다)": "0.25 s of invulnerability when a dash starts (every 2 s)",
     "강철 맹세의 검": "Iron Oath Sword",

@@ -9,7 +9,7 @@
   "boots":     { "_name": "바람의 정수 — 이동 속도%", "stat": "speed",     "add": 0.008, "inherit": true },
   "hourglass": { "_name": "시간의 정수 — 특수기 재사용 대기 감소", "stat": "cooldown", "add": 0.012, "inherit": true },
   "plate":     { "_name": "강철의 정수 — 받는 피해 감소", "stat": "armor",     "add": 0.01,  "inherit": true },
-  "fervor":    { "_name": "열기의 정수 — 콤보당 배수 증가", "stat": "comboStep", "add": 0.001, "inherit": true },
+  "fervor":    { "_name": "열기의 정수 — 콤보 5마다 배수 증가 (기본 0.5에 맞춰 0.01)", "stat": "comboStep", "add": 0.01, "inherit": true },
   "fang":      { "_name": "피의 정수 — 보스 처치 때 회복 (이 생에서만, 정수로 보여서 15의 1/10을 반올림한 2)", "stat": "lifesteal", "add": 2, "inherit": false },
   "chain":     { "_name": "연쇄의 정수 — 연쇄 횟수 (예외: 1개씩 그대로)", "stat": "chain", "add": 1, "inherit": true },
   "leap":      { "_name": "점프의 정수 — 점프 피해 지역 반지름% (착지 피해% 에서 바뀜)", "stat": "jumpRadius", "add": 0.01, "inherit": true },

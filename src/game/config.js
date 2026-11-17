@@ -90,7 +90,7 @@ export function applyTuning(config) {
     for (const ty of Object.values(config.enemies.types)) for (const p of Object.values(ty.patterns || {})) if (p.kind === 'lines') p.windup = t.bosses.rotatingLines.warn;
   }
   // depth pressure (tuning/pressure.json): the riposte cone and melee first strikes
-  if (t.pressure) { config.enemies.riposteCone = t.pressure.riposte; config.enemies.firstStrike = t.pressure.firstStrike; config.dungeon.mobs = t.pressure.mobs; }
+  if (t.pressure) { config.enemies.riposteCone = t.pressure.riposte; config.enemies.firstStrike = t.pressure.firstStrike; config.dungeon.mobs = t.pressure.mobs; Object.assign(config.dungeon, { waves: t.pressure.waves, roomShrink: t.pressure.rooms, timedWaves: t.pressure.timedWaves }); }
   // essences: the amount one card adds (점프의 정수 changes with the jump in stage 3)
   if (t.essence) for (const [id, e] of Object.entries(t.essence)) if (e && e.add != null && config.relics.list[id]) { config.relics.list[id].add = e.add; if (e.stat) config.relics.list[id].stat = e.stat; }
   return config;

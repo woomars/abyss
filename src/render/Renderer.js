@@ -434,6 +434,11 @@ export class Renderer {
 
   drawRings(fx) {
     const ctx = this.ctx;
+    for (const f of fx.floods) { // an orc's all-round blow: its whole circle red for a moment
+      ctx.globalAlpha = 0.55 * (f.life / f.max);
+      ctx.fillStyle = '#ff2a1a';
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+    }
     fx.rings.forEachActive((r) => {
       const k = r.life / r.max;
       ctx.globalAlpha = k;
@@ -642,6 +647,7 @@ export class Renderer {
           ctx.fillStyle = `rgba(255,60,40,${(e.riposteArm > 0 ? 0.08 : 0.2) * fade})`;
           ctx.fill();
         }
+        if (!e.riposteDir) { // no direction (a skill hit): the old ring
         ctx.setLineDash([6, 5]);
         ctx.beginPath();
         ctx.arc(x, y, reach, 0, Math.PI * 2);
@@ -654,6 +660,7 @@ export class Renderer {
         ctx.strokeStyle = `rgba(255,80,50,${0.6 * fade})`;
         ctx.lineWidth = 2.5;
         ctx.stroke();
+        }
       }
       if ((e.isElite || e.mods.enhanced) && !e.isBoss && !e.dying && e.hp < e.maxHp) {
         const w = r * 2.2, h = 5;
@@ -826,7 +833,10 @@ export class Renderer {
       ctx.arc(x, y, reach, 0, Math.PI * 2);
       ctx.strokeStyle = st.flash ? `rgba(255,235,200,${st.strokeAlpha})` : `rgba(255,70,55,${st.strokeAlpha})`;
       ctx.lineWidth = st.lineWidth;
+      if (e.isElite) ctx.setLineDash([10, 7]); // the orc's all-round blow: a dashed edge
       ctx.stroke();
+      ctx.setLineDash([]);
+      if (e.isElite) { ctx.beginPath(); ctx.arc(x, y, reach, 0, Math.PI * 2); ctx.fillStyle = `rgba(255,40,30,${0.08 + 0.12 * k})`; ctx.fill(); } // the whole floor it covers, reddening
     }
     const hz = game.hazards;
     for (const h of hz.list) {
@@ -1095,6 +1105,20 @@ export class Renderer {
           ctx.beginPath(); ctx.moveTo(cx, cy - step * 0.38); ctx.lineTo(cx + step * 0.25, cy + step * 0.3); ctx.lineTo(cx - step * 0.25, cy + step * 0.3); ctx.closePath(); ctx.fill();
         }
       }
+    }
+    const wp = d.warp;
+    if (wp && this.isVisible(wp, wp.r * 2)) { // Ariadne's rope: a golden thread coiled in a pale ring
+      ctx.save();
+      ctx.translate(wp.x, wp.y);
+      ctx.beginPath(); ctx.arc(0, 0, wp.r * 1.3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(160,220,200,0.18)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(190,240,220,0.8)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.rotate(-t * 1.2);
+      ctx.strokeStyle = '#ffd88a'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let k = 0; k <= 40; k++) { const a = k * 0.45, rr = wp.r * (0.15 + k / 52); ctx[k ? 'lineTo' : 'moveTo'](Math.cos(a) * rr, Math.sin(a) * rr); }
+      ctx.stroke();
+      ctx.restore();
     }
     const ex = d.exit;
     if (ex.r > 0 && ex.open && this.isVisible(ex, ex.r * 2)) { // the portal only shows once it is there

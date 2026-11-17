@@ -34,6 +34,9 @@ export class Dungeon {
     this.forceBoss = null;
     this.lastBoss = {}; // tier -> boss met last in this run (not twice in a row)
     this.cycleTypes = { cycle: -1, list: [] }; // attack types met in this 20-floor cycle (no type twice)
+    this.waveTimes = [];  // average seconds to beat one wave, on the last few combat floors (timed waves, C5)
+    this.interval = null; // seconds between timed waves on this floor (21층~); never longer than before
+    this.lastInterval = null;
     this.stageTrack = null; // combat-floor music: one track per 20-floor cycle (music.playlists.stage)
     this.stageCycle = null;
     this.floor = 0;
@@ -44,10 +47,15 @@ export class Dungeon {
     this.fade = 0;       // 0 = clear, 1 = black
     this.exit = { x: 0, y: 0, r: 0, open: false };
     this.chest = null;
+    this.warp = null;  // the rope's warp zone (10.4): { x, y, r, floors, armed }
     this.boss = null;
     this.bosses = [];
     this.waveIndex = 0;
     this.waveCount = 0;
+    this.pending = 0;  // enemies of this wave still waiting for room (maxAlive)
+    this.clock = 0;    // seconds played in this room
+    this.waveAt = 0;   // when the current wave came
+    this.waveDur = []; // how long each wave of this floor took
     this.sinceKill = 0;
     this.lastAlive = 0;
   }
@@ -74,7 +82,9 @@ export class Dungeon {
   // build a room, move the player there (behind the fade) and populate it
   enterRoom(kind) {
     const g = this.game, c = this.cfg;
-    const room = buildRoom(kind, c, g.rng, this.isDouble(kind) ? c.doubleBoss.roomScale : 1);
+    // what the run remembered when this floor began (a save made here goes back to it)
+    this.entryMemory = { cycleTypes: JSON.parse(JSON.stringify(this.cycleTypes)), lastBoss: { ...this.lastBoss } };
+    const room = buildRoom(kind, c, g.rng, this.roomScale(kind));
     this.room = room;
     this.roomKind = kind;
     g.loadRoom(room);
@@ -84,14 +94,21 @@ export class Dungeon {
     this.variant = null; // elite | trap on some combat floors
     this.exitIn = Infinity; // seconds until the exit appears after the room is won
     this.chest = null;
+    this.warp = null;
     this.boss = null;
     this.bosses = [];
     this.waveIndex = 0;
     this.waveCount = 0;
+    this.pending = 0;
+    this.clock = 0;
+    this.waveAt = 0;
+    this.waveDur = [];
+    this.interval = null;
     this.sinceKill = 0;
     this.state = 'fadeIn';
     this.fade = 1;
     const info = this.info;
+    this.setRope();
     let title = floorLabel(this.floor), music = info.music, bossName = null, bossNames = null;
     if (kind === 'combat') {
       // from floor 5 on, some combat floors are an elite room or a trap room
@@ -101,7 +118,9 @@ export class Dungeon {
         this.variant = r < v.elite ? 'elite' : r < v.elite + v.trap ? 'trap' : null;
       }
       if (this.variant === 'trap') this.layTraps();
-      this.waveCount = info.band.waves.count;
+      const w = c.waves;
+      this.waveCount = info.band.waves.count + (w ? w.extraWavesPerCycle * info.cycle : 0); // one more wave each cycle (9.6)
+      this.interval = this.timedInterval();
       this.spawnWave();
       const stage = g.config.music && g.config.music.playlists && g.config.music.playlists.stage;
       if (stage && stage.length) {
@@ -114,7 +133,13 @@ export class Dungeon {
       const fin = this.isFinal ? c.final : null; // floor 100: the founder, every time
       if (this.cycleTypes.cycle !== info.cycle) this.cycleTypes = { cycle: info.cycle, list: [], pairs: [] };
       let list;
-      if (this.isDouble(kind)) { // floor 61 on: two bosses whose pair of types is new in this cycle (9.5)
+      const forced = this.forceList; // a saved boss floor: the same bosses again
+      this.forceList = null;
+      if (forced) {
+        list = forced.slice();
+        if (list.length > 1) this.cycleTypes.pairs.push(list.map((k) => types[k].ai).sort().join('+'));
+        else { this.lastBoss[b.tier] = list[0]; this.cycleTypes.list.push(types[list[0]].ai); }
+      } else if (this.isDouble(kind)) { // floor 61 on: two bosses whose pair of types is new in this cycle (9.5)
         const pair = pickPair(types, b.tier, info.cycle, g.rng, this.cycleTypes.pairs);
         this.cycleTypes.pairs.push(pair[2]);
         list = [pair[0], pair[1]];
@@ -146,6 +171,46 @@ export class Dungeon {
     }
     this.lastAlive = this.remaining;
     g.events.emit('floorStart', { floor: this.floor, kind, music, track: music === 'stage' ? this.stageTrack : null, title, boss: bossName, bosses: bossNames, final: kind === 'boss' && this.isFinal, founder: this.boss && this.boss.founder ? this.boss.founder : null, variant: this.variant, rush: this.rush ? { n: this.rush.i + 1, total: this.rush.list.length, loop: this.rush.loop } : null });
+  }
+
+  // ---- Ariadne's rope (10.4) ----
+  // the first floor of every cycle (1, 21, 41, 61, 81); floor 1 is always one
+  isRopeFloor(f) {
+    const fin = this.cfg.final ? this.cfg.final.floor : Infinity;
+    return f >= 1 && f < fin && (f - 1) % this.cfg.cycleLength === 0;
+  }
+
+  get ropeRun() { return !!this.game.vault && !this.rush && this.startFloor !== -1; }
+
+  // first arrival on 21 / 41 / 61 / 81: the family's rope is set there
+  setRope() {
+    const v = this.game.vault;
+    if (!this.ropeRun || this.floor <= 1 || !this.isRopeFloor(this.floor)) return;
+    if (!v.ropes) v.ropes = [];
+    if (v.ropes.includes(this.floor)) return;
+    v.ropes.push(this.floor);
+    v.ropes.sort((a, b) => a - b);
+    this.game.events.emit('ropeSet', { floor: this.floor });
+    if (v.state === 'run') this.game.saveVault();
+  }
+
+  // a rope floor won: when another rope floor is set, a warp zone in the room's corner leads there
+  openWarp() {
+    if (!this.ropeRun || !this.isRopeFloor(this.floor)) return;
+    const floors = [...new Set([1, ...(this.game.vault.ropes || [])])].filter((f) => f !== this.floor).sort((a, b) => a - b);
+    if (!floors.length) return;
+    const g = this.game, r = this.cfg.exitRadius, a = g.arena;
+    const at = a.resolveCircle({ x: Math.min(this.cfg.startInset, a.width / 4), y: Math.max(r * 2, a.height * 0.18) }, r).pos;
+    this.warp = { x: at.x, y: at.y, r, floors, armed: true };
+    g.events.emit('warpOpen', { pos: { x: at.x, y: at.y } });
+  }
+
+  // down (or up) the rope: the start of that floor; what lies between is passed by
+  warpTo(floor) {
+    this.waveTimes = []; // another part of the dungeon: the family's wave time until this run measures its own
+    this.floor = floor;
+    this.info = floorInfo(floor, this.cfg);
+    this.enterRoom(this.info.kind);
   }
 
   // two bosses on this floor (61 on, not floor 100 or the debug rush)
@@ -183,6 +248,7 @@ export class Dungeon {
       g.enemies.spawnAt(k, this.spawnPoint(), { ...this.info.mods });
     }
     this.waveIndex = this.waveCount;
+    this.pending = 0;
     this.lastAlive = this.remaining;
   }
 
@@ -324,12 +390,56 @@ export class Dungeon {
     return out;
   }
 
+  // how many may be alive at once on this floor (grows each cycle, 9.6)
+  get maxAlive() {
+    const w = this.cfg.waves, cy = this.info ? this.info.cycle : 0;
+    return w ? w.maxAlive[Math.min(cy, w.maxAlive.length - 1)] : this.cfg.maxAlive;
+  }
+
+  // the room grows smaller each cycle down to minScale (9.6); two bosses: that, then a little larger
+  roomScale(kind) {
+    const rs = this.cfg.roomShrink, cy = this.info ? this.info.cycle : 0;
+    const shrink = rs && (kind === 'combat' || kind === 'boss') ? Math.max(rs.minScale, 1 - rs.shrinkPerCycle * cy) : 1;
+    return shrink * (this.isDouble(kind) ? this.cfg.doubleBoss.roomScale : 1);
+  }
+
+  // timed waves (21층~, C5): the measured wave time x ratio (the last few combat floors), else the
+  // family's value, else the fallback; never longer than the last interval. null below fromFloor.
+  timedInterval() {
+    const tw = this.cfg.timedWaves, v = this.game.vault;
+    if (!tw || this.floor < tw.fromFloor) return null;
+    const avg = this.waveTimes.length ? this.waveTimes.reduce((a, b) => a + b, 0) / this.waveTimes.length : null;
+    let t = avg != null ? avg * tw.ratio : (v && v.waveInterval) || tw.fallbackSec;
+    if (tw.neverLonger && this.lastInterval != null) t = Math.min(t, this.lastInterval);
+    this.lastInterval = t;
+    if (tw.saveToFamily && v) v.waveInterval = t;
+    return t;
+  }
+
+  // the floor's waves are beaten: keep its average wave time (the last sampleFloors floors)
+  recordWaves() {
+    const tw = this.cfg.timedWaves;
+    this.waveDur.push(this.clock - this.waveAt);
+    if (!tw || this.variant) return;
+    this.waveTimes.push(this.waveDur.reduce((a, b) => a + b, 0) / this.waveDur.length);
+    if (this.waveTimes.length > tw.sampleFloors) this.waveTimes.shift();
+  }
+
   spawnWave() {
     const g = this.game, c = this.cfg, band = this.info.band, rng = g.rng, mix = this.mobMix();
+    if (this.waveIndex > 0) this.waveDur.push(this.clock - this.waveAt);
     this.waveIndex += 1;
-    const room = Math.max(0, c.maxAlive - this.remaining);
-    let n = Math.min(randInt(band.waves.size, rng), room);
+    this.waveAt = this.clock;
+    const w = c.waves, mult = w ? w.sizeMult[Math.min(this.info.cycle, w.sizeMult.length - 1)] : 1;
+    let n = Math.round(randInt(band.waves.size, rng) * mult);
     if (this.variant === 'elite') n = Math.max(2, Math.round(n * c.variants.eliteSize)); // fewer, all empowered
+    const now = Math.min(n, Math.max(0, this.maxAlive - this.remaining));
+    this.pending += n - now; // the rest come when there is room
+    this.spawnSome(now, mix);
+  }
+
+  spawnSome(n, mix = this.mobMix()) {
+    const g = this.game, c = this.cfg, band = this.info.band, rng = g.rng;
     while (n > 0) {
       const group = Math.min(n, randInt(c.spawn.groupSize, rng));
       const center = this.spawnPoint();
@@ -380,6 +490,7 @@ export class Dungeon {
   clear(bossPos = null) {
     const c = this.cfg, g = this.game;
     g.hazards.clear(); // nothing left in flight can hurt after the room is won
+    this.openWarp();
     const mult = 1 + c.rewards.goldPerFloor * (this.floor - 1);
     const gold = Math.round(randInt(c.rewards.clearGold, g.rng) * mult);
     this.gold += gold;
@@ -460,8 +571,11 @@ export class Dungeon {
     if (this.spikes.length && !this.cleared) this.updateTraps(dt);
     if (!this.exit.open && !this.cleared) {
       if (this.roomKind === 'combat') {
-        if (this.waveIndex < this.waveCount && alive <= this.info.band.waves.nextAt) this.spawnWave();
-        else if (this.waveIndex >= this.waveCount && alive === 0) this.clear();
+        this.clock += dt;
+        if (this.pending > 0 && alive < this.maxAlive) { const k = Math.min(this.pending, this.maxAlive - alive); this.pending -= k; this.spawnSome(k); }
+        const timed = this.interval != null && this.clock - this.waveAt >= this.interval; // 21층~: also on time
+        if (this.waveIndex < this.waveCount && (this.remaining + this.pending <= this.info.band.waves.nextAt || timed)) this.spawnWave();
+        else if (this.waveIndex >= this.waveCount && this.remaining === 0 && this.pending === 0) { this.recordWaves(); this.clear(); }
       } else if (this.roomKind === 'boss' && this.boss && this.bossesDown()) { // (a boss in the smoke is only hidden)
         // the boss falls: its minions fall with it
         const bp = this.boss.pos;
@@ -498,6 +612,10 @@ export class Dungeon {
       if (this.exit.armIn <= 0 && outside) this.exit.armed = true;
     }
     if (this.chest && !this.chest.opened && dist(p.pos, this.chest) <= this.chest.r + p.radius) this.openChest();
+    if (this.warp && this.state === 'play' && !g.ropeOffer) { // the rope: step in for the list, step out to use it again
+      const inWarp = dist(p.pos, this.warp) <= this.warp.r + p.radius;
+      if (inWarp && this.warp.armed) { this.warp.armed = false; g.openRope(this.warp.floors); } else if (!inWarp) this.warp.armed = true;
+    }
     if (this.exit.armed && this.state === 'play' && dist(p.pos, this.exit) <= this.exit.r + p.radius) {
       this.state = 'fadeOut';
       g.events.emit('floorExit', { floor: this.floor });

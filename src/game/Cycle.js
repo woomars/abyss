@@ -42,5 +42,6 @@ export function newCycle(vault, finale, { survived = [] } = {}) {
   vault.lastFloor = 0;
   vault.carry = [];
   vault.runStats = null;
+  vault.ropes = []; // a new cycle: the ropes are gone (10.4)
   return chronicle;
 }

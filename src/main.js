@@ -20,6 +20,7 @@ import { LootToast } from './ui/LootToast.js';
 import { TitleMenu } from './ui/TitleMenu.js';
 import { HeirScreen } from './ui/HeirScreen.js';
 import { ForgeScreen } from './ui/ForgeScreen.js';
+import { RopePicker } from './ui/RopePicker.js';
 import { LegacyScene } from './ui/LegacyScene.js';
 import { HallScreen } from './ui/HallScreen.js';
 import { StoryScreen, autoStory } from './ui/StoryScreen.js';
@@ -113,6 +114,9 @@ async function boot() {
   });
   // dungeon announcements and music follow the room
   const banner = new Banner(ui);
+  const ropePicker = new RopePicker(ui, { onPick: (f) => game.chooseRope(f), onCancel: () => game.cancelRope() });
+  events.on('ropeOffer', (e) => ropePicker.show(e.floors));
+  events.on('ropeSet', () => setTimeout(() => { if (started && game.mode === 'dungeon' && !game.over) banner.show(t('rope.set'), '', { kind: 'reward', ms: 2400 }); }, 2600)); // after the floor's own banner
   events.on('floorStart', (e) => {
     music.play(e.music, e.track);
     if (e.final) banner.show(founderTitle(e.founder), t('final.arrive'), { kind: 'boss', ms: 2800 });
@@ -159,6 +163,8 @@ async function boot() {
     onDebug: debugOn ? () => { if (debug) debug.open(); } : null,
     onChange: (s) => { applySettings(s); save.save(s); if (forge.isOpen) forge.render(); }, // the stash order may have changed
     onRestart: () => { gameOver.hide(); game.giveUp(); },
+    canSave: () => game.canSaveNow(),
+    onSave: () => { if (game.saveAndQuit()) toTitle(); },
     onOpenChange: updatePaused,
   });
   events.on('setComplete', (e) => { if (forge.isOpen) forge.flash(t('notice.setComplete', { name: tr(e.name) }), true); });
@@ -239,6 +245,7 @@ async function boot() {
       if (v.state === 'rest' && v.run) game.restoreRun(v.run);
       else if (v.state === 'run' && v.run && v.run.won) game.resumeFinale(v.run); // closed after the founder fell
       else if (v.state === 'run' && v.run && v.run.final) game.resumeFinal(v.run); // back to the founder, whole
+      else if (v.state === 'run' && v.run && v.run.saved) game.resumeSaved(v.run); // [저장하고 나가기]: that floor again
       else if (v.state === 'run') {
         // the game was closed in the middle of a fight: that run counts as a death
         game.enterLimbo();
@@ -321,7 +328,7 @@ async function boot() {
   onLangChange(() => {
     applyI18n(ui);
     hud.relabel(); skillButtons.relabel(); menu.renderToggles(); gameOver.relabel(); picker.relabel();
-    title.relabel(); forge.relabel(); hall.relabel(); heir.relabel(); legacy.relabel(); story.relabel(); guide.relabel(); ending.relabel(); finalAsk.relabel();
+    title.relabel(); forge.relabel(); ropePicker.relabel(); hall.relabel(); heir.relabel(); legacy.relabel(); story.relabel(); guide.relabel(); ending.relabel(); finalAsk.relabel();
     layout(); // button sizes may change: refresh the stroke exclusion zones
   });
   // back to the game: a touch outside the open debug panel closes it
@@ -364,6 +371,7 @@ async function boot() {
       music.setDuck((menu && menu.isOpen) || game.over);
       music.update(Math.min(0.1, (now - lastRender) / 1000));
       lastRender = now;
+      if (ropePicker.isOpen && !game.ropeOffer) ropePicker.hide(); // the run ended under the rope list
       if (picker.isOpen && !game.offer && !game.skillOffer && !picker.chosen) picker.hide(); // run restarted under the cards
       renderer.render(game, alpha);
       skillButtons.render();

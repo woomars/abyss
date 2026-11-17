@@ -22,6 +22,7 @@ export class EffectManager {
     this.links = new Pool(() => ({ x0: 0, y0: 0, x1: 0, y1: 0, life: 0, max: 1, index: 0 }), 32);
     this.winds = new Pool(() => ({ x: 0, y: 0, angle: 0, life: 0, max: 1 }), 16);
     this.afterimages = []; // {x, y, angle, age}
+    this.floods = [];      // {x, y, r, life, max}: an orc warrior's all-round strike floods its circle red
     this.combo = { count: 0, timer: 0 };
 
     events.on('slash', (e) => this.onSlash(e));
@@ -64,6 +65,12 @@ export class EffectManager {
       else { this.ring(e.pos.x, e.pos.y, 12, e.radius, '#c27cff'); this.ring(e.pos.x, e.pos.y, 6, e.radius * 0.6, '#ffffff'); }
     });
     events.on('enemyStrike', (e) => {
+      if (!e.riposte && e.enemy.isElite && !e.enemy.isBoss && e.enemy.tcfg) { // the orc's all-round blow: the whole circle flashes red, a shockwave and grit
+        const reach = e.enemy.radius + (e.enemy.tcfg.attackRange || 0) + 16;
+        this.floods.push({ x: e.pos.x, y: e.pos.y, r: reach, life: 0.35, max: 0.35 });
+        this.ring(e.pos.x, e.pos.y, e.enemy.radius, reach * 1.15, '#ff5a3a');
+        for (const d of [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) this.spark(e.pos.x, e.pos.y, d, 3, reach * 3, '#ff8a5a', 3, 0.3);
+      }
       if (!e.riposte) return; // riposte: a red burst on the angry enemy
       const r = this.rings.acquire();
       r.x = e.pos.x; r.y = e.pos.y; r.r0 = e.enemy.radius; r.r1 = e.enemy.radius + 50; r.color = '#ff3b30';
@@ -203,6 +210,7 @@ export class EffectManager {
     this.numbers.forEachActive((n) => { n.life -= dt; n.y -= 40 * dt; if (n.life <= 0) this.numbers.release(n); });
     if (this.hurtVignette > 0) this.hurtVignette = Math.max(0, this.hurtVignette - dt);
     decay(this.rings); decay(this.slashes); decay(this.links); decay(this.winds);
+    for (let i = this.floods.length - 1; i >= 0; i--) { this.floods[i].life -= dt; if (this.floods[i].life <= 0) this.floods.splice(i, 1); }
 
     for (const a of this.afterimages) a.age += dt;
     while (this.afterimages.length && this.afterimages[0].age > 0.12) this.afterimages.shift();
@@ -223,6 +231,7 @@ export class EffectManager {
   clear() {
     for (const p of [this.particles, this.numbers, this.rings, this.slashes, this.links, this.winds]) p.releaseAll();
     this.afterimages.length = 0;
+    this.floods.length = 0;
     this.combo.count = 0; this.combo.timer = 0;
   }
 }

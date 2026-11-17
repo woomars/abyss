@@ -80,6 +80,7 @@ export class Game {
     this.forge = null; // { start: bool } while the forge screen is open — the world waits
     this.tokenScene = false; // the legacy-token scene is open — the world waits
     this.finalAsk = null; // floor 100 lost: the founder's question is up (the world waits)
+    this.ropeOffer = null; // the rope's floor list is up (10.4) — the world waits
     this.finale = null;   // floor 100 won: { family, father, child, sex, item } for the ending
     this.ending = false;  // the ending is playing
     this.tokenFloors = new Set(); // floors that already gave a token this run
@@ -451,7 +452,77 @@ export class Game {
       floor: d.floor, startFloor: d.startFloor || 1, hp: this.player.hp, stageTrack: d.stageTrack, stageCycle: d.stageCycle,
       pocket: this.loot.pocket.slice(), relics: { owned: { ...this.relics.owned }, stats: { ...this.relics.stats } },
       stats: JSON.parse(JSON.stringify(this.stats)),
+      // what the run remembers: boss types met this cycle, the last boss per tier, the timed-wave clock
+      memory: {
+        ...JSON.parse(JSON.stringify(d.entryMemory || { cycleTypes: d.cycleTypes, lastBoss: d.lastBoss })), // as when this floor began
+        waveTimes: d.waveTimes.slice(), lastInterval: d.lastInterval,
+        bossTypes: d.roomKind === 'boss' && d.bosses.length ? d.bosses.map((b) => b.type) : null,
+      },
     };
+  }
+
+  // put a saved run's memory back into the dungeon (saves from before stage 5 have none)
+  restoreMemory(snap) {
+    const d = this.dungeon, m = snap.memory;
+    if (!m) return;
+    if (m.cycleTypes) d.cycleTypes = { ...m.cycleTypes, pairs: m.cycleTypes.pairs || [] };
+    if (m.lastBoss) d.lastBoss = { ...m.lastBoss };
+    if (Array.isArray(m.waveTimes)) d.waveTimes = m.waveTimes.slice();
+    if (Number.isFinite(m.lastInterval)) d.lastInterval = m.lastInterval;
+    if (Array.isArray(m.bossTypes)) d.forceList = m.bossTypes.slice();
+  }
+
+  // Ariadne's rope: the list from the warp zone; a pick goes to that floor's start, cancel stays
+  openRope(floors) {
+    this.ropeOffer = { floors: floors.slice() };
+    this.events.emit('ropeOffer', { floors: floors.slice() });
+  }
+
+  chooseRope(floor) {
+    if (!this.ropeOffer) return;
+    this.ropeOffer = null;
+    this.dungeon.warpTo(floor);
+  }
+
+  cancelRope() { this.ropeOffer = null; }
+
+  // [저장하고 나가기] (10.1): in the middle of a dungeon fight (not floor 100, saved on arrival anyway)
+  canSaveNow() {
+    const d = this.dungeon;
+    return this.mode === 'dungeon' && !this.over && !!this.vault && this.vault.state === 'run' && !d.rush && !d.isFinal
+      && (d.roomKind === 'combat' || d.roomKind === 'boss') && d.startFloor !== -1 && !this.ropeOffer && !d.cleared && d.state !== 'fadeOut';
+  }
+
+  saveAndQuit() {
+    if (!this.canSaveNow()) return false;
+    this.vault.run = { ...this.snapshotRun(), saved: true };
+    this.saveVault();
+    this.enterLimbo();
+    return true;
+  }
+
+  // continue a run saved with [저장하고 나가기]: the same knight, from the start of that floor (once)
+  resumeSaved(run) {
+    this.mode = 'dungeon';
+    this.enemies.autoSpawn = false;
+    this.resetRun();
+    const d = this.dungeon;
+    d.reset();
+    d.floor = run.floor; d.startFloor = run.startFloor;
+    d.stageTrack = run.stageTrack != null ? run.stageTrack : null; d.stageCycle = run.stageCycle != null ? run.stageCycle : null;
+    d.info = floorInfo(run.floor, d.cfg);
+    this.restoreMemory(run);
+    this.loot.pocket.push(...(run.pocket || []));
+    Object.assign(this.relics.owned, run.relics.owned);
+    Object.assign(this.relics.stats, run.relics.stats);
+    Object.assign(this.stats, run.stats);
+    this.refreshBonus();
+    this.resetHealth();
+    this.player.hp = Math.min(this.player.maxHp, run.hp);
+    this.vault.state = 'run';
+    this.vault.run = null; // from here a closed game is a death again
+    this.saveVault();
+    d.enterRoom(d.info.kind);
   }
 
   // reopen a run saved while resting at a forge
@@ -464,6 +535,7 @@ export class Game {
     d.floor = snap.floor; d.startFloor = snap.startFloor;
     d.stageTrack = snap.stageTrack != null ? snap.stageTrack : null; d.stageCycle = snap.stageCycle != null ? snap.stageCycle : null; // the cycle keeps its track
     d.info = floorInfo(snap.floor, d.cfg);
+    this.restoreMemory(snap);
     d.roomKind = 'forge'; d.state = 'forge'; d.fade = 1;
     this.loot.pocket.push(...snap.pocket);
     Object.assign(this.relics.owned, snap.relics.owned);
@@ -655,6 +727,7 @@ export class Game {
 
   die() {
     this.over = true;
+    this.ropeOffer = null;
     this.combat.cancel();
     const run = this.mode === 'dungeon';
     const fate = run ? this.endRunByDeath() : null;
@@ -686,6 +759,7 @@ export class Game {
   resetRun() {
     this.enemies.clear();
     this.hazards.clear();
+    this.ropeOffer = null;
     this.player.reset(this.center());
     this.movement.burstTime = Infinity;
     this.combat.reset();
@@ -756,7 +830,7 @@ export class Game {
 
   update(realDt) {
     if (this.paused) return;
-    if (this.offer || this.skillOffer || this.forge || this.tokenScene || this.finalAsk || this.ending) return; // cards / forge / legacy token / floor-100 question / ending
+    if (this.offer || this.skillOffer || this.forge || this.tokenScene || this.finalAsk || this.ending || this.ropeOffer) return; // cards / forge / legacy token / floor-100 question / ending
     if (this.over) { this.hpTrail.reset(this.player.hp); this.effects.update(realDt, this.player, false); return; } // dead: both bars empty at once
     const dt = this.hitStop.update(realDt);
     this.time += dt;

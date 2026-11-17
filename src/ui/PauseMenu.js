@@ -4,7 +4,10 @@ import { langSwitch } from './TitleMenu.js';
 
 export class PauseMenu {
   // onDebug: given only when the debug panel exists (not with ?debug=0) — then a [디버그] button
-  constructor(root, { settings, onChange, onRestart, onOpenChange, onDebug = null }) {
+  // canSave / onSave: [저장하고 나가기] shows while a dungeon fight can be saved (10.1)
+  constructor(root, { settings, onChange, onRestart, onOpenChange, onDebug = null, canSave = () => false, onSave = () => {} }) {
+    this.canSave = canSave;
+    this.onSave = onSave;
     this.onDebug = onDebug;
     this.settings = settings;
     this.onChange = onChange;
@@ -28,6 +31,7 @@ export class PauseMenu {
           <div class="pm-col">
             <div class="pm-lang"></div>
             ${onDebug ? `<button data-act="debug" data-i18n="pause.debug">${t('pause.debug')}</button>` : ''}
+            <button data-act="save" data-i18n="pause.saveQuit">${t('pause.saveQuit')}</button>
             <span class="pm-gap"></span>
             <button data-act="restart" data-i18n="pause.giveUp">${t('pause.giveUp')}</button>
           </div>
@@ -70,6 +74,7 @@ export class PauseMenu {
     else if (a === 'confirm-no') { this.confirmView.classList.add('hidden'); this.mainView.classList.remove('hidden'); }
     else if (a === 'confirm-yes') { this.onRestart(); this.close(); }
     else if (a === 'debug' && this.onDebug) { this.close(); this.onDebug(); }
+    else if (a === 'save') { this.close(); this.onSave(); }
     else if (a === 'sort') { // pocket/stash order: grade first <-> part first
       this.settings.sortMode = this.settings.sortMode === 'type' ? 'grade' : 'type';
       this.renderToggles();
@@ -86,6 +91,7 @@ export class PauseMenu {
     this.isOpen = true;
     this.confirmView.classList.add('hidden');
     this.mainView.classList.remove('hidden');
+    this.el.querySelector('[data-act="save"]').hidden = !this.canSave();
     this.el.classList.remove('hidden');
     this.onOpenChange();
   }

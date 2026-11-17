@@ -1,10 +1,10 @@
 import { relicIcon } from './relicIcons.js';
 import { itemCell, itemDetail } from './itemView.js';
-import { itemStats, formatStat } from '../game/items/itemStats.js';
+import { itemStats, formatStat, describeItem } from '../game/items/itemStats.js';
 import { LOADOUT_SLOTS } from '../game/items/Loadout.js';
 import {
   findItem, equipItem, unequipItem, storeItem, takeItem, salvagePreview, salvageItems, enhancePreview, enhanceItem,
-  wornSetSummary, compareSlots, salvageSelectAll, gradeUpPreview, gradeUpItem, stashPrice, buyStashSlot,
+  compareSlots, salvageSelectAll, gradeUpPreview, gradeUpItem, stashPrice, buyStashSlot,
 } from '../game/items/Forge.js';
 import { sortItems, applyAutoEquip, snapshotGear, restoreGear, setPieceOwners, equipSet } from '../game/items/gear.js';
 import { captureScroll, restoreScroll } from './scrollKeep.js';
@@ -18,26 +18,30 @@ const slotLabel = (s) => t(`slot.${s}`);
 const SLOT_ICON = { weapon: 'sword', helm: 'helm', armor: 'shield', gloves: 'gloves', boots: 'boots', amulet: 'amulet', ring1: 'ring', ring2: 'ring' };
 const TIER = ['일반', '상급', '최상급']; // powder tiers (shown through tr)
 const tierLabel = (q) => tr(TIER[q]);
-const PARTS = ['weapon', 'helm', 'armor', 'gloves', 'boots', 'amulet', 'ring'];
-const SCROLLERS = ['.fg-scroll', '.fg-pop-body', '.fg-sets', '.fg-box'];
+const TABS = [['equip', 'fg.tabEquip'], ['salvage', 'fg.tabSalvage'], ['enhance', 'fg.tabEnhance'], ['sets', 'fg.tabSets']];
+const SCROLLERS = ['.fg-scroll', '.fg-gear', '.fg-sdet'];
+// the full stats sheet ([상세]): attack first, then these
+const DETAIL = ['maxHp', 'armor', 'crit', 'critDamage', 'chain', 'chainDamage', 'chainRange', 'attackSpeed', 'speed', 'range', 'dashRange', 'cooldown', 'lifesteal', 'skillDamage', 'knockback'];
 // is any checked item like this (token gear, set piece)? — for the salvage warning
 const picked = (ctx, checked, test) => [...checked].some((id) => { const f = findItem(ctx, id); return f && test(f.item); });
 
-// The forge: 장비 (paper doll, pocket / stash, compare), 분해 (multi-select into powder), 강화 (powder into
-// any item, worn / pocket / stash). Every action goes through the pure Forge rules, then game.forgeChanged().
+// The forge, one layout for every tab: left = the gear panel (paper doll, or what the picked item / set
+// is) over the stats strip; right = what to pick over the tab's buttons (the salvage tab adds the powder
+// it would give). Every action goes through the pure Forge rules, then game.forgeChanged().
 export class ForgeScreen {
   // sortMode: () => 'grade' | 'type' (the pocket/stash order chosen in the pause menu)
-  constructor(root, { game, onDepart, onTitle, onSets, onToken, sortMode = () => 'grade' }) {
+  constructor(root, { game, onDepart, onTitle, onToken, sortMode = () => 'grade' }) {
     this.sortMode = sortMode;
     this.undo = null; // gear before the last auto-equip (one undo, until anything else is done)
     this.onToken = onToken;
     this.game = game;
     this.onDepart = onDepart;
     this.onTitle = onTitle;
-    this.onSets = onSets;
     this.tab = 'equip';
     this.bag = 'pocket';
     this.sel = null;     // selected item id
+    this.setSel = null;  // the set shown on the sets tab
+    this.statsOpen = false;
     this.checked = new Set();
     this.tier = 0;
     this.count = 1;
@@ -60,6 +64,8 @@ export class ForgeScreen {
     this.tab = 'equip';
     this.bag = this.game.loot.pocket.length ? 'pocket' : 'stash';
     this.sel = null;
+    this.setSel = null;
+    this.statsOpen = false;
     this.checked.clear();
     this.confirm = false;
     this.scrolls = {}; // a new visit starts at the top (positions are kept only while it stays open)
@@ -85,23 +91,35 @@ export class ForgeScreen {
   render() {
     const g = this.game, l = g.vault.lineage;
     if (this.scrollKey) this.scrolls[this.scrollKey] = captureScroll(this.el, SCROLLERS); // where the old view stood
-    if (this.freshDetail && this.scrollKey) this.scrolls[this.scrollKey].delete('.fg-box');
+    if (this.freshDetail && this.scrollKey) this.scrolls[this.scrollKey].delete('.fg-gear');
     this.freshDetail = false;
+    if (this.sel != null && !findItem(this.ctx, this.sel)) this.sel = null;
+    const v = this.tab === 'salvage' ? this.salvageView() : this.tab === 'enhance' ? this.enhanceView() : this.tab === 'sets' ? this.setsView() : this.equipView();
+    this.pv = this.previewBonus(); // the bonus after the pending action (for the +/- on the stats)
     this.el.innerHTML = `
       <div class="fg-bg"></div>
       <div class="fg-top">
         <span class="fg-title">${t('fg.title')}</span>
         <span class="fg-who">${esc(fullName(l.family, l.given))} · ${t('gen', { n: l.generation })} · Lv ${g.vault.progress.level}</span>
-        <div class="fg-tabs">${[['equip', t('fg.tabEquip')], ['salvage', t('fg.tabSalvage')], ['enhance', t('fg.tabEnhance')]].map(([k, n]) =>
-          `<button class="fg-tab${this.tab === k ? ' on' : ''}" data-act="tab" data-v="${k}">${n}</button>`).join('')}</div>
+        <div class="fg-tabs">${TABS.map(([k, n]) => `<button class="fg-tab${this.tab === k ? ' on' : ''}" data-act="tab" data-v="${k}">${t(n)}</button>`).join('')}</div>
         <span class="fg-sp"></span>
         <span class="fg-gold">${relicIcon('gold', 13)} ${g.vault.gold}</span>
         ${g.vault.tokens > 0 ? `<button class="fg-btn fg-token" data-act="token">${tr(this.cfg.legacyToken.label)} ×${g.vault.tokens}</button>` : ''}
         <button class="fg-btn small" data-act="title">${t('fg.toTitle')}</button>
         <button class="fg-btn pri" data-act="depart">${t('toFloor', { floor: floorLabel(this.start ? 1 : g.dungeon.floor + 1) })} ▶</button>
       </div>
-      <div class="fg-body">${this.tab === 'equip' ? this.renderEquip() : this.tab === 'salvage' ? this.renderSalvage() : this.tab === 'sets' ? this.renderSets() : this.renderEnhance()}</div>
-      ${this.tab === 'equip' && this.sel != null ? this.equipPopup() : ''}`;
+      <div class="fg-body">
+        <div class="fg-col">
+          <div class="fg-panel fg-gear${v.doll ? ' dollmode' : ''}">${v.gear}</div>
+          <div class="fg-panel fg-stats">${this.statsStrip()}</div>
+          ${this.statsOpen ? `<div class="fg-sdet">${this.statsDetail()}</div>` : ''}
+        </div>
+        <div class="fg-col">
+          <div class="fg-panel fg-items">${v.items}</div>
+          ${v.gain ? `<div class="fg-panel fg-gain">${v.gain}</div>` : ''}
+          <div class="fg-panel fg-btns">${v.btns}</div>
+        </div>
+      </div>`;
     this.scrollKey = `${this.tab}:${this.bag}`;
     restoreScroll(this.el, this.scrolls[this.scrollKey]);
   }
@@ -124,37 +142,146 @@ export class ForgeScreen {
     return c.loadout.items();
   }
 
-  summaryStats() {
-    const g = this.game, b = g.bonusStats, c = g.config.combat;
-    return [
-      [tr('공격력'), Math.round((c.attackDamage + b.attackFlat) * (1 + b.damage))],
-      [tr('최대 체력'), Math.round(g.player.maxHp)],
-      [tr('받는 피해'), `-${Math.round(Math.min(0.8, b.armor) * 100)}%`],
-      [t('fg.crit'), `${Math.round((c.critChance + b.crit) * 100)}%`],
-      [t('fg.chain'), t('fg.times', { n: g.combat.chainCount })],
-    ];
-  }
-
-  renderEquip() {
-    const c = this.ctx, lo = c.loadout;
+  // the paper doll; the set button sits in its empty bottom-right corner
+  doll() {
+    const lo = this.ctx.loadout;
     const slot = (s) => {
       const it = lo.slots[s];
       return `<div class="fg-slot fs-${s}">${it ? itemCell(it, this.cfg, { cls: this.sel === it.id ? 'sel' : '', size: 24 })
         : `<span class="fg-slot-empty">${relicIcon(SLOT_ICON[s], 20)}</span>`}<span class="fg-slot-name">${slotLabel(s)}</span></div>`;
     };
-    const ws = wornSetSummary(this.game.gearSets || {}, this.cfg.sets);
-    return `
-      <div class="fg-left">
-        <div class="fg-doll"><div class="fg-sil"></div>${LOADOUT_SLOTS.map(slot).join('')}</div>
-        <div class="fg-stats">${this.summaryStats().map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}
-          <button class="fg-set" data-act="sets"><span>${ws.id ? esc(tr(this.cfg.sets[ws.id].name)) : t('fg.set')}</span><b>${ws.n}/${ws.total}</b></button></div>
-      </div>
-      <div class="fg-right">
-        <div class="fg-bagbar">${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: `${c.vault.stash.length}/${c.vault.stashSlots}` })]])}
-          <span class="fg-auto"><button class="fg-btn" data-act="auto">${t('fg.autoEquip')}</button>${this.undo ? `<button class="fg-btn" data-act="undo">${t('fg.undo')}</button>` : ''}</span></div>
-        ${this.bag === 'pocket' ? `<div class="fg-note">${t('fg.pocketNote')}</div>` : this.stashBuy()}
-        <div class="fg-scroll">${this.grid(this.bagItems())}</div>
-      </div>`;
+    return `<div class="fg-doll"><div class="fg-sil"></div>${LOADOUT_SLOTS.map(slot).join('')}<div class="fs-set">${this.setButton()}</div></div>`;
+  }
+
+  // worn sets: one = name and n/total; several = a row each (most pieces first, three rows, then "외 n종")
+  setButton() {
+    const sets = this.cfg.sets, worn = this.game.gearSets || {};
+    const list = Object.keys(sets).filter((k) => worn[k] > 0)
+      .map((k) => [k, worn[k], Object.keys(sets[k].pieces).length]).sort((a, b) => b[1] - a[1]);
+    const done = list.filter(([, n, total]) => n >= total).length;
+    const cls = `fg-set${list.length > 1 ? ' multi' : ''}${done ? ' done' : ''}${done >= 3 ? ' triple' : ''}`;
+    if (list.length <= 1) {
+      const [k, n, total] = list[0] || [null, 0, Object.keys(Object.values(sets)[0].pieces).length];
+      return `<button class="${cls}" data-act="sets" data-v="${k || ''}"><span>${k ? esc(tr(sets[k].name)) : t('fg.set')}</span><b>${n}/${total}</b></button>`;
+    }
+    const rows = list.slice(0, 3).map(([k, n, total]) => `<span class="sr${n >= total ? ' ok' : ''}">${esc(tr(sets[k].name))}<b>${n}/${total}</b></span>`).join('');
+    return `<button class="${cls}" data-act="sets" data-v="${list[0][0]}">${rows}${list.length > 3 ? `<span class="more">${t('fg.moreSets', { n: list.length - 3 })}</span>` : ''}</button>`;
+  }
+
+  // ---------- stats ----------
+  // the five numbers of the strip from a bonus: [label, value, kind]
+  numbers(b) {
+    const c = this.game.config.combat;
+    return [
+      [tr('공격력'), Math.round((c.attackDamage + b.attackFlat) * (1 + b.damage)), 'n'],
+      [tr('최대 체력'), Math.round(c.player.maxHp + b.maxHp), 'n'],
+      [tr('받는 피해'), Math.round(Math.min(0.8, b.armor) * 100), 'cut'],
+      [t('fg.crit'), Math.round((c.critChance + b.crit) * 100), 'pct'],
+      [t('fg.chain'), c.chain.count + b.chain, 'times'],
+    ];
+  }
+
+  statsStrip() {
+    const show = (kind, v) => (kind === 'cut' ? `-${v}%` : kind === 'pct' ? `${v}%` : kind === 'times' ? t('fg.times', { n: v }) : `${v}`);
+    const now = this.numbers(this.game.bonusStats), pv = this.pv ? this.numbers(this.pv) : null;
+    return `<div class="fg-svs">${now.map(([k, v, kind], i) => {
+      const d = pv ? pv[i][1] - v : 0;
+      // less damage taken is shown as a minus and is good
+      const txt = kind === 'cut' ? `${d > 0 ? '-' : '+'}${Math.abs(d)}%` : `${d > 0 ? '+' : '-'}${Math.abs(d)}${kind === 'pct' ? '%' : ''}`;
+      return `<div class="fg-sv"><span>${k}</span><b>${show(kind, v)}${d ? `<i class="${d > 0 ? 'up' : 'down'}">${txt}</i>` : ''}</b></div>`;
+    }).join('')}</div><button class="fg-btn small" data-act="statsOpen">${t('fg.details')}</button>`;
+  }
+
+  // one stat's total as the hero has it (base + bonus)
+  total(k, b) {
+    const c = this.game.config.combat;
+    if (k === 'attack') return (c.attackDamage + b.attackFlat) * (1 + b.damage);
+    if (k === 'maxHp') return c.player.maxHp + b.maxHp;
+    if (k === 'armor') return Math.min(0.8, b.armor);
+    if (k === 'crit') return c.critChance + b.crit;
+    if (k === 'critDamage') return c.critMultiplier + b.critDamage;
+    if (k === 'chain') return c.chain.count + b.chain;
+    return b[k] || 0;
+  }
+
+  fmtStat(k, v, sign = false) {
+    const s = sign && v > 0 ? '+' : v < 0 ? '-' : '';
+    const a = Math.abs(v);
+    if (k === 'chain') return `${s}${t('fg.times', { n: Math.round(a) })}`;
+    const fmt = k === 'attack' ? 'int' : (this.cfg.statLabels[k] || [k, 'int'])[1];
+    return fmt === 'int' ? `${s}${Math.round(a)}` : `${s}${Math.round(a * 1000) / 10}%`;
+  }
+
+  statsDetail() {
+    const b = this.game.bonusStats, gear = this.ctx.loadout.summary().stats;
+    const label = (k) => (k === 'attack' ? tr('공격력') : tr((this.cfg.statLabels[k] || [k])[0]));
+    return `<div class="fg-h">${t('fg.allStats')} <small>${t('fg.gearShare')}</small><button class="fg-btn small" data-act="statsOpen">${t('fg.close')}</button></div>
+      <div class="fg-allstats">${['attack', ...DETAIL].map((k) => {
+        const v = this.total(k, b), d = this.pv ? this.total(k, this.pv) - v : 0;
+        const share = k !== 'attack' && gear[k] ? `<em>(${this.fmtStat(k, gear[k], true)})</em>` : '';
+        return `<div class="fg-st"><span>${label(k)}</span><b>${this.fmtStat(k, v)}${share}${Math.abs(d) > 1e-9 ? `<i class="${d > 0 ? 'up' : 'down'}">${this.fmtStat(k, d, true)}</i>` : ''}</b></div>`;
+      }).join('')}</div>`;
+  }
+
+  // the bonus as it would be after the pending action (equip / take off, enhance a worn item, wear a set),
+  // read by putting it on for a moment and back; null when nothing is pending
+  previewBonus() {
+    const g = this.game, c = this.ctx, lo = c.loadout, slots = { ...lo.slots };
+    const f = this.sel != null ? findItem(c, this.sel) : null;
+    let enh = null;
+    if (this.tab === 'equip' && f) {
+      if (f.where !== 'equipped' && f.item.slot === 'ring' && lo.slots.ring1 && lo.slots.ring2) return null; // [반지 1에]/[반지 2에] decide
+      if (f.where === 'equipped') lo.slots[f.slot] = null; else lo.equip(f.item);
+    } else if (this.tab === 'enhance' && f && f.where === 'equipped') {
+      const p = enhancePreview(c, f.item.id, this.tier, this.count);
+      if (!p.ok || p.to <= f.item.enhance) return null;
+      enh = f.item.enhance;
+      f.item.enhance = p.to;
+    } else if (this.tab === 'sets' && this.setSel) {
+      for (const o of Object.values(setPieceOwners(c, this.setSel))) if (o && o.where !== 'equipped') lo.equip(o.item);
+    } else return null;
+    try {
+      g.refreshBonus();
+      return { ...g.bonusStats };
+    } finally {
+      Object.assign(lo.slots, slots);
+      if (enh != null) f.item.enhance = enh;
+      g.refreshBonus();
+    }
+  }
+
+  // ---------- tabs: each gives { gear, doll, items, gain, btns } ----------
+  backBtn() { return `<button class="fg-btn small fg-back" data-act="unsel">${t('fg.backDoll')}</button>`; }
+
+  equipView() {
+    const c = this.ctx, lo = c.loadout, f = this.sel != null ? findItem(c, this.sel) : null;
+    let gear;
+    if (f) {
+      const it = f.item;
+      const cmp = f.where === 'equipped' ? '' : compareSlots(lo, it).map((target) => { // a ring is set beside both worn rings
+        const worn = lo.slots[target];
+        return `<div class="fg-cmp">${worn ? `<div class="fg-cmp-h">${t('fg.wornIn', { slot: slotLabel(target) })}</div>${itemDetail(worn, this.cfg)}` : `<div class="fg-cmp-h">${t('fg.slotEmpty', { slot: slotLabel(target) })}</div>`}
+          <div class="fg-delta">${this.deltaLines(it, worn)}</div></div>`;
+      }).join('');
+      gear = `<div class="fg-h">${t(f.where === 'equipped' ? 'fg.wornItem' : 'fg.pickedItem')}${this.backBtn()}</div>
+        <div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>${cmp}</div>`;
+    }
+    const items = `${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: `${c.vault.stash.length}/${c.vault.stashSlots}` })]])}
+      ${this.bag === 'stash' ? this.stashBuy() : ''}
+      <div class="fg-scroll">${this.grid(this.bagItems())}</div>
+      ${this.bag === 'pocket' ? `<div class="fg-note">${t('fg.pocketNote')}</div>` : ''}`;
+    // left: auto-equip; right: where it is kept, then wearing it — far apart so one is not hit for the other
+    const left = `<button class="fg-btn" data-act="auto">${t('fg.autoEquip')}</button><button class="fg-btn" data-act="undo" ${this.undo ? '' : 'disabled'}>${t('fg.undo')}</button>`;
+    let right;
+    if (!f) right = `<button class="fg-btn" disabled>${t(this.bag === 'stash' ? 'fg.toPocket' : 'fg.toStash')}</button><button class="fg-btn pri" disabled>${t('fg.equip')}</button>`;
+    else if (f.where === 'equipped') right = `<button class="fg-btn" data-act="store">${t('fg.toStash')}</button><button class="fg-btn pri" data-act="unequip">${t('fg.unequip')}</button>`;
+    else {
+      const wear = f.item.slot === 'ring' && lo.slots.ring1 && lo.slots.ring2
+        ? `<button class="fg-btn pri" data-act="equip" data-v="ring1">${t('fg.toRing1')}</button><button class="fg-btn pri" data-act="equip" data-v="ring2">${t('fg.toRing2')}</button>`
+        : `<button class="fg-btn pri" data-act="equip">${t('fg.equip')}</button>`;
+      right = f.where === 'pocket' ? `<button class="fg-btn" data-act="store">${t('fg.toStash')}</button>${wear}` : `<button class="fg-btn" data-act="take">${t('fg.toPocket')}</button>${wear}`;
+    }
+    return { gear: gear || this.doll(), doll: !gear, items, btns: `<span class="fg-act-l">${left}</span><span class="fg-act-r">${right}</span>` };
   }
 
   // stash tab: buy one more place (price grows each time)
@@ -163,32 +290,6 @@ export class ForgeScreen {
     if (v.stashSlots >= s.maxSlots) return '';
     const price = stashPrice(this.ctx.econ, v.stashSlots);
     return `<div class="fg-buyrow"><button class="fg-btn" data-act="buySlot" ${v.gold >= price ? '' : 'disabled'}>${t('fg.buySlot', { n: price })}</button>${v.gold >= price ? '' : `<small class="down">${t('fg.needGold', { n: price - v.gold })}</small>`}</div>`;
-  }
-
-  // the selected item in a pop-up over the forge; a tap outside it (on the shade) closes it
-  equipPopup() {
-    const f = findItem(this.ctx, this.sel);
-    if (!f) { this.sel = null; return ''; }
-    const lo = this.ctx.loadout, it = f.item;
-    const equipBtns = it.slot === 'ring' && lo.slots.ring1 && lo.slots.ring2
-      ? `<button class="fg-btn pri" data-act="equip" data-v="ring1">${t('fg.toRing1')}</button><button class="fg-btn pri" data-act="equip" data-v="ring2">${t('fg.toRing2')}</button>`
-      : `<button class="fg-btn pri" data-act="equip">${t('fg.equip')}</button>`;
-    // left: where it is kept (stash / pocket); right: wearing it — far apart so one is not hit for the other
-    let left = '', right = '';
-    if (f.where === 'equipped') { left = `<button class="fg-btn" data-act="store">${t('fg.toStash')}</button>`; right = `<button class="fg-btn" data-act="unequip">${t('fg.unequip')}</button>`; }
-    else if (f.where === 'pocket') { left = `<button class="fg-btn" data-act="store">${t('fg.toStash')}</button>`; right = equipBtns; }
-    else { left = `<button class="fg-btn" data-act="take">${t('fg.toPocket')}</button>`; right = equipBtns; }
-    const btns = `<span class="fg-act-l">${left}</span><span class="fg-act-r">${right}</span>`;
-    let cmp = '';
-    if (f.where !== 'equipped') { // a ring is set beside both worn rings
-      cmp = compareSlots(lo, it).map((target) => {
-        const worn = lo.slots[target];
-        return `<div class="fg-cmp">${worn ? `<div class="fg-cmp-h">${t('fg.wornIn', { slot: slotLabel(target) })}</div>${itemDetail(worn, this.cfg)}` : `<div class="fg-cmp-h">${t('fg.slotEmpty', { slot: slotLabel(target) })}</div>`}
-        <div class="fg-delta">${this.deltaLines(it, worn)}</div></div>`;
-      }).join('');
-    }
-    return `<div class="fg-pop-shade" data-act="closePop"></div>
-      <div class="fg-pop"><div class="fg-pop-body"><div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>${cmp}</div><div class="fg-actions split">${btns}</div></div>`;
   }
 
   deltaLines(a, b) {
@@ -204,92 +305,108 @@ export class ForgeScreen {
     return out.length ? out.join('') : `<span class="dim">${t('fg.noChange')}</span>`;
   }
 
-  // set overview: every piece (silhouette until found), how many are worn, active and next bonus
-  renderSets() {
-    const cfg = this.cfg, v = this.ctx.vault, lo = this.ctx.loadout;
-    return `<div class="fg-sets">${Object.entries(cfg.sets).map(([id, s]) => {
-      const worn = (this.game.gearSets || {})[id] || 0;
-      const seen = v.seen[id] || {};
-      const owners = setPieceOwners(this.ctx, id);
-      let canWear = false;
-      const pieces = Object.entries(s.pieces).map(([slot, name]) => {
-        const o = owners[slot], on = o && o.where === 'equipped', own = o && !on;
-        if (own) canWear = true;
-        const label = `${relicIcon(cfg.parts[slot].icon, 26)}<span>${seen[slot] || o ? esc(tr(name)) : '???'}</span><small>${t(on ? 'fg.pieceWorn' : own ? 'fg.pieceOwn' : 'fg.pieceNone')}</small>`;
-        // an owned piece not worn: tap to wear just that one
-        return own ? `<button class="fg-piece seen own" data-act="wearPiece" data-v="${o.item.id}">${label}</button>`
-          : `<div class="fg-piece${seen[slot] || on ? ' seen' : ''}${on ? ' on' : ''}">${label}</div>`;
-      }).join('');
-      const needs = Object.keys(s.labels).map(Number).sort((a, b) => a - b);
-      const next = needs.find((n) => n > worn);
-      const bonus = needs.map((n) => `<div class="fg-bonus${worn >= n ? ' on' : ''}${n === next ? ' next' : ''}"><b>${t('fg.setN', { n })}</b> ${esc(setLabel(cfg, id, n))}${n === next ? ` <small>${t('fg.next')}</small>` : ''}</div>`).join('');
-      return `<div class="fg-setview"><div class="fg-h">${esc(tr(s.name))} <span class="fg-setn">${t('fg.wornCount', { a: worn, b: Object.keys(s.pieces).length })}</span></div>
-        <div class="fg-pieces">${pieces}</div><div class="fg-bonuses">${bonus}</div>
-        <div class="fg-setacts"><button class="fg-btn" data-act="tab" data-v="equip">${t('fg.backToGear')}</button>${canWear ? `<button class="fg-btn pri" data-act="wearSet" data-v="${id}">${t('fg.wearSet')}</button>` : ''}</div></div>`;
-    }).join('')}</div>`; // one row per set, scrolled
-  }
-
-  renderSalvage() {
+  salvageView() {
     const c = this.ctx, pre = salvagePreview(c, [...this.checked]);
-    const table = `<table class="fg-powder"><tr><th></th>${TIER.map((_, i) => `<th><span class="pw t${i}"></span>${tierLabel(i)}</th>`).join('')}</tr>
-      <tr><td>${t('fg.powder')}</td>${[0, 1, 2].map((q) => `<td>${c.vault.powder[q]}${pre.powder[q] ? ` <small class="up">+${pre.powder[q]}</small>` : ''}</td>`).join('')}</tr></table>`;
-    const gain = [0, 1, 2].filter((q) => pre.powder[q]).map((q) => `${tierLabel(q)} ×${pre.powder[q]}`).join(' · ');
-    return `
-      <div class="fg-left"><div class="fg-box"><div class="fg-h">${t('fg.powderStore')}</div>${table}</div></div>
-      <div class="fg-right">
-        ${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: c.vault.stash.length })]])}
-        <div class="fg-selrow"><button class="fg-btn" data-act="checkAll">${t('fg.checkAll')}</button><button class="fg-btn" data-act="clearChecks">${t('fg.clearChecks')}</button><span class="fg-note">${t('fg.salvageNote')}</span></div>
-        <div class="fg-scroll">${this.grid(this.bagItems(), { check: true })}</div>
-        <div class="fg-detail fg-salv">
-          <div class="fg-salv-sum"><b>${t('fg.selected', { n: pre.count })}</b>${gain ? t('fg.gain', { list: gain }) : ''}${pre.count ? ` · ${t('fg.goldCost', { n: pre.gold })}` : ''}${pre.count && c.vault.gold < pre.gold ? ` <b class="down">${t('fg.needGold', { n: pre.gold - c.vault.gold })}</b>` : ''}</div>
-          <div class="fg-salv-go">
-            ${this.confirm ? `<span class="fg-ask">${picked(c, this.checked, (it) => it.token) ? t('fg.tokenWarn') : ''}${picked(c, this.checked, (it) => it.set) ? t('fg.setWarn') : ''}${t('fg.askSalvage')}</span><button class="fg-btn" data-act="salvageNo">${t('no')}</button><button class="fg-btn red" data-act="salvageYes">${t('fg.salvage')}</button>`
-              : `<button class="fg-btn red" data-act="salvage" ${pre.count && c.vault.gold >= pre.gold ? '' : 'disabled'}>${t('fg.salvageGo')}</button>`}
-          </div>
-        </div>
-      </div>`;
+    const f = this.sel != null && this.checked.has(this.sel) ? findItem(c, this.sel) : null;
+    const ask = this.confirm ? `<div class="fg-warn">${picked(c, this.checked, (it) => it.token) ? t('fg.tokenWarn') : ''}${picked(c, this.checked, (it) => it.set) ? t('fg.setWarn') : ''}${t('fg.askSalvage')}</div>` : '';
+    const gear = f ? `${ask}<div class="fg-h">${t('fg.selected', { n: pre.count })}</div><div class="fg-detail"><div class="fg-detail-main">${itemDetail(f.item, this.cfg)}</div></div>` : `${ask}${this.doll()}`;
+    const items = `${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: c.vault.stash.length })]])}
+      <div class="fg-scroll">${this.grid(this.bagItems(), { check: true })}</div>
+      <div class="fg-note">${t('fg.salvageNote')}</div>`;
+    const short = pre.count && c.vault.gold < pre.gold;
+    const gain = `<div class="fg-sv"><span>${t('fg.pickLabel')}</span><b>${t('fg.count', { n: pre.count })}</b></div>
+      ${[0, 1, 2].map((q) => `<div class="fg-sv"><span><i class="pw t${q}"></i>${t('fg.powderOf', { part: tierLabel(q) })}</span><b>+${pre.powder[q]}</b></div>`).join('')}
+      <span class="fg-sp"></span><div class="fg-sv"><span>${t('fg.salvCost')}</span><b class="${short ? 'down' : 'gold'}">◆ ${pre.gold}</b></div>`;
+    const btns = this.confirm
+      ? `<span class="fg-act-l"><button class="fg-btn" data-act="salvageNo">${t('no')}</button></span><span class="fg-act-r"><button class="fg-btn red" data-act="salvageYes">${t('fg.salvage')} · ◆${pre.gold}</button></span>`
+      : `<span class="fg-act-l"><button class="fg-btn" data-act="checkAll">${t('fg.checkAll')}</button><button class="fg-btn" data-act="clearChecks" ${pre.count ? '' : 'disabled'}>${t('fg.clearChecks')}</button></span>
+        <span class="fg-act-r">${short ? `<small class="down">${t('fg.needGold', { n: pre.gold - c.vault.gold })}</small>` : ''}<button class="fg-btn red" data-act="salvage" ${pre.count && !short ? '' : 'disabled'}>${t('fg.salvageGoCost', { n: pre.gold })}</button></span>`;
+    return { gear, doll: !f, items, gain, btns };
   }
 
   // +10: one grade up for gold (legendary is the top)
   gradeUpButton(it) {
     const p = gradeUpPreview(this.ctx, it.id);
-    if (p.reason === 'maxGrade') return `<b class="fg-top">${t('fg.maxGrade')}</b>`;
+    if (p.reason === 'maxGrade') return `<b class="fg-topgrade">${t('fg.maxGrade')}</b>`;
     const short = p.reason === 'gold' ? `<small class="down">${t('fg.needGold', { n: p.cost - this.ctx.vault.gold })}</small>` : '';
     return `${short}<button class="fg-btn pri" data-act="gradeUp" ${p.ok ? '' : 'disabled'}>${t('fg.gradeUp', { grade: tr(this.cfg.grades[p.to].label), n: p.cost })}</button>`;
   }
 
-  renderEnhance() {
+  // the item as it would be at +to: each line at its new value with the gain beside it
+  growCard(it, to, caption) {
+    const cfg = this.cfg, d = describeItem(it, cfg), now = itemStats(it, cfg), next = itemStats({ ...it, enhance: to }, cfg);
+    const keys = [...new Set([it.base.stat, ...it.affixes.map((a) => a.stat)])];
+    const lines = keys.map((k) => {
+      const int = (cfg.statLabels[k] || [k, 'int'])[1] === 'int';
+      const gain = int ? Math.round(next[k]) - Math.round(now[k]) : Math.round((next[k] - now[k]) * 1000) / 10;
+      return `<div class="iline fg-grow"><span>${formatStat(cfg, k, next[k])}</span>${gain > 0 ? `<b class="up">+${gain}${int ? '' : '%'}</b>` : ''}</div>`;
+    }).join('');
+    return `<div class="idetail"><div class="fg-cmp-h">${caption}</div><div class="iname" style="color:${d.gradeColor}">${d.name}</div>${lines}${d.effectText ? `<div class="ieffect">${d.effectText}</div>` : ''}</div>`;
+  }
+
+  enhanceView() {
     const c = this.ctx;
     if (this.bag !== 'worn' && this.bag !== 'pocket' && this.bag !== 'stash') this.bag = 'worn';
-    let left = `<div class="fg-box dim">${t('fg.pickEnhance')}</div>`;
     const f = this.sel != null ? findItem(c, this.sel) : null;
-    if (f) {
-      const it = f.item, e = this.cfg.enhance, have = c.vault.powder;
-      const pre = enhancePreview(c, it.id, this.tier, this.count);
-      const need = it.enhance < e.max ? e.need[it.enhance] : 0;
-      const cur = need ? (it.points / need) * 100 : 100;
-      const after = pre.ok ? (pre.to > it.enhance ? 100 : ((pre.points) / need) * 100) : cur;
-      left = `<div class="fg-box fg-enh">
-        ${itemDetail(it, this.cfg)}
-        <div class="fg-enh-lv">+${it.enhance}${pre.ok && pre.to > it.enhance ? ` → <b class="up">+${pre.to}</b>` : ''}${it.enhance >= e.max ? ` <small>${t('fg.maxed')}</small>` : ''}</div>
-        <div class="fg-gauge"><i style="width:${cur}%"></i>${pre.ok ? `<i class="add" style="left:${cur}%;width:${Math.max(0, after - cur)}%"></i>` : ''}</div>
-        <div class="fg-h">${t('fg.powder')}</div>
-        <div class="fg-chips">${[0, 1, 2].map((q) => `<button class="fg-chip${this.tier === q ? ' on' : ''}" data-act="tier" data-v="${q}" ${have[q] ? '' : 'disabled'}>
-          <span><span class="pw t${q}"></span>${tierLabel(q)}</span><b>${t('fg.count', { n: have[q] })}</b><small>${t('fg.perOne', { n: e.points[q] })}</small></button>`).join('')}</div>
-        <div class="fg-actions">
-          <span class="fg-stepper"><button data-act="cnt" data-v="-1">−</button><b>${pre.use || 0}</b><button data-act="cnt" data-v="1">+</button><button data-act="cnt" data-v="99">${t('fg.max')}</button></span>
-          ${it.enhance >= e.max ? this.gradeUpButton(it) : `<button class="fg-btn pri" data-act="enhance" ${pre.ok ? '' : 'disabled'}>${t('fg.enhance')}${pre.gold ? ` · ◆${pre.gold}` : ''}</button>`}
-        </div>
-        ${pre.reason === 'gold' ? `<div class="down">${t('fg.needGold', { n: pre.gold - c.vault.gold })}</div>` : ''}
-      </div>`;
+    const e = this.cfg.enhance, have = c.vault.powder;
+    const items = `${this.bagTabs([['worn', t('where.equipped')], ['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: c.vault.stash.length })]])}
+      <div class="fg-scroll">${this.grid(this.bagItems())}</div>
+      <div class="fg-note">${t('fg.enhNote')}</div>`;
+    if (!f) {
+      return {
+        gear: this.doll(), doll: true, items,
+        btns: `<span class="fg-act-l"><span class="fg-stepper"><button disabled>−</button><b>-</b><button disabled>+</button><button disabled>${t('fg.max')}</button></span></span><span class="fg-act-r"><button class="fg-btn pri" disabled>${t('fg.enhance')}</button></span>`,
+      };
     }
-    return `
-      <div class="fg-left">${left}</div>
-      <div class="fg-right">
-        ${this.bagTabs([['worn', t('where.equipped')], ['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: c.vault.stash.length })]])}
-        <div class="fg-scroll">${this.grid(this.bagItems())}</div>
-        <div class="fg-note">${t('fg.enhNote')}</div>
-      </div>`;
+    const it = f.item, pre = enhancePreview(c, it.id, this.tier, this.count), maxed = it.enhance >= e.max;
+    const need = maxed ? 0 : e.need[it.enhance];
+    const cur = need ? (it.points / need) * 100 : 100;
+    const after = pre.ok ? (pre.to > it.enhance ? 100 : (pre.points / need) * 100) : cur;
+    const to = maxed ? it.enhance : Math.max(pre.ok ? pre.to : 0, it.enhance + 1);
+    const gear = `<div class="fg-h">${t('fg.enhance')} <small>${t('fg.noFail')}</small>${this.backBtn()}</div>
+      <div class="fg-enh-top"><span class="fg-enh-lv">+${it.enhance}${pre.ok && pre.to > it.enhance ? ` → <b class="up">+${pre.to}</b>` : ''}${maxed ? ` <small>${t('fg.maxed')}</small>` : ''}</span>
+        <div class="fg-gauge"><i style="width:${cur}%"></i>${pre.ok ? `<i class="add" style="left:${cur}%;width:${Math.max(0, after - cur)}%"></i>` : ''}</div></div>
+      <div class="fg-chips">${[0, 1, 2].map((q) => `<button class="fg-chip${this.tier === q ? ' on' : ''}" data-act="tier" data-v="${q}" ${have[q] ? '' : 'disabled'}>
+        <span><span class="pw t${q}"></span>${tierLabel(q)} ${t('fg.count', { n: have[q] })}</span><small>${t('fg.perOne', { n: e.points[q] })}</small></button>`).join('')}</div>
+      <div class="fg-detail">${maxed ? `<div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>`
+        : this.growCard(it, to, `${t('fg.atLevel', { n: to })}${pre.ok && pre.to > it.enhance ? '' : ` · ${t('fg.needMore')}`}`)}</div>`;
+    const right = maxed ? this.gradeUpButton(it)
+      : `${pre.reason === 'gold' ? `<small class="down">${t('fg.needGold', { n: pre.gold - c.vault.gold })}</small>` : ''}<button class="fg-btn pri" data-act="enhance" ${pre.ok ? '' : 'disabled'}>${t('fg.enhance')}${pre.gold ? ` · ◆${pre.gold}` : ''}</button>`;
+    const btns = `<span class="fg-act-l"><span class="fg-stepper"><button data-act="cnt" data-v="-1">−</button><b>${pre.use || 0}</b><button data-act="cnt" data-v="1">+</button><button data-act="cnt" data-v="99">${t('fg.max')}</button></span></span>
+      <span class="fg-act-r">${right}</span>`;
+    return { gear, doll: false, items, btns };
+  }
+
+  // sets: the list on the right; the chosen set's pieces and steps on the left
+  setsView() {
+    const cfg = this.cfg, v = this.ctx.vault, worn = this.game.gearSets || {};
+    if (!this.setSel || !cfg.sets[this.setSel]) this.setSel = Object.keys(cfg.sets)[0];
+    const id = this.setSel, s = cfg.sets[id], n = worn[id] || 0, total = Object.keys(s.pieces).length;
+    const seen = v.seen[id] || {};
+    const owners = setPieceOwners(this.ctx, id);
+    let canWear = false;
+    const pieces = Object.entries(s.pieces).map(([slot, name]) => {
+      const o = owners[slot], on = o && o.where === 'equipped', own = o && !on;
+      if (own) canWear = true;
+      const label = `${relicIcon(cfg.parts[slot].icon, 22)}<span>${seen[slot] || o ? esc(tr(name)) : '???'}</span><small>${t(on ? 'fg.pieceWorn' : own ? 'fg.pieceOwn' : 'fg.pieceNone')}</small>`;
+      // an owned piece not worn: tap to wear just that one
+      return own ? `<button class="fg-piece seen own" data-act="wearPiece" data-v="${o.item.id}">${label}</button>`
+        : `<div class="fg-piece${seen[slot] || on ? ' seen' : ''}${on ? ' on' : ''}">${label}</div>`;
+    }).join('');
+    const needs = Object.keys(s.labels).map(Number).sort((a, b) => a - b);
+    const next = needs.find((k) => k > n);
+    const bonus = needs.map((k) => `<div class="fg-bonus${n >= k ? ' on' : ''}${k === next ? ' next' : ''}"><b>${t('fg.setN', { n: k })}</b> ${esc(setLabel(cfg, id, k))}${k === next ? ` <small>${t('fg.next')}</small>` : ''}</div>`).join('');
+    const gear = `<div class="fg-h">${esc(tr(s.name))} <span class="fg-setn">${t('fg.wornCount', { a: n, b: total })}</span></div>
+      <div class="fg-pieces">${pieces}</div><div class="fg-bonuses">${bonus}</div>`;
+    const rows = Object.entries(cfg.sets).map(([k, set]) => {
+      const own = setPieceOwners(this.ctx, k);
+      const dots = Object.keys(set.pieces).map((slot) => { const o = own[slot]; return `<i class="${o ? (o.where === 'equipped' ? 'on' : 'own') : ''}"></i>`; }).join('');
+      return `<button class="fg-setrow${k === id ? ' sel' : ''}" data-act="setSel" data-v="${k}"><b>${esc(tr(set.name))}</b><small>${t('fg.wornCount', { a: worn[k] || 0, b: Object.keys(set.pieces).length })}</small><span class="fg-dots">${dots}</span></button>`;
+    }).join('');
+    const items = `<div class="fg-h">${t('fg.set')} <small>${t('fg.setsHint')}</small></div><div class="fg-scroll fg-setlist">${rows}</div>`;
+    const btns = `<span class="fg-act-l"><span class="fg-note">${t('fg.dotsLegend')}</span></span>
+      <span class="fg-act-r"><button class="fg-btn pri" data-act="wearSet" data-v="${id}" ${canWear ? '' : 'disabled'}>${t('fg.wearSet')}</button></span>`;
+    return { gear, doll: false, items, btns };
   }
 
   // ---------- input ----------
@@ -304,19 +421,21 @@ export class ForgeScreen {
     else if (a === 'depart') this.onDepart();
     else if (a === 'title') this.onTitle();
     else if (a === 'token') this.onToken();
-    else if (a === 'sets') { this.tab = 'sets'; this.sel = null; this.render(); }
-    else if (a === 'equip') { if (equipItem(c, this.sel, v || null).ok) { this.sel = null; this.changed('equip'); } } // back to the neutral hint
+    else if (a === 'sets') { this.tab = 'sets'; this.setSel = v || null; this.sel = null; this.checked.clear(); this.confirm = false; this.render(); }
+    else if (a === 'setSel') { this.setSel = v; this.render(); }
+    else if (a === 'unsel') { this.sel = null; this.render(); }
+    else if (a === 'statsOpen') { this.statsOpen = !this.statsOpen; this.render(); }
+    else if (a === 'equip') { if (equipItem(c, this.sel, v || null).ok) { this.sel = null; this.changed('equip'); } } // back to the doll
     else if (a === 'unequip') { const s = c.loadout.find(this.sel); if (s && unequipItem(c, s).ok) { this.sel = null; this.changed('unequip'); } }
     else if (a === 'store') {
       const r = storeItem(c, this.sel);
       if (r.ok) { this.sel = null; this.changed('store'); } else if (r.reason === 'stashFull') this.flash(t('fg.stashFull'));
-    } else if (a === 'take') { if (takeItem(c, this.sel).ok) this.changed('take'); }
-    else if (a === 'clearChecks') { this.checked.clear(); this.confirm = false; this.render(); }
+    } else if (a === 'take') { if (takeItem(c, this.sel).ok) { this.sel = null; this.changed('take'); } }
+    else if (a === 'clearChecks') { this.checked.clear(); this.sel = null; this.confirm = false; this.render(); }
     else if (a === 'checkAll') { for (const id of salvageSelectAll(this.bagItems())) this.checked.add(id); this.confirm = false; this.render(); }
-    else if (a === 'closePop') { this.sel = null; this.render(); }
-    else if (a === 'salvage') { this.confirm = true; this.render(); }
+    else if (a === 'salvage') { this.confirm = true; this.freshDetail = true; this.render(); } // the warning sits at the top of the gear panel
     else if (a === 'salvageNo') { this.confirm = false; this.render(); }
-    else if (a === 'salvageYes') { const r = salvageItems(c, [...this.checked]); this.confirm = false; if (r.ok) { this.checked.clear(); this.changed('salvage'); } else { this.render(); if (r.reason === 'gold') this.flash(t('fg.needGold', { n: r.gold - c.vault.gold })); } }
+    else if (a === 'salvageYes') { const r = salvageItems(c, [...this.checked]); this.confirm = false; if (r.ok) { this.checked.clear(); this.sel = null; this.changed('salvage'); } else { this.render(); if (r.reason === 'gold') this.flash(t('fg.needGold', { n: r.gold - c.vault.gold })); } }
     else if (a === 'auto') { const snap = snapshotGear(c); if (applyAutoEquip(c).changed) { this.undo = snap; this.sel = null; this.changed('auto'); } else this.flash(t('fg.autoNone')); }
     else if (a === 'undo') { if (this.undo) { restoreGear(c, this.undo); this.undo = null; this.changed('undo'); } }
     else if (a === 'wearPiece') { if (equipItem(c, Number(v)).ok) this.changed('equip'); }
@@ -332,9 +451,10 @@ export class ForgeScreen {
     if (this.tab === 'salvage') {
       const f = findItem(this.ctx, id);
       if (!f || f.where === 'equipped') return;
-      if (this.checked.has(id)) this.checked.delete(id); else this.checked.add(id);
+      if (this.checked.has(id)) { this.checked.delete(id); if (this.sel === id) this.sel = null; } else { this.checked.add(id); this.sel = id; }
       this.confirm = false;
-    } else {
+      this.freshDetail = true;
+    } else if (this.tab !== 'sets') {
       this.sel = this.sel === id ? null : id;
       this.freshDetail = true; // another item's detail starts at its top
       if (this.tab === 'enhance' && this.sel != null) {

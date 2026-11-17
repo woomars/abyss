@@ -22,7 +22,7 @@ export class EffectManager {
     this.links = new Pool(() => ({ x0: 0, y0: 0, x1: 0, y1: 0, life: 0, max: 1, index: 0 }), 32);
     this.winds = new Pool(() => ({ x: 0, y: 0, angle: 0, life: 0, max: 1 }), 16);
     this.afterimages = []; // {x, y, angle, age}
-    this.floods = [];      // {x, y, r, life, max}: an orc warrior's all-round strike floods its circle red
+    this.floods = [];      // {x, y, r, dir, arc, life, max}: an orc warrior's strike floods its cone red
     this.combo = { count: 0, timer: 0 };
 
     events.on('slash', (e) => this.onSlash(e));
@@ -65,11 +65,11 @@ export class EffectManager {
       else { this.ring(e.pos.x, e.pos.y, 12, e.radius, '#c27cff'); this.ring(e.pos.x, e.pos.y, 6, e.radius * 0.6, '#ffffff'); }
     });
     events.on('enemyStrike', (e) => {
-      if (!e.riposte && e.enemy.isElite && !e.enemy.isBoss && e.enemy.tcfg) { // the orc's all-round blow: the whole circle flashes red, a shockwave and grit
-        const reach = e.enemy.radius + (e.enemy.tcfg.attackRange || 0) + 16;
-        this.floods.push({ x: e.pos.x, y: e.pos.y, r: reach, life: 0.35, max: 0.35 });
-        this.ring(e.pos.x, e.pos.y, e.enemy.radius, reach * 1.15, '#ff5a3a');
-        for (const d of [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }]) this.spark(e.pos.x, e.pos.y, d, 3, reach * 3, '#ff8a5a', 3, 0.3);
+      if (!e.riposte && e.enemy.isElite && !e.enemy.isBoss && e.enemy.tcfg && e.enemy.windupDir) { // the orc's heavy swing: its cone flashes red, grit flies along it
+        const reach = e.enemy.radius + (e.enemy.tcfg.attackRange || 0) + 16, dir = e.enemy.windupDir, arc = e.enemy.meleeArc;
+        this.floods.push({ x: e.pos.x, y: e.pos.y, r: reach, dir, arc, life: 0.35, max: 0.35 });
+        const a0 = Math.atan2(dir.y, dir.x), half = (arc * Math.PI) / 360;
+        for (const a of [a0 - half, a0, a0 + half]) this.spark(e.pos.x, e.pos.y, { x: Math.cos(a), y: Math.sin(a) }, 3, reach * 3, '#ff8a5a', 3, 0.3);
       }
       if (!e.riposte) return; // riposte: a red burst on the angry enemy
       const r = this.rings.acquire();

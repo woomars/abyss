@@ -17,9 +17,7 @@ export function jumpStun(dist, radius, coreRatio, zones) {
   return clampStun(zones[i]);
 }
 
-// the spin's blade: nothing inside nearZero of its length, rising in a straight line to `base` at the tip
-export function spinStun(dist, radius, base, nearZero) {
-  const start = radius * nearZero;
-  if (dist <= start) return 0;
-  return clampStun(base * Math.min(1, (dist - start) / (radius - start)));
+// the spin's blade: two zones — inside `inner` (a fixed circle) one chance, from there to the blade tip another
+export function spinStun(dist, inner, innerStun, outerStun) {
+  return clampStun(dist <= inner ? innerStun : outerStun);
 }

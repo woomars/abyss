@@ -205,7 +205,7 @@ export default {
   'set.chainStun': "連鎖攻撃の気絶 +{v}",
   'set.lightningFull': "連鎖の最後の一撃で前方の円錐に雷が走り、円錐内の敵は必ず気絶",
   'set.blade': "回転斬りの刃 +{v}",
-  'set.spinStun': "遠い側の気絶 +{v}",
+  'set.spinStun': "外側の輪の気絶 +{v}",
   'set.stormFull': "刃が二本、逆向きに回る",
   'set.core': "着地の中心(必ず気絶) {v}",
   'set.area': "着地範囲 {v}",

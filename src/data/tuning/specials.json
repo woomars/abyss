@@ -10,7 +10,13 @@
 
   "spin": {
     "_radius": "회전 베기 칼날 길이(회전 반지름). 지금 150의 절반. 폭풍 세트가 늘린다(sets.json storm.radius)",
-    "radius": 75
+    "radius": 75,
+    "_innerRatio": "기절 구역 둘: 안쪽 원 반지름 = 기본 칼날 길이 × 이 값 (고정). 칼날이 길어지면(성장·폭풍 세트) 바깥 고리만 넓어진다",
+    "innerRatio": 0.5,
+    "_innerStun": "안쪽 원 기절 확률",
+    "innerStun": 0,
+    "_outerStun": "바깥 고리(안쪽 원 ~ 칼날 끝) 기절 확률. 폭풍 세트 기절은 여기에만 더해진다",
+    "outerStun": 0.1
   },
 
   "stun": {

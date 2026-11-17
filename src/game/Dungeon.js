@@ -148,7 +148,8 @@ export class Dungeon {
         if (!fin) { this.lastBoss[b.tier] = type; this.cycleTypes.list.push(types[type].ai); }
         list = [type];
       }
-      const k = fin ? { hp: fin.hp || 1, attack: fin.attack || 1 } : { hp: list.length > 1 ? c.doubleBoss.hp : 1, attack: 1 };
+      const str = (!fin && c.bossStrength && c.bossStrength[b.tier]) || { hp: 1, attack: 1 }; // the tier's strength row (tuning/bosses.json)
+      const k = fin ? { hp: fin.hp || 1, attack: fin.attack || 1 } : { hp: (list.length > 1 ? c.doubleBoss.hp : 1) * str.hp, attack: str.attack };
       list.forEach((type, i) => {
         const tcfg = types[type];
         const level = bossLevel(b.tier || tcfg.tier, info.cycle, g.config.enemies);

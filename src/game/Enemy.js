@@ -33,6 +33,7 @@ export class Enemy {
     this.windupMax = 0; // length of the current windup (telegraph fill)
     this.stunTime = 0; // > 0: stunned by a special attack (no moving, no attacking, no riposte)
     this.lunge = 0; // minion strike: steps this far toward the player when the windup ends
+    this.windupDir = null; // the swing's way: toward the hero when the windup starts (a cone, never all round)
     this.angerTime = 0; // > 0: a hit made it ready to strike back at anyone entering its reach
     this.riposteCd = 0;
     this.riposteArc = 0;    // width of the riposte cone (deg); 0 = all round
@@ -66,6 +67,7 @@ export class Enemy {
   get isBoss() { return this.rank === 'boss'; }
   get targetable() { return this.alive && !this.dying && !this.hidden; }
   get canRiposte() { return !!(this.tcfg.riposte || this.mods.riposte); }
+  get meleeArc() { const m = this.root.meleeArc; return m ? (this.isElite ? m.eliteArc : m.arc) : 90; } // width of a plain swing (deg)
   get riposteWindow() { return this.mods.riposteWindow || this.root.counterWindow || 1; }
 
   // stunned: hold still for t, and forget every attack in progress (anger, counter, windup, timers)
@@ -87,10 +89,11 @@ export class Enemy {
     if (this.brain && this.brain.onStun) this.brain.onStun(this);
   }
 
-  startWindup(time, lunge = 0) {
+  startWindup(time, lunge = 0, dir = null) {
     this.windupTime = time;
     this.windupMax = time;
     this.lunge = lunge;
+    this.windupDir = dir;
   }
 
   // noRiposte: a blow that never angers (망령 set wraiths) — no riposte window, no counter
@@ -175,9 +178,15 @@ export class Enemy {
   inRiposteCone(p) {
     const d = this.riposteDir;
     if (!d) return !(this.riposteArc > 0); // not aimed yet: nothing (no cone at all: all round)
-    const a = Math.atan2(p.y - this.pos.y, p.x - this.pos.x) - Math.atan2(d.y, d.x);
-    return Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) <= (this.riposteArc * Math.PI) / 360;
+    return this.inCone(p, d, this.riposteArc);
   }
+
+  inCone(p, d, arcDeg) {
+    const a = Math.atan2(p.y - this.pos.y, p.x - this.pos.x) - Math.atan2(d.y, d.x);
+    return Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) <= (arcDeg * Math.PI) / 360;
+  }
+
+  aimAt(p) { const dx = p.x - this.pos.x, dy = p.y - this.pos.y, d = Math.hypot(dx, dy) || 1; return { x: dx / d, y: dy / d }; }
 
   // game: the Game (brains read the player, hazards, view); null in plain melee tests
   update(dt, playerPos, arena, playerRadius = 16, onAttack = null, onStrike = null, game = null) {
@@ -222,7 +231,7 @@ export class Enemy {
         }
         // mixed beats: after a quick strike it may swing again once the beat's wait is over
         if (this.rhythm && this.beat) { const w = this.beat.wait; this.beat = this.rhythm.next(); if (w < this.counterTime) this.rearm = w; }
-        const hit = this.inReach(playerPos, playerRadius);
+        const hit = this.inReach(playerPos, playerRadius) && (!this.windupDir || this.inCone(playerPos, this.windupDir, this.meleeArc));
         if (onStrike) onStrike(this, hit);
         if (hit && onAttack) onAttack(this);
       }
@@ -230,7 +239,7 @@ export class Enemy {
       // its first strike is on the floor: hold still until it lands
     } else if (this.canCounter && this.counterTime > 0 && this.inReach(playerPos, playerRadius)) {
       const base = this.tcfg.attackWindup || 0.2;
-      this.startWindup(this.rhythm && this.beat ? teleTime(this.root, base, this.beat.tele) : base);
+      this.startWindup(this.rhythm && this.beat ? teleTime(this.root, base, this.beat.tele) : base, 0, this.aimAt(playerPos));
     } else {
       const dx = playerPos.x - this.pos.x, dy = playerPos.y - this.pos.y;
       const d = Math.hypot(dx, dy);
@@ -243,7 +252,7 @@ export class Enemy {
         // minion: show the swing whether or not the player is in reach yet, then leap and strike
         const [a, b] = mc.attackEvery;
         this.minionCd = a + ((this.id * 0.61) % 1) * (b - a);
-        this.startWindup(mc.windup, mc.lunge);
+        this.startWindup(mc.windup, mc.lunge, this.aimAt(playerPos));
       } else if (d > this.radius) {
         const sp = this.speed * (mc ? mc.speed : 1);
         mx += (dx / d) * sp;

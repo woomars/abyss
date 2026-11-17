@@ -14,6 +14,13 @@
     "noTypeRepeat": true
   },
 
+  "strength": {
+    "_설명": "보스 세기 배율 (9단계 봇 시험으로 맞춤). 칸마다 체력(hp)·공격력(attack)에 곱한다. 1 = 그대로. 100층 시조는 founder.json을 따른다",
+    "mid": { "hp": 0.8, "attack": 0.7 },
+    "region": { "hp": 1, "attack": 1 },
+    "great": { "hp": 1, "attack": 1 }
+  },
+
   "double": {
     "_fromFloor": "이 층부터 보스가 두 마리",
     "fromFloor": 61,

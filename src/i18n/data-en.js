@@ -78,7 +78,7 @@ export default {
     "폭풍 갑옷": "Storm Armor",
     "폭풍 장갑": "Storm Gloves",
     "폭풍 장화": "Storm Boots",
-    "회전 베기 칼날 +3%, 기절 +5% (먼 쪽)": "Spin blade +3%, stun +5% (far side)",
+    "회전 베기 칼날 +3%, 기절 +5% (바깥 고리)": "Spin blade +3%, stun +5% (outer ring)",
     "칼날 +6%, 기절 +10%": "Blade +6%, stun +10%",
     "칼날 +9%, 기절 +15%": "Blade +9%, stun +15%",
     "칼날 +12%, 기절 +20%": "Blade +12%, stun +20%",

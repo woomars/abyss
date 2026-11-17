@@ -435,10 +435,11 @@ export class Renderer {
 
   drawRings(fx) {
     const ctx = this.ctx;
-    for (const f of fx.floods) { // an orc's all-round blow: its whole circle red for a moment
+    for (const f of fx.floods) { // an orc's heavy swing: its cone red for a moment
       ctx.globalAlpha = 0.55 * (f.life / f.max);
       ctx.fillStyle = '#ff2a1a';
-      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
+      const a0 = Math.atan2(f.dir.y, f.dir.x), half = (f.arc * Math.PI) / 360;
+      ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.arc(f.x, f.y, f.r, a0 - half, a0 + half); ctx.closePath(); ctx.fill();
     }
     fx.rings.forEachActive((r) => {
       const k = r.life / r.max;
@@ -843,18 +844,18 @@ export class Renderer {
       const reach = e.radius + (e.tcfg.attackRange || 0) + 16 + (e.lunge || 0);
       const total = e.windupMax || e.tcfg.attackWindup || 0.2;
       const k = 1 - e.windupTime / total, st = telegraphStyle(k, total - e.windupTime);
-      ctx.beginPath();
-      ctx.arc(x, y, reach * k, 0, Math.PI * 2);
+      const d = e.windupDir, a0 = d ? Math.atan2(d.y, d.x) : 0, half = d ? (e.meleeArc * Math.PI) / 360 : Math.PI;
+      const pie = (r) => { ctx.beginPath(); if (d) ctx.moveTo(x, y); ctx.arc(x, y, r, a0 - half, a0 + half); if (d) ctx.closePath(); }; // the swing's cone
+      pie(reach * k);
       ctx.fillStyle = `rgba(255,60,50,${st.fillAlpha})`;
       ctx.fill();
-      ctx.beginPath();
-      ctx.arc(x, y, reach, 0, Math.PI * 2);
+      pie(reach);
       ctx.strokeStyle = st.flash ? `rgba(255,235,200,${st.strokeAlpha})` : `rgba(255,70,55,${st.strokeAlpha})`;
       ctx.lineWidth = st.lineWidth;
-      if (e.isElite) ctx.setLineDash([10, 7]); // the orc's all-round blow: a dashed edge
+      if (e.isElite) ctx.setLineDash([10, 7]); // the orc's heavy swing: a dashed edge
       ctx.stroke();
       ctx.setLineDash([]);
-      if (e.isElite) { ctx.beginPath(); ctx.arc(x, y, reach, 0, Math.PI * 2); ctx.fillStyle = `rgba(255,40,30,${0.08 + 0.12 * k})`; ctx.fill(); } // the whole floor it covers, reddening
+      if (e.isElite) { pie(reach); ctx.fillStyle = `rgba(255,40,30,${0.08 + 0.12 * k})`; ctx.fill(); } // the whole floor it covers, reddening
     }
     const hz = game.hazards;
     for (const h of hz.list) {

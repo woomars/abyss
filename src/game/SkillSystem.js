@@ -226,7 +226,7 @@ export class SkillSystem {
       const pause = left > 1e-9 && (s.pausedAt == null || firstRel - s.pausedAt >= minTurn - 1e-9);
       const damage = this.baseDamage('spin') * (1 + def.chainDamageStep * s.hits);
       const fd = Math.hypot(first.pos.x - p.x, first.pos.y - p.y);
-      const stun = spinStun(fd, R, (this.cfg.stun ? this.cfg.stun.chance : 0) + (this.bonus().spinStun || 0), def.nearZero != null ? def.nearZero : 0.4); // the far part of the blade stuns
+      const stun = spinStun(fd, def.innerRadius || 0, def.innerStun || 0, (def.outerStun != null ? def.outerStun : this.cfg.stun ? this.cfg.stun.chance : 0) + (this.bonus().spinStun || 0)); // the storm set lifts only the outer ring
       this.hitEnemy(first, damage, firstDir, { critChance: this.spinCritChance(s.hits), chainIndex: s.hits, skill: 'spin', noStop: !pause, stunChance: stun });
       s.hits += 1;
       if (!this.spin) return; // the room ended under the blade

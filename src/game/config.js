@@ -33,7 +33,8 @@ export function applyTuning(config) {
     d.bladeWave.stunNear = st.base;
     config.items.stunBase = st.base; // the set screen's lines (질풍 5: certain stun)
     Object.assign(d.rushStrike, { distance: j.distance, radius: j.radius, knockback: j.knockback, mult: sp.damage.jump, speed: j.distance / j.airTime, coreRadius: j.coreRadius, outerZones: j.outerZones });
-    if (t.sets && t.sets.storm) d.spin.nearZero = t.sets.storm.nearZero; // the spin stuns only with the far part of its blade
+    // the spin's two stun zones: a fixed inner circle (half the base blade); blade growth widens only the outer ring
+    Object.assign(d.spin, { innerRadius: sp.spin.radius * sp.spin.innerRatio, innerStun: sp.spin.innerStun, outerStun: sp.spin.outerStun });
     config.skills.stun = { chance: st.base, duration: st.duration, bossChance: st.base * st.bossRatio, bossDuration: st.bossDuration };
   }
   if (t.sets) {
@@ -72,6 +73,7 @@ export function applyTuning(config) {
     config.dungeon.forgeAfter = s.forgeAfter;
   }
   if (t.bosses && t.bosses.double) config.dungeon.doubleBoss = t.bosses.double; // two bosses from floor 61
+  if (t.bosses && t.bosses.strength) config.dungeon.bossStrength = t.bosses.strength; // hp and attack per tier (stage 9 balance)
   // the founder (tuning/founder.json): floor 100 and every number of the fight
   if (t.founder && config.enemies.types.founder) {
     const f = t.founder, s = f.stats, r = f.rhythm, m = f.movement, q = f.quests;
@@ -91,7 +93,7 @@ export function applyTuning(config) {
     for (const ty of Object.values(config.enemies.types)) for (const p of Object.values(ty.patterns || {})) if (p.kind === 'lines') p.windup = t.bosses.rotatingLines.warn;
   }
   // depth pressure (tuning/pressure.json): the riposte cone and melee first strikes
-  if (t.pressure) { config.enemies.riposteCone = t.pressure.riposte; config.enemies.firstStrike = t.pressure.firstStrike; config.dungeon.mobs = t.pressure.mobs; Object.assign(config.dungeon, { waves: t.pressure.waves, roomShrink: t.pressure.rooms, timedWaves: t.pressure.timedWaves }); }
+  if (t.pressure) { config.enemies.riposteCone = t.pressure.riposte; config.enemies.firstStrike = t.pressure.firstStrike; config.enemies.meleeArc = t.pressure.melee; config.dungeon.mobs = t.pressure.mobs; Object.assign(config.dungeon, { waves: t.pressure.waves, roomShrink: t.pressure.rooms, timedWaves: t.pressure.timedWaves }); }
   // essences: the amount one card adds (점프의 정수 changes with the jump in stage 3)
   if (t.essence) for (const [id, e] of Object.entries(t.essence)) if (e && e.add != null && config.relics.list[id]) { config.relics.list[id].add = e.add; if (e.stat) config.relics.list[id].stat = e.stat; }
   return config;

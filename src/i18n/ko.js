@@ -220,7 +220,7 @@ export default {
   'set.chainStun': "연쇄 타격 기절 +{v}",
   'set.lightningFull': "연쇄 마지막 타격에서 앞쪽 원뿔로 번개가 터지고, 원뿔 안의 적은 반드시 기절",
   'set.blade': "회전 베기 칼날 +{v}",
-  'set.spinStun': "먼 쪽 기절 +{v}",
+  'set.spinStun': "바깥 고리 기절 +{v}",
   'set.stormFull': "칼날 둘이 서로 반대로 돈다",
   'set.core': "착지 가운데(반드시 기절) {v}",
   'set.area': "착지 범위 {v}",

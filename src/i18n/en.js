@@ -207,7 +207,7 @@ export default {
   'set.chainStun': "Chain hit stun +{v}",
   'set.lightningFull': "The last chain hit bursts lightning in a cone ahead; foes in it are always stunned",
   'set.blade': "Spin Slash blade +{v}",
-  'set.spinStun': "far-side stun +{v}",
+  'set.spinStun': "outer-ring stun +{v}",
   'set.stormFull': "two blades turn opposite ways",
   'set.core': "Landing core (sure stun) {v}",
   'set.area': "landing area {v}",

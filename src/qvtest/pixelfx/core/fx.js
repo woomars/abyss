@@ -69,7 +69,7 @@ export function createFx(mod, o = {}) {
     },
     draw(frame, layer) {
       const p = painterFor(frame);
-      p.place(opts.x ?? 0, opts.y ?? 0, !!opts.flip, opts.angle ?? 0);
+      p.place(opts.x ?? 0, opts.y ?? 0, !!opts.flip, opts.angle ?? 0, opts.scale ?? 1); // abyss: scale
       p.fade = stopAt === Infinity ? 1 : clamp(1 - (t - stopAt) / FADE);
       p.lightK = opts.light ?? 1;
       const tt = meta.loop ? t % D : Math.min(t, D);

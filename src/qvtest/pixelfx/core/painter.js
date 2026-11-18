@@ -22,22 +22,23 @@ export class Painter {
   reset() {
     const f = this.frame;
     this.w = f.w; this.h = f.h; this.ox = f.ox | 0; this.oy = f.oy | 0; this.C = f.color; this.L = f.light;
-    this.tx = 0; this.ty = 0; this.fx = 1; this.cs = 1; this.sn = 0;
+    this.tx = 0; this.ty = 0; this.fx = 1; this.cs = 1; this.sn = 0; this.k = 1;
     this.fade = 1; this.lightK = 1; this.layer = "front";
     return this;
   }
 
   /** Put the effect's origin at (x, y) in frame space, mirrored if flip, rotated by angle (radians). */
-  place(x, y, flip = false, angle = 0) {
-    this.tx = x; this.ty = y; this.fx = flip ? -1 : 1; this.cs = Math.cos(angle); this.sn = Math.sin(angle);
+  // abyss: scale shrinks the whole effect round its origin (the game's sprites are smaller than pixelfx's stock actor)
+  place(x, y, flip = false, angle = 0, scale = 1) {
+    this.tx = x; this.ty = y; this.fx = flip ? -1 : 1; this.cs = Math.cos(angle) * scale; this.sn = Math.sin(angle) * scale; this.k = scale;
     return this;
   }
 
   // ---- transforms: local (effect) space <-> screen (frame) space
   toX(x, y) { return this.tx + x * this.fx * this.cs - y * this.sn; }
   toY(x, y) { return this.ty + x * this.fx * this.sn + y * this.cs; }
-  fromX(sx, sy) { const dx = sx - this.tx, dy = sy - this.ty; return (dx * this.cs + dy * this.sn) * this.fx; }
-  fromY(sx, sy) { const dx = sx - this.tx, dy = sy - this.ty; return -dx * this.sn + dy * this.cs; }
+  fromX(sx, sy) { const dx = sx - this.tx, dy = sy - this.ty, k2 = this.k * this.k; return ((dx * this.cs + dy * this.sn) * this.fx) / k2; }
+  fromY(sx, sy) { const dx = sx - this.tx, dy = sy - this.ty, k2 = this.k * this.k; return (-dx * this.sn + dy * this.cs) / k2; }
   // the screen pixel of the local pixel cell holding (x, y): mirrors and rotations land on whole cells
   cellX(x, y) { return Math.floor(this.toX(Math.floor(x) + 0.5, Math.floor(y) + 0.5)); }
   cellY(x, y) { return Math.floor(this.toY(Math.floor(x) + 0.5, Math.floor(y) + 0.5)); }
@@ -253,6 +254,7 @@ export class Painter {
   // ---- light
   /** Radial glow into the light buffer: k at the center, falling to 0 at radius r. */
   glow(x, y, r, c, k = 0.5) {
+    r *= this.k;
     if (r < 1 || k <= 0.004) return;
     const cx = this.toX(x, y), cy = this.toY(x, y);
     const x0 = Math.floor(cx - r), x1 = Math.ceil(cx + r), y0 = Math.floor(cy - r), y1 = Math.ceil(cy + r);
@@ -268,6 +270,7 @@ export class Painter {
   }
   /** Glow around a segment (a soft beam of light). */
   glowLine(x0, y0, x1, y1, r, c, k = 0.5) {
+    r *= this.k;
     if (r < 1 || k <= 0.004) return;
     const ax = this.toX(x0, y0), ay = this.toY(x0, y0), bx = this.toX(x1, y1), by = this.toY(x1, y1);
     const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1e-9;
@@ -284,6 +287,7 @@ export class Painter {
   }
   /** Glow hugging a circle of radius R (a shockwave's light), falling off over width r. */
   glowRing(x, y, R, r, c, k = 0.5) {
+    R *= this.k; r *= this.k;
     if (r < 1 || k <= 0.004) return;
     const cx = this.toX(x, y), cy = this.toY(x, y), E = R + r;
     for (let sy = Math.floor(cy - E); sy <= Math.ceil(cy + E); sy++)

@@ -151,5 +151,43 @@
     1
    ]
   }
+ },
+ "knightGen": {
+  "image": "knightGen.png",
+  "w": 24,
+  "h": 24,
+  "cols": 11,
+  "perDir": 11,
+  "dirs": 3,
+  "anchor": [
+   11,
+   21
+  ],
+  "anims": {
+   "stand": [
+    0,
+    1
+   ],
+   "run": [
+    1,
+    4
+   ],
+   "swing": [
+    5,
+    4
+   ],
+   "cast": [
+    5,
+    4
+   ],
+   "block": [
+    0,
+    1
+   ],
+   "die": [
+    9,
+    2
+   ]
+  }
  }
 }

@@ -4,25 +4,14 @@
 // Hits are acted the pixelfx way: wind-up, snap, freeze on contact, the target rocks back, recovery.
 // Feel the controls and read the fps with 0/50/100/150 enemies on a phone. Debug text is Korean only.
 import { createFrame, clearFrame, createFx, composite } from './pixelfx/core/index.js';
-import * as swordSlash from './pixelfx/fx/melee/sword-slash.js';
-import * as doubleSlash from './pixelfx/fx/melee/double-slash.js';
-import * as spinSlash from './pixelfx/fx/melee/spin-slash.js';
-import * as hitSpark from './pixelfx/fx/impacts/hit-spark.js';
-import * as critHit from './pixelfx/fx/impacts/crit-hit.js';
-import * as groundSlam from './pixelfx/fx/impacts/ground-slam.js';
-import * as poof from './pixelfx/fx/spawn/poof.js';
-import * as damageNumber from './pixelfx/fx/ui/damage-number.js';
-import * as critNumber from './pixelfx/fx/ui/crit-number.js';
-import * as energyDisc from './pixelfx/fx/projectiles/energy-disc.js';
+import { FX, facing } from './fxTuning.js';
 
 const PIXI_URL = 'https://cdn.jsdelivr.net/npm/pixi.js@8.6.6/dist/pixi.min.mjs';
 const BASE = 'assets/qvtest/';
 const PX = 2; // world units per screen pixel
 const PILLAR_H = 120;
 const KIND = { hero: 'pxHero', zombie: 'pxEnemy', boss: 'pxBoss' };
-const CAP = { num: 5, crit: 1, hit: 10, death: 8 }; // live pixelfx instances per group (the oldest goes first)
-const GOLD = ['#3a2a10', '#7a5a1a', '#c8962a', '#f0c850', '#fff0a0', '#fffbe0', '#ffffff'];
-const VIOLET = ['#2a0a3a', '#5a1a8a', '#8a3ac8', '#b86af0', '#e0b0ff', '#f4e4ff', '#ffffff'];
+const CAP = { num: 6, crit: 1, hit: 10, death: 8 }; // live pixelfx instances per group (the oldest goes first)
 
 const CSS = `
 .qvt{position:absolute;inset:0;z-index:60;background:#0a0a10;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden}
@@ -456,7 +445,7 @@ class QvTest {
     }
     if (kind === 'spin') {
       Object.assign(p, { state: 'spin', st: 0, hits: 0, a0: Math.atan2(p.dy, p.dx) });
-      this.spawn(spinSlash, p, { radius: 60 }, { follow: p });
+      this.spawn('spin', p, {}, { follow: p });
     }
     if (kind === 'wave') { this.faceTo(p, d.x, d.y); Object.assign(p, { state: 'cast', st: 0, fired: false }); this.play(p, 'cast', 16, false); }
   }
@@ -501,12 +490,12 @@ class QvTest {
     const aim = Math.atan2(dy, dx), big = t === this.boss;
     if (crit) {
       // the big starburst only on the boss: on a crowd it buries the fight
-      if (big) this.spawn(critHit, t, { aim, height: 22 }, { group: 'hit' });
-      else this.spawn(hitSpark, t, { aim, height: 9, palette: GOLD }, { group: 'hit' });
-      this.spawn(critNumber, t, { text: `${Math.round(dmg)}!` }, { group: 'crit', dy: big ? -46 : -24 });
+      this.spawn(big ? 'bossCrit' : 'hitCrit', t, { aim });
+      if (big) this.spawn('bossCritNum', t, { text: `${Math.round(dmg)}!` }, { dy: -46 });
+      else this.spawn('numCrit', t, { text: `-${Math.round(dmg)}!` }, { dy: -20 });
     } else {
-      this.spawn(hitSpark, t, { aim, height: big ? 22 : 9 }, { group: 'hit' });
-      this.spawn(damageNumber, t, { text: `-${Math.round(dmg)}` }, { group: 'num', dy: big ? -40 : -18 });
+      this.spawn('hit', t, big ? { aim, height: 40 } : { aim });
+      this.spawn('num', t, { text: `-${Math.round(dmg)}` }, { dy: big ? -40 : -18 });
     }
     if (t.hp <= 0) { this.kill(t); return; }
     if (big) { t.kx += dx * 40; t.ky += dy * 40; return; }
@@ -516,7 +505,7 @@ class QvTest {
   kill(t) {
     Object.assign(t, { alive: false, state: 'dead', st: 0 });
     this.play(t, 'die', 12, false);
-    this.spawn(poof, t, {}, { group: 'death', life: 0.7 });
+    this.spawn('death', t);
   }
 
   hurtPlayer(dmg, dx, dy, kn = 240) {
@@ -527,7 +516,7 @@ class QvTest {
     Object.assign(p, { state: 'hurt', st: 0, kx: dx * kn, ky: dy * kn, invuln: 0.7, flash: 0.12, rock: 1, chain: null });
     this.buffer = null;
     this.freeze(0.06, 2);
-    this.spawn(hitSpark, p, { aim: Math.atan2(dy, dx), height: 9, palette: VIOLET }, { group: 'hit' });
+    this.spawn('hitHero', p, { aim: Math.atan2(dy, dx) });
   }
 
   // freeze on contact (pixelfx "stop") and throw the picture a few whole pixels
@@ -540,7 +529,7 @@ class QvTest {
   slash() {
     const p = this.player, R = p.fromDash ? 95 : 85, cos = Math.cos(65 * Math.PI / 180);
     const last = p.fromDash && p.chain && p.chain.left === 0;
-    this.spawnDir(last ? doubleSlash : swordSlash, p, { radius: last ? 30 : 32, palette: p.fromDash ? GOLD : undefined });
+    this.spawnDir(last ? 'finisher' : p.fromDash ? 'slashDash' : 'slash', p);
     for (const t of this.targets()) {
       const dx = t.x - p.x, dy = t.y - p.y, l = len(dx, dy);
       if (l > R + t.r || (dx * p.dx + dy * p.dy) / l < cos) continue;
@@ -558,11 +547,10 @@ class QvTest {
 
   // ---- pixelfx ----
   // anchored to a world point (or a body that it follows); lx/ly/dy in pixels; the oldest of a capped group makes room
-  spawn(mod, at, o = {}, { group = null, dy = 0, follow = null, flip = false, angle = 0, lx = 0, ly = 0, life = 0 } = {}) {
+  spawn(name, at, o = {}, { dy = 0, follow = null, flip = false, angle = 0, lx = 0, ly = 0 } = {}) {
     if (!this.fxOn) return null;
-    const opts = { ...o };
-    for (const k of Object.keys(opts)) if (opts[k] === undefined) delete opts[k];
-    const f = createFx(mod, { ...opts, flip, angle, seed: Math.floor(Math.random() * 1e6) });
+    const pre = FX[name], group = pre.group || null, life = pre.life || 0;
+    const f = createFx(pre.mod, { ...pre.o, ...o, flip, angle, seed: Math.floor(Math.random() * 1e6) });
     const e = { f, wx: at.x, wy: at.y, follow, dy, group, lx, ly, life };
     if (group && CAP[group]) {
       const same = this.pfx.filter((q) => q.group === group);
@@ -573,12 +561,9 @@ class QvTest {
   }
 
   // a side-view swing turned to face the hero's way: mirrored when facing left, its arc centre carried ahead of the body
-  spawnDir(mod, p, o) {
-    const th = Math.atan2(p.dy, p.dx), flip = Math.cos(th) < 0, angle = flip ? th - Math.PI : th;
-    // the effect's arc centre sits about (6, -26) px from its origin: put it 8 px ahead of the hero's chest
-    const lx = flip ? -6 : 6, ly = -26, c = Math.cos(angle), s = Math.sin(angle);
-    const ox = Math.cos(th) * 8 - (lx * c - ly * s), oy = Math.sin(th) * 8 - 8 - (lx * s + ly * c);
-    return this.spawn(mod, p, o, { follow: p, flip, angle, lx: ox, ly: oy });
+  spawnDir(name, p) {
+    const f = facing(Math.atan2(p.dy, p.dx), FX[name].o.scale);
+    return this.spawn(name, p, {}, { follow: p, ...f });
   }
 
   drawPixelFx(dt, frozen) {
@@ -732,7 +717,7 @@ class QvTest {
       p.hold = sw + (k > 0.7 ? 2 : k > 0.35 ? 1 : 0);
       if (k >= 1) {
         p.z = 0; p.state = 'free';
-        this.spawn(groundSlam, p, { reach: 62 }, { life: 0.8 });
+        this.spawn('land', p);
         this.aoe(p.x, p.y, 125, 20, 420);
         this.freeze(0.12, 3);
       }
@@ -757,7 +742,7 @@ class QvTest {
   addWave(p) {
     const w = { x: p.x + p.dx * 30, y: p.y + p.dy * 30, z: 16, dx: p.dx, dy: p.dy, t: 0, hit: new Set() };
     const th = Math.atan2(p.dy, p.dx), flip = Math.cos(th) < 0;
-    const fx = this.spawn(energyDisc, w, { size: 8 }, { follow: w, flip, angle: flip ? th - Math.PI : th });
+    const fx = this.spawn('wave', w, {}, { follow: w, flip, angle: flip ? th - Math.PI : th });
     this.waves.push({ w, fx });
   }
 
@@ -863,7 +848,7 @@ class QvTest {
       g.circle(b.sx, b.sy, 110 * k).fill({ color: 0xff3030, alpha: 0.25 });
       if (k >= 1) {
         b.state = 'recover'; b.st = 0; b.hold = sw + 2;
-        this.spawn(groundSlam, { x: b.sx, y: b.sy }, { reach: 58 }, { life: 0.8 });
+        this.spawn('bossSlam', { x: b.sx, y: b.sy });
         this.freeze(0.1, 3);
         const ex = p.x - b.sx, ey = p.y - b.sy, el = len(ex, ey);
         if (el < 110 + p.r) this.hurtPlayer(20, ex / el, ey / el, 380);
@@ -885,7 +870,7 @@ class QvTest {
       const blocked = len(b.x - ox, b.y - oy) < 640 * dt * 0.3;
       if (len(b.x - b.ox, b.y - b.oy) >= 480 || blocked || b.st > 1) {
         b.state = 'recover'; b.st = -0.4; // a longer breather after a charge: the opening
-        if (blocked) { this.freeze(0.08, 3); this.spawn(critHit, { x: b.x + b.cdx * 30, y: b.y + b.cdy * 30 }, { aim: Math.atan2(b.cdy, b.cdx), height: 20 }); }
+        if (blocked) { this.freeze(0.08, 3); this.spawn('bossCrit', { x: b.x + b.cdx * 30, y: b.y + b.cdy * 30 }, { aim: Math.atan2(b.cdy, b.cdx) }); }
       }
     } else if (b.state === 'quake') {
       this.play(b, 'block', 4);
@@ -900,7 +885,7 @@ class QvTest {
         const [r0, r1] = R[b.rings];
         b.rings++;
         b.hold = sw + 2;
-        this.spawn(groundSlam, b, { reach: Math.round(r1 / PX) }, { life: 0.6 });
+        this.spawn('quake', b, { reach: Math.round(r1 / PX / 0.7) });
         this.freeze(0.05, 2);
         if (l > r0 - p.r && l < r1 + p.r) this.hurtPlayer(14, dx / l, dy / l, 300);
       } else if (b.hold != null && b.st - at[b.rings - 1] > 0.15) b.hold = null;

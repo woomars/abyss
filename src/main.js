@@ -302,6 +302,11 @@ async function boot() {
     game.strokes.setExcludedRects(rects.map(rectToStage));
     updatePaused();
   };
+  // debug screen test (PixiJS); ?qvtest opens it straight away
+  const openQv = () => {
+    qvOpen = true; updatePaused();
+    import('./qvtest/QvTest.js').then(({ openQvTest }) => openQvTest(stage, { config, toLocal, onClose: () => { qvOpen = false; updatePaused(); } }));
+  };
   // a debug jump leaves every screen and plays as a throwaway family
   const debugReady = () => {
     gameOver.hide();
@@ -314,10 +319,7 @@ async function boot() {
       config, game, onLayout: () => layout(),
       onGear: () => { if (forge.isOpen) forge.render(); },
       onOpenChange: (open) => { debugOpen = open; updatePaused(); },
-      onQvTest: () => {
-        qvOpen = true; updatePaused();
-        import('./qvtest/QvTest.js').then(({ openQvTest }) => openQvTest(stage, { config, toLocal, onClose: () => { qvOpen = false; updatePaused(); } }));
-      },
+      onQvTest: () => openQv(),
       // debug: the ending with this hero's names (the line goes on as if he had won)
       onEnding: () => {
         const l = game.vault.lineage, w = game.loadout.slots.weapon;
@@ -358,6 +360,7 @@ async function boot() {
     if (window.innerWidth < window.innerHeight && chooseRotation(rot, { vw: window.innerWidth, vh: window.innerHeight, gx }) !== rot) layout();
   });
   layout();
+  if (new URLSearchParams(location.search).has('qvtest')) openQv();
 
   document.addEventListener('contextmenu', (e) => e.preventDefault());
   document.addEventListener('visibilitychange', () => {

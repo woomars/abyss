@@ -157,13 +157,17 @@ class QvTest {
     this.bodies.sortableChildren = true;
     this.world.addChild(this.floor, this.tele, this.shadows, this.fxBack, this.bodies);
     this.fxFront = new P.Sprite(P.Texture.EMPTY);
-    app.stage.addChild(this.world, this.fxFront);
+    // the hero is drawn above every effect, so a swing, a spark or a dust cloud never hides him
+    this.top = new P.Container();
+    this.top.scale.set(1 / PX);
+    app.stage.addChild(this.world, this.fxFront, this.top);
     this.app = app;
 
     this.shadowTex = this.shadowTexture();
     this.drawFloor(tex('px_dirt.png'), tex('px_grass1.png'));
     for (const p of this.room.pillars) this.drawPillar(p);
     this.player = this.actor('hero', 16);
+    this.top.addChild(this.player.sprite);
     this.heroArt = 'pxHero';
     Object.assign(this.player, { x: 300, y: this.room.h / 2, hp: 100, maxHp: 100, state: 'free', invuln: 0, chain: null });
     this.cam = { x: this.player.x, y: this.player.y };
@@ -682,6 +686,7 @@ class QvTest {
     } else this.shakeAmp = 0;
     // whole pixels only, so the pixel grid never swims
     this.world.position.set(Math.round(this.pw / 2 - this.cam.x / PX) + sx, Math.round(this.ph / 2 - (this.cam.y - 20) / PX) + sy);
+    this.top.position.copyFrom(this.world.position);
   }
 
   measure(dt, ms) {

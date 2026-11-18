@@ -24,6 +24,13 @@ const CSS = `
 .qvt-err{position:absolute;inset:60px 20px auto;color:#f88;font:13px monospace;white-space:pre-wrap}
 `;
 
+// each body's sheet and scale per view: A/B use the 8-direction Flare art, C the top-down art (one facing, rotated)
+const KIND = {
+  hero: { ab: 'hero', c: 'tdHero', sAB: 1, sC: 1.1 },
+  zombie: { ab: 'zombie', c: 'tdEnemy', sAB: 1, sC: 0.95 },
+  boss: { ab: 'boss', c: 'tdBoss', sAB: 1.3, sC: 2.1 },
+};
+const MODE_LABEL = { A: 'A 3/4 탑다운', B: 'B 아이소메트릭', C: 'C 탑다운' };
 const rnd = (a, b) => a + Math.random() * (b - a);
 const len = (x, y) => Math.hypot(x, y) || 1e-6;
 
@@ -88,7 +95,7 @@ class QvTest {
       const a = b.dataset.a;
       if (a === 'close') this.close();
       if (!this.app) return;
-      if (a === 'mode') this.setMode(this.mode === 'A' ? 'B' : 'A');
+      if (a === 'mode') this.setMode({ A: 'B', B: 'C', C: 'A' }[this.mode]);
       if (a === 'n') this.setEnemies(Number(b.dataset.n));
       if (a === 'boss') this.toggleBoss();
       if (a === 'res') this.setRes(this.res >= 2 ? 1 : this.res >= 1.5 ? 2 : 1.5);
@@ -123,6 +130,7 @@ class QvTest {
     const cut = (src, x, y, w, h) => new P.Texture({ source: src, frame: new P.Rectangle(x, y, w, h) });
     for (const s of Object.values(this.sheets)) {
       const src = tex(s.image).source;
+      if (s.dirs === 1) src.scaleMode = 'nearest'; // pixel art
       s.tex = Array.from({ length: 8 * s.perDir }, (_, i) => cut(src, (i % s.cols) * s.w, Math.floor(i / s.cols) * s.h, s.w, s.h));
     }
     const sparks = tex('fx_sparks.png').source, impact = tex('fx_impact.png').source;
@@ -152,7 +160,7 @@ class QvTest {
     this.app = app;
 
     this.drawFloor();
-    this.player = this.actor('hero', 16, 1);
+    this.player = this.actor('hero', 16);
     Object.assign(this.player, { x: 300, y: this.room.h / 2, hp: 100, maxHp: 100, state: 'free', invuln: 0, chain: null });
     this.cam = { x: this.player.x, y: this.player.y };
     this.setMode('A');
@@ -175,16 +183,16 @@ class QvTest {
   }
 
   // ---- projection ----
-  proj(x, y) { return this.mode === 'A' ? { x, y } : { x: (x - y) * C, y: (x + y) * C * 0.5 }; }
+  proj(x, y) { return this.mode !== 'B' ? { x, y } : { x: (x - y) * C, y: (x + y) * C * 0.5 }; }
   // a screen direction -> the world direction that moves the same way on screen
   unproj(dx, dy) {
-    if (this.mode === 'A') { const l = len(dx, dy); return { x: dx / l, y: dy / l }; }
+    if (this.mode !== 'B') { const l = len(dx, dy); return { x: dx / l, y: dy / l }; }
     const x = (dx + 2 * dy) / (2 * C), y = (2 * dy - dx) / (2 * C), l = len(x, y);
     return { x: x / l, y: y / l };
   }
   // Flare rows: 0 W, 1 SW, 2 S, 3 SE, 4 E, 5 NE, 6 N, 7 NW (screen directions)
   faceTo(e, dx, dy) {
-    const p = this.mode === 'A' ? { x: dx, y: dy } : { x: (dx - dy), y: (dx + dy) * 0.5 };
+    const p = this.mode !== 'B' ? { x: dx, y: dy } : { x: (dx - dy), y: (dx + dy) * 0.5 };
     const deg = Math.atan2(p.y, p.x) * 180 / Math.PI;
     e.face = (((Math.round((180 - deg) / 45)) % 8) + 8) % 8;
     const l = len(dx, dy);
@@ -197,8 +205,16 @@ class QvTest {
     this.ground.rotation = m === 'B' ? Math.PI / 4 : 0;
     if (this.pillarGfx) for (const g of this.pillarGfx) g.destroy();
     this.pillarGfx = this.room.pillars.map((p) => this.drawPillar(p));
-    for (const e of this.all()) this.faceTo(e, e.dx, e.dy);
-    this.el.querySelector('[data-a="mode"]').textContent = m === 'A' ? 'A 3/4 탑다운' : 'B 아이소메트릭';
+    for (const e of this.all()) { this.applySheet(e); this.faceTo(e, e.dx, e.dy); }
+    this.el.querySelector('[data-a="mode"]').textContent = MODE_LABEL[m];
+  }
+
+  applySheet(e) {
+    const k = KIND[e.kind], c = this.mode === 'C';
+    e.sh = this.sheets[c ? k.c : k.ab];
+    e.scl = c ? k.sC : k.sAB;
+    e.sprite.anchor.set(e.sh.anchor[0] / e.sh.w, e.sh.anchor[1] / e.sh.h);
+    e.sprite.rotation = 0;
   }
 
   setRes(r) {
@@ -217,6 +233,13 @@ class QvTest {
 
   drawPillar(p) {
     const g = new this.P.Graphics();
+    if (this.mode === 'C') { // straight down: the top and a cast shadow
+      g.rect(p.x + 14, p.y + 14, p.w, p.h).fill({ color: 0x000000, alpha: 0.35 });
+      g.rect(p.x, p.y, p.w, p.h).fill(0x4b4557).stroke({ width: 3, color: 0x5d5669 });
+      g.zIndex = -1e6;
+      this.bodies.addChild(g);
+      return g;
+    }
     const s = [[p.x, p.y], [p.x + p.w, p.y], [p.x + p.w, p.y + p.h], [p.x, p.y + p.h]].map(([x, y]) => this.proj(x, y));
     const cx = s.reduce((a, q) => a + q.x, 0) / 4, cy = s.reduce((a, q) => a + q.y, 0) / 4;
     for (let i = 0; i < 4; i++) {
@@ -232,17 +255,16 @@ class QvTest {
   }
 
   // ---- actors ----
-  actor(kind, r, scale) {
-    const P = this.P, sh = this.sheets[kind];
-    const sprite = new P.Sprite(sh.tex[0]);
-    sprite.anchor.set(sh.anchor[0] / sh.w, sh.anchor[1] / sh.h);
-    sprite.scale.set(scale);
+  actor(kind, r) {
+    const P = this.P;
+    const sprite = new P.Sprite(P.Texture.EMPTY);
     const shadow = new P.Sprite(this.t.shadow);
     shadow.anchor.set(0.5);
-    shadow.scale.set(r * 2.6 / 64);
     this.bodies.addChild(sprite);
     this.shadows.addChild(shadow);
-    return { kind, sh, sprite, shadow, r, base: r * 2.6 / 64, x: 0, y: 0, z: 0, kx: 0, ky: 0, face: 2, dx: 0, dy: 1, anim: 'stand', at: 0, fps: 6, loop: true, hold: null, flash: 0, st: 0, alive: true };
+    const e = { kind, sprite, shadow, r, base: r * 2.6 / 64, x: 0, y: 0, z: 0, kx: 0, ky: 0, face: 2, dx: 0, dy: 1, anim: 'stand', at: 0, fps: 6, loop: true, hold: null, flash: 0, st: 0, alive: true };
+    this.applySheet(e);
+    return e;
   }
 
   play(e, anim, fps, loop = true) {
@@ -256,15 +278,25 @@ class QvTest {
     let k = Math.floor(e.at * e.fps);
     k = e.loop ? k % a[1] : Math.min(k, a[1] - 1);
     const col = e.hold != null ? e.hold : a[0] + k;
-    e.sprite.texture = e.sh.tex[e.face * e.sh.perDir + col];
+    e.sprite.texture = e.sh.tex[(e.sh.dirs === 1 ? 0 : e.face) * e.sh.perDir + col];
   }
 
   sync(e) {
-    const p = this.proj(e.x, e.y);
-    e.sprite.position.set(p.x, p.y - e.z);
+    const p = this.proj(e.x, e.y), ks = 1 - Math.min(0.5, e.z / 220);
     e.sprite.zIndex = p.y;
-    e.shadow.position.set(p.x, p.y);
-    e.shadow.scale.set(e.base * (1 - Math.min(0.5, e.z / 220)));
+    if (this.mode === 'C') { // seen from above: a jump grows the body, the shadow stays on the floor
+      e.sprite.position.set(p.x, p.y);
+      e.sprite.scale.set(e.scl * (1 + e.z / 160));
+      e.sprite.rotation = Math.atan2(e.dy, e.dx) + Math.PI / 2; // the art faces north
+      e.sprite.zIndex += e.z * 10;
+      e.shadow.position.set(p.x + 4 + e.z * 0.3, p.y + 6 + e.z * 0.3);
+      e.shadow.scale.set(e.base * 0.9 * ks, e.base * 1.8 * ks);
+    } else {
+      e.sprite.position.set(p.x, p.y - e.z);
+      e.sprite.scale.set(e.scl);
+      e.shadow.position.set(p.x, p.y);
+      e.shadow.scale.set(e.base * ks);
+    }
     e.sprite.tint = e.flash > 0 ? 0xff6a6a : 0xffffff;
     e.sprite.alpha = e.fade != null ? e.fade : (e.invuln > 0 && Math.floor(e.invuln * 20) % 2 ? 0.45 : 1);
   }
@@ -286,7 +318,7 @@ class QvTest {
   setEnemies(n) {
     while (this.enemies.length > n) { const e = this.enemies.pop(); e.sprite.destroy(); e.shadow.destroy(); }
     while (this.enemies.length < n) {
-      const e = this.actor('zombie', 14, 1);
+      const e = this.actor('zombie', 14);
       this.respawn(e);
       this.enemies.push(e);
     }
@@ -302,7 +334,7 @@ class QvTest {
   toggleBoss() {
     if (this.boss) { this.boss.sprite.destroy(); this.boss.shadow.destroy(); this.boss = null; this.bossBar.style.display = 'none'; this.tele.clear(); }
     else {
-      const b = this.boss = this.actor('boss', 30, 1.3);
+      const b = this.boss = this.actor('boss', 30);
       Object.assign(b, this.freeSpot(450), { hp: 900, maxHp: 900, state: 'idle', st: 0, alive: true, fade: null });
       this.play(b, 'stand', 6);
       this.bossBar.style.display = 'block';
@@ -388,7 +420,7 @@ class QvTest {
       Object.assign(p, { state: 'jump', st: 0, jx: p.x, jy: p.y, tx, ty, invuln: 0.5 });
       this.play(p, 'swing', 0); p.hold = p.sh.anims.swing[0];
     }
-    if (kind === 'spin') { Object.assign(p, { state: 'spin', st: 0, hits: 0, face0: p.face }); this.addSpinFx(p); }
+    if (kind === 'spin') { Object.assign(p, { state: 'spin', st: 0, hits: 0, a0: Math.atan2(p.dy, p.dx) }); this.addSpinFx(p); }
     if (kind === 'wave') { this.faceTo(p, d.x, d.y); Object.assign(p, { state: 'cast', st: 0, fired: false }); this.play(p, 'cast', 16, false); }
   }
 
@@ -480,7 +512,7 @@ class QvTest {
     const sp = new this.P.Sprite(frames[0]);
     const p = this.proj(t.x, t.y);
     sp.anchor.set(0.5);
-    sp.position.set(p.x + rnd(-6, 6), p.y - (t === this.boss ? 60 : 30));
+    sp.position.set(p.x + rnd(-6, 6), p.y - (this.mode === 'C' ? 0 : t === this.boss ? 60 : 30));
     sp.scale.set(t === this.boss ? 1.6 : 1.1);
     this.addFx(sp, this.topFx, 0.22, null, frames);
   }
@@ -543,6 +575,8 @@ class QvTest {
     const sp = new this.P.Sprite(p.sprite.texture);
     sp.anchor.copyFrom(p.sprite.anchor);
     sp.position.copyFrom(p.sprite.position);
+    sp.scale.copyFrom(p.sprite.scale);
+    sp.rotation = p.sprite.rotation;
     sp.zIndex = p.sprite.zIndex - 1;
     sp.tint = 0x66bbff;
     sp.blendMode = 'add';
@@ -605,7 +639,7 @@ class QvTest {
     this.shakeAmp *= Math.exp(-dt / 0.08);
     const sx = (Math.random() * 2 - 1) * this.shakeAmp, sy = (Math.random() * 2 - 1) * this.shakeAmp;
     this.world.scale.set(zoom);
-    this.world.position.set(this.el.clientWidth / 2 - c.x * zoom + sx, this.el.clientHeight / 2 - (c.y - 30) * zoom + sy);
+    this.world.position.set(this.el.clientWidth / 2 - c.x * zoom + sx, this.el.clientHeight / 2 - (c.y - (this.mode === 'C' ? 0 : 30)) * zoom + sy);
   }
 
   measure(dt, ms) {
@@ -654,11 +688,12 @@ class QvTest {
         this.hitstop = Math.max(this.hitstop, 0.07);
       }
     } else if (p.state === 'spin') {
-      p.face = (p.face0 + Math.floor(p.st / 0.035)) % 8;
+      const a = p.a0 + p.st / 0.28 * Math.PI * 2; // a full turn every 0.28s: rows in A/B, rotation in C
+      this.faceTo(p, Math.cos(a), Math.sin(a));
       p.hold = p.sh.anims.swing[0] + 2;
       const due = [0.04, 0.19, 0.34].filter((t) => p.st >= t).length;
       while (p.hits < due) { p.hits++; this.aoe(p.x, p.y, 125, 9, 200); }
-      if (p.st >= 0.45) { p.state = 'free'; p.face = p.face0; }
+      if (p.st >= 0.45) { p.state = 'free'; this.faceTo(p, Math.cos(p.a0), Math.sin(p.a0)); }
     } else if (p.state === 'cast') {
       if (!p.fired && p.st >= 0.12) { p.fired = true; this.addWave(p); this.shake(2); }
       if (p.st >= 0.26) p.state = 'free';

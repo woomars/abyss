@@ -105,5 +105,107 @@
     6
    ]
   }
+ },
+ "tdHero": {
+  "image": "tdHero.png",
+  "w": 64,
+  "h": 64,
+  "cols": 16,
+  "perDir": 24,
+  "dirs": 1,
+  "anchor": [
+   32,
+   32
+  ],
+  "anims": {
+   "stand": [
+    0,
+    1
+   ],
+   "run": [
+    0,
+    8
+   ],
+   "swing": [
+    8,
+    8
+   ],
+   "cast": [
+    8,
+    4
+   ],
+   "block": [
+    8,
+    1
+   ],
+   "die": [
+    16,
+    8
+   ]
+  }
+ },
+ "tdEnemy": {
+  "image": "tdEnemy.png",
+  "w": 64,
+  "h": 64,
+  "cols": 16,
+  "perDir": 24,
+  "dirs": 1,
+  "anchor": [
+   32,
+   32
+  ],
+  "anims": {
+   "stand": [
+    0,
+    1
+   ],
+   "run": [
+    0,
+    8
+   ],
+   "swing": [
+    8,
+    8
+   ],
+   "die": [
+    16,
+    8
+   ]
+  }
+ },
+ "tdBoss": {
+  "image": "tdBoss.png",
+  "w": 64,
+  "h": 64,
+  "cols": 16,
+  "perDir": 29,
+  "dirs": 1,
+  "anchor": [
+   32,
+   32
+  ],
+  "anims": {
+   "stand": [
+    0,
+    1
+   ],
+   "run": [
+    0,
+    8
+   ],
+   "swing": [
+    8,
+    5
+   ],
+   "block": [
+    8,
+    1
+   ],
+   "die": [
+    13,
+    16
+   ]
+  }
  }
 }

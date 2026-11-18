@@ -11,7 +11,7 @@ const BASE = 'assets/qvtest/';
 const PX = 2; // world units per screen pixel
 const PILLAR_H = 120;
 const KIND = { hero: 'pxHero', zombie: 'pxEnemy', boss: 'pxBoss' };
-const CAP = { num: 6, crit: 1, hit: 10, death: 8 }; // live pixelfx instances per group (the oldest goes first)
+const CAP = { num: 6, hit: 10 }; // live pixelfx instances per group (the oldest goes first)
 
 const CSS = `
 .qvt{position:absolute;inset:0;z-index:60;background:#0a0a10;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden}
@@ -491,8 +491,7 @@ class QvTest {
     if (crit) {
       // the big starburst only on the boss: on a crowd it buries the fight
       this.spawn(big ? 'bossCrit' : 'hitCrit', t, { aim });
-      if (big) this.spawn('bossCritNum', t, { text: `${Math.round(dmg)}!` }, { dy: -46 });
-      else this.spawn('numCrit', t, { text: `-${Math.round(dmg)}!` }, { dy: -20 });
+      this.spawn('numCrit', t, { text: `-${Math.round(dmg)}!` }, { dy: big ? -40 : -20 }); // no CRIT lettering, boss included
     } else {
       this.spawn('hit', t, big ? { aim, height: 40 } : { aim });
       this.spawn('num', t, { text: `-${Math.round(dmg)}` }, { dy: big ? -40 : -18 });
@@ -504,8 +503,7 @@ class QvTest {
 
   kill(t) {
     Object.assign(t, { alive: false, state: 'dead', st: 0 });
-    this.play(t, 'die', 12, false);
-    this.spawn('death', t);
+    this.play(t, 'die', 12, false); // no smoke: the fall frames, then a fade
   }
 
   hurtPlayer(dmg, dx, dy, kn = 240) {

@@ -112,7 +112,7 @@ class Stage {
     this.freeze = Math.max(this.freeze, crit ? 0.14 : 0.08);
     this.shake = crit ? 2 : 1;
     const boss = t.key === 'pxBoss';
-    if (crit && boss) { this.spawn('bossCrit', t.x, t.y, { aim }); this.spawn('bossCritNum', t.x, t.y, { text: '64!' }, { dy: -46 }); }
+    if (crit && boss) { this.spawn('bossCrit', t.x, t.y, { aim }); this.spawn('numCrit', t.x, t.y, { text: '-64!' }, { dy: -40 }); }
     else if (crit) { this.spawn('hitCrit', t.x, t.y, { aim }); this.spawn('numCrit', t.x, t.y, { text: '-32!' }, { dy: -20 }); }
     else { this.spawn('hit', t.x, t.y, boss ? { aim, height: 40 } : { aim }); this.spawn('num', t.x, t.y, { text: '-12' }, { dy: boss ? -40 : -18 }); }
   }
@@ -225,19 +225,27 @@ const DEFS = [
       if (u >= 0 && u < 1) { h.state = 'jump'; h.x = 24 + 58 * u; h.z = Math.sin(Math.PI * u) * 34; h.hold = sw + (u > 0.7 ? 2 : u > 0.35 ? 1 : 0); }
       if (s.at(0.72)) { h.z = 0; h.state = 'idle'; h.hold = null; s.spawn('land', h.x, h.y); s.freeze = 0.12; s.shake = 3; for (const f of s.foes) s.hit(f, h); s.freeze = 0.12; }
     } },
-  { title: '질풍', desc: '회전 원반이 날아가며 줄 위의 적을 모두 벱니다.', len: 1.6,
-    setup: (s) => { s.hero.x = 20; s.foe(72, GROUND); s.foe(104, GROUND); s.disc = null; },
+  { title: '질풍', desc: '대쉬 베기의 금빛 칼날이 같은 크기로 떨어져 나가 쏜 각도대로 날아갑니다. 줄 위의 적을 모두 벱니다.', len: 2.2,
+    setup: (s) => { s.hero.x = 20; s.hero.y = GROUND - 14; s.foe(70, GROUND - 14); s.foe(104, GROUND - 14); s.foe(62, GROUND + 6); s.foe(92, GROUND + 18); s.blades = []; },
     update: (s) => {
       const h = s.hero;
-      if (s.at(0.3)) { h.anim = 'cast'; h.at = 0; }
-      if (s.at(0.42)) { s.disc = { x: h.x + 10, y: h.y, z: 8, hit: new Set() }; s.discFx = s.spawn('wave', 0, 0, {}, { follow: s.disc }); }
-      if (s.at(0.6)) h.anim = 'stand';
-      const d = s.disc;
-      if (d) {
-        d.x += 230 * (s.t - s.prev);
-        for (const f of s.foes) if (!d.hit.has(f) && Math.abs(f.x - d.x) < 10) { d.hit.add(f); s.hit(f, h); }
-        if (d.x > W + 20) { if (s.discFx) s.discFx.f.stop(); s.disc = null; }
+      // two casts: straight ahead, then down at an angle
+      for (const [t0, a] of [[0.3, 0], [1.2, 0.42]]) {
+        if (s.at(t0)) { h.anim = 'cast'; h.at = 0; face(h, Math.cos(a), Math.sin(a)); }
+        if (s.at(t0 + 0.12)) {
+          const b = { x: h.x + Math.cos(a) * 10, y: h.y + Math.sin(a) * 10, z: 8, dx: Math.cos(a), dy: Math.sin(a), hit: new Set() };
+          const flip = Math.cos(a) < 0;
+          b.fx = s.spawn('wave', 0, 0, {}, { follow: b, flip, angle: flip ? a - Math.PI : a });
+          s.blades.push(b);
+        }
+        if (s.at(t0 + 0.3)) h.anim = 'stand';
       }
+      const dt = s.t - s.prev;
+      for (const b of s.blades) {
+        b.x += b.dx * 230 * dt; b.y += b.dy * 230 * dt;
+        for (const f of s.foes) if (!b.hit.has(f) && Math.hypot(f.x - b.x, f.y - b.y) < 14) { b.hit.add(f); s.hit(f, h); }
+      }
+      s.blades = s.blades.filter((b) => b.x < W + 30 && b.y < H + 30);
     } },
   { title: '주인공 피격', desc: '적이 들어올렸다 내려치면, 주인공은 피격 프레임 + 보라 불꽃 + 넉백.', len: 1.6,
     setup: (s) => { s.hero.x = 52; s.foe(70, GROUND); },
@@ -246,12 +254,12 @@ const DEFS = [
       actSwingFoe(s, e, 0.3);
       if (s.at(0.68)) { const h = s.hero; h.state = 'hurt'; h.st = 0; h.rock = 1; h.kx = -60; s.freeze = 0.06; s.shake = 2; s.spawn('hitHero', h.x, h.y, { aim: Math.PI }); }
     } },
-  { title: '적 죽음', desc: '마지막 일격: 피격 → 쓰러짐 프레임 → 연기 퍼짐(0.7초에 걷힘).', len: 2,
+  { title: '적 죽음', desc: '마지막 일격: 피격 → 쓰러짐 프레임 → 서서히 사라짐 (연기 없음).', len: 2,
     setup: (s) => { s.foe(66, GROUND); s.hero.x = 46; },
     update: (s) => {
       const e = s.foes[0];
       actSwing(s, s.hero, 0.3, () => { s.slash('slash', s.hero); s.hit(e, s.hero); });
-      if (s.at(0.5)) { e.state = 'dead'; e.anim = 'die'; e.at = 0; e.hold = null; s.spawn('death', e.x, e.y); }
+      if (s.at(0.5)) { e.state = 'dead'; e.anim = 'die'; e.at = 0; e.hold = null; }
       if (e.state === 'dead') { const sh = sheets[e.key]; e.hold = sh.anims.die[0] + Math.min(sh.anims.die[1] - 1, Math.floor(e.at * 12)); if (e.at > 0.5) e.fade = Math.max(0, 1 - (e.at - 0.5) / 0.3); }
     } },
   { title: '보스 내려찍기', desc: '붉은 원으로 0.7초 예고 → 내려찍기 + 땅 충격 + 0.1초 멈춤.', len: 2.2, hero: false,
@@ -270,7 +278,7 @@ const DEFS = [
       for (let i = 0; i < 3; i++) if (s.at(at[i])) { s.spawn('quake', 64, GROUND, { reach: Math.round(R[i][1] / 0.7) }); s.freeze = 0.05; s.shake = 2; b.hold = sheets.pxBoss.anims.swing[0] + 2; }
       if (s.at(1.75)) b.hold = null;
     } },
-  { title: '보스가 맞을 때 (치명타)', desc: '보스에게만 큰 별모양 치명타와 CRIT 숫자.', len: 1.6,
+  { title: '보스가 맞을 때 (치명타)', desc: '보스에게만 큰 별모양 치명타. 숫자는 금색 (CRIT 글자 없음).', len: 1.6,
     setup: (s) => { s.foe(76, GROUND + 6, 'pxBoss'); s.hero.x = 40; },
     update: (s) => actSwing(s, s.hero, 0.3, () => { s.slash('slash', s.hero); s.hit(s.foes[0], s.hero, true); }) },
 ];

@@ -115,15 +115,15 @@
  },
  "knight": {
   "image": "knight.png",
-  "w": 33,
-  "h": 34,
+  "w": 17,
+  "h": 17,
   "cols": 1,
   "perDir": 1,
   "dirs": 1,
   "still": true,
   "anchor": [
-   19,
-   33
+   10,
+   16
   ],
   "anims": {
    "stand": [

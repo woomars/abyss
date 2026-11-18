@@ -110,7 +110,7 @@ class QvTest {
       if (!this.app) return;
       if (a === 'n') this.setEnemies(Number(b.dataset.n));
       if (a === 'boss') this.toggleBoss();
-      if (a === 'hero') this.setHero(this.heroArt === 'knight' ? 'pxHero' : 'knight');
+      if (a === 'hero') { const order = ['pxHero', 'knight', 'knightGen'].filter((k) => this.sheets[k]); this.setHero(order[(order.indexOf(this.heroArt) + 1) % order.length]); }
       if (a === 'fx') { this.fxOn = !this.fxOn; b.classList.toggle('on', this.fxOn); if (!this.fxOn) this.pfx.length = 0; }
       if (a === 'zoom') { this.viewH = this.viewH === 540 ? 420 : this.viewH === 420 ? 340 : 540; b.textContent = `확대 ${Math.round(540 / this.viewH * 100)}%`; this.layout(); }
     });
@@ -260,8 +260,13 @@ class QvTest {
   // Puny rows: row 0 faces south, then 45deg counter-clockwise on screen
   faceTo(e, dx, dy) {
     const deg = Math.atan2(dy, dx) * 180 / Math.PI;
-    e.face = e.sh.dirs === 1 ? 0 : (((Math.round((e.sh.dir0 - deg) / 45)) % 8) + 8) % 8;
-    if (Math.abs(dx) > 0.2 * len(dx, dy)) e.flipX = dx < 0; // a one-facing still turns by mirroring (straight up/down keeps the last side)
+    if (e.sh.dirs === 3) { // front / side / back rows, the left side mirrored
+      e.face = deg > 45 && deg < 135 ? 0 : deg < -45 && deg > -135 ? 2 : 1;
+      e.flipX = Math.abs(deg) > 90;
+    } else {
+      e.face = e.sh.dirs === 1 ? 0 : (((Math.round((e.sh.dir0 - deg) / 45)) % 8) + 8) % 8;
+      if (Math.abs(dx) > 0.2 * len(dx, dy)) e.flipX = dx < 0; // a one-facing still turns by mirroring (straight up/down keeps the last side)
+    }
     const l = len(dx, dy);
     e.dx = dx / l; e.dy = dy / l;
   }
@@ -288,6 +293,7 @@ class QvTest {
     s.scale.set(PX * (1 + e.rock * 0.3), PX * (1 - e.rock * 0.22 + breath));
     s.rotation = 0;
     if (e.sh.still) this.stillPose(e, s);
+    else if (e.sh.dirs === 3 && e.flipX) s.scale.x *= -1;
     s.tint = e.flash > 0 ? 0xff7a7a : 0xffffff;
     s.alpha = e.fade != null ? e.fade : (e.invuln > 0 && Math.floor(e.invuln * 20) % 2 ? 0.45 : 1);
     e.shadow.position.set(e.x, e.y);
@@ -315,11 +321,12 @@ class QvTest {
   setHero(art) {
     const p = this.player;
     this.heroArt = art;
+    if (!this.sheets[art]) return;
     p.sh = this.sheets[art];
     p.sprite.anchor.set(p.sh.anchor[0] / p.sh.w, p.sh.anchor[1] / p.sh.h);
-    p.shadowK = art === 'knight' ? 1.6 : 1;
+    p.shadowK = 1;
     this.faceTo(p, p.dx, p.dy);
-    this.el.querySelector('[data-a="hero"]').textContent = art === 'knight' ? '주인공: 기사' : '주인공: Puny';
+    this.el.querySelector('[data-a="hero"]').textContent = { pxHero: '주인공: Puny', knight: '주인공: 기사 원본', knightGen: '주인공: 기사 생성' }[art];
   }
 
   all() { return this.boss ? [this.player, ...this.enemies, this.boss] : [this.player, ...this.enemies]; }

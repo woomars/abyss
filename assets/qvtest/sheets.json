@@ -1,213 +1,4 @@
 {
- "hero": {
-  "image": "hero.png",
-  "w": 115,
-  "h": 95,
-  "cols": 16,
-  "perDir": 32,
-  "anchor": [
-   53,
-   74
-  ],
-  "anims": {
-   "stand": [
-    0,
-    4
-   ],
-   "run": [
-    4,
-    8
-   ],
-   "swing": [
-    12,
-    4
-   ],
-   "block": [
-    16,
-    2
-   ],
-   "die": [
-    18,
-    6
-   ],
-   "cast": [
-    24,
-    4
-   ],
-   "shoot": [
-    28,
-    4
-   ]
-  }
- },
- "zombie": {
-  "image": "zombie.png",
-  "w": 69,
-  "h": 70,
-  "cols": 16,
-  "perDir": 26,
-  "anchor": [
-   30,
-   61
-  ],
-  "anims": {
-   "stand": [
-    0,
-    4
-   ],
-   "run": [
-    4,
-    8
-   ],
-   "swing": [
-    12,
-    4
-   ],
-   "bite": [
-    16,
-    4
-   ],
-   "die": [
-    20,
-    6
-   ]
-  }
- },
- "boss": {
-  "image": "boss.png",
-  "w": 128,
-  "h": 123,
-  "cols": 16,
-  "perDir": 24,
-  "anchor": [
-   64,
-   95
-  ],
-  "anims": {
-   "stand": [
-    0,
-    4
-   ],
-   "run": [
-    4,
-    8
-   ],
-   "swing": [
-    12,
-    4
-   ],
-   "block": [
-    16,
-    2
-   ],
-   "die": [
-    18,
-    6
-   ]
-  }
- },
- "tdHero": {
-  "image": "tdHero.png",
-  "w": 64,
-  "h": 64,
-  "cols": 16,
-  "perDir": 24,
-  "dirs": 1,
-  "anchor": [
-   32,
-   32
-  ],
-  "anims": {
-   "stand": [
-    0,
-    1
-   ],
-   "run": [
-    0,
-    8
-   ],
-   "swing": [
-    8,
-    8
-   ],
-   "cast": [
-    8,
-    4
-   ],
-   "block": [
-    8,
-    1
-   ],
-   "die": [
-    16,
-    8
-   ]
-  }
- },
- "tdEnemy": {
-  "image": "tdEnemy.png",
-  "w": 64,
-  "h": 64,
-  "cols": 16,
-  "perDir": 24,
-  "dirs": 1,
-  "anchor": [
-   32,
-   32
-  ],
-  "anims": {
-   "stand": [
-    0,
-    1
-   ],
-   "run": [
-    0,
-    8
-   ],
-   "swing": [
-    8,
-    8
-   ],
-   "die": [
-    16,
-    8
-   ]
-  }
- },
- "tdBoss": {
-  "image": "tdBoss.png",
-  "w": 64,
-  "h": 64,
-  "cols": 16,
-  "perDir": 29,
-  "dirs": 1,
-  "anchor": [
-   32,
-   32
-  ],
-  "anims": {
-   "stand": [
-    0,
-    1
-   ],
-   "run": [
-    0,
-    8
-   ],
-   "swing": [
-    8,
-    5
-   ],
-   "block": [
-    8,
-    1
-   ],
-   "die": [
-    13,
-    16
-   ]
-  }
- },
  "pxHero": {
   "image": "pxHero.png",
   "w": 32,
@@ -286,14 +77,14 @@
  },
  "pxBoss": {
   "image": "pxBoss.png",
-  "w": 32,
-  "h": 32,
+  "w": 64,
+  "h": 64,
   "cols": 24,
   "perDir": 24,
   "dir0": 90,
   "anchor": [
-   16,
-   23
+   32,
+   46
   ],
   "anims": {
    "stand": [
@@ -319,6 +110,45 @@
    "die": [
     19,
     5
+   ]
+  }
+ },
+ "knight": {
+  "image": "knight.png",
+  "w": 33,
+  "h": 34,
+  "cols": 1,
+  "perDir": 1,
+  "dirs": 1,
+  "still": true,
+  "anchor": [
+   19,
+   33
+  ],
+  "anims": {
+   "stand": [
+    0,
+    1
+   ],
+   "run": [
+    0,
+    1
+   ],
+   "swing": [
+    0,
+    1
+   ],
+   "cast": [
+    0,
+    1
+   ],
+   "block": [
+    0,
+    1
+   ],
+   "die": [
+    0,
+    1
    ]
   }
  }

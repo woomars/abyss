@@ -33,7 +33,7 @@ export class DebugPanel {
         <div class="dbtns">장비 지급 <select data-act="grant"><option value="">고르기</option><option value="common">일반</option><option value="uncommon">고급</option><option value="rare">희귀</option><option value="epic">영웅</option><option value="legendary">전설</option><option value="set">세트</option></select></div>
         <div class="dbtns">세트 전체 장착 <select data-act="grantSet"><option value="">고르기</option></select> 강화 <input type="number" class="dsetup" min="0" max="10" step="1" value="0" inputmode="numeric" style="width:44px;user-select:text;-webkit-user-select:text"></div>
         <div class="dbtns">내 레벨 <input type="number" class="dlevel" min="1" step="1" value="1" inputmode="numeric" style="width:56px;user-select:text;-webkit-user-select:text"><button data-act="setLevel">적용</button><span class="dlevel-now"></span></div>
-        <div class="dbtns"><button data-act="ending">엔딩 보기</button><button data-act="qvtest">화면 테스트 (쿼터뷰 A/B)</button></div>
+        <div class="dbtns"><button data-act="ending">엔딩 보기</button><button data-act="qvtest">화면 테스트 (픽셀)</button></div>
         <div class="dsec">특수기술 성장 <span class="dups-note"></span></div>
         <div class="dups"></div>
         <div class="dsec">내 수치 <span class="dnote">(초록 = 장비가 더한 몫)</span></div>

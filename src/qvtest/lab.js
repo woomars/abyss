@@ -307,4 +307,5 @@ async function boot() {
   requestAnimationFrame(tick);
 }
 
-boot().catch((err) => { const d = document.createElement('div'); d.className = 'err'; d.textContent = String(err && err.stack || err); document.body.appendChild(d); });
+// the page starts itself only in a browser (the module-load test imports every src file in Node)
+if (typeof document !== 'undefined') boot().catch((err) => { const d = document.createElement('div'); d.className = 'err'; d.textContent = String(err && err.stack || err); document.body.appendChild(d); });

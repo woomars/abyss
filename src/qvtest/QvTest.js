@@ -1,5 +1,6 @@
 // Debug "화면 테스트" (throwaway spike): PixiJS v8 quarter view with free test art.
-// A = 3/4 top-down (screen = world), B = isometric (world turned 45deg, height halved).
+// A = 3/4 top-down (screen = world), B = isometric (world turned 45deg, height halved), C = straight down;
+// D/E = the A/B views with pixel art.
 // Feel the controls and read the fps with 0/50/100/150 enemies on a phone. Debug text is Korean only.
 const PIXI_URL = 'https://cdn.jsdelivr.net/npm/pixi.js@8.6.6/dist/pixi.min.mjs';
 const BASE = 'assets/qvtest/';
@@ -24,13 +25,21 @@ const CSS = `
 .qvt-err{position:absolute;inset:60px 20px auto;color:#f88;font:13px monospace;white-space:pre-wrap}
 `;
 
-// each body's sheet and scale per view: A/B use the 8-direction Flare art, C the top-down art (one facing, rotated)
-const KIND = {
-  hero: { ab: 'hero', c: 'tdHero', sAB: 1, sC: 1.1 },
-  zombie: { ab: 'zombie', c: 'tdEnemy', sAB: 1, sC: 0.95 },
-  boss: { ab: 'boss', c: 'tdBoss', sAB: 1.3, sC: 2.1 },
+// modes = a view (A 3/4 top-down, B isometric, C straight down) + an art set
+const MODES = {
+  A: { view: 'A', art: 'flare', label: 'A 3/4 탑다운' },
+  B: { view: 'B', art: 'flare', label: 'B 아이소메트릭' },
+  C: { view: 'C', art: 'td', label: 'C 탑다운' },
+  D: { view: 'A', art: 'puny', label: 'D 픽셀 탑다운', floor: 'grass' },
+  E: { view: 'B', art: 'puny', label: 'E 픽셀 쿼터뷰', floor: 'grass' },
 };
-const MODE_LABEL = { A: 'A 3/4 탑다운', B: 'B 아이소메트릭', C: 'C 탑다운' };
+const NEXT = { A: 'B', B: 'C', C: 'D', D: 'E', E: 'A' };
+// each body's sheet and scale per art set (flare: 8-direction renders, td: one facing turned, puny: 8-direction pixel)
+const KIND = {
+  hero: { flare: ['hero', 1], td: ['tdHero', 1.1], puny: ['pxHero', 2] },
+  zombie: { flare: ['zombie', 1], td: ['tdEnemy', 0.95], puny: ['pxEnemy', 2] },
+  boss: { flare: ['boss', 1.3], td: ['tdBoss', 2.1], puny: ['pxBoss', 4] },
+};
 const rnd = (a, b) => a + Math.random() * (b - a);
 const len = (x, y) => Math.hypot(x, y) || 1e-6;
 
@@ -47,6 +56,8 @@ class QvTest {
     // the largest combat room (by area), pillars included
     this.room = [...config.dungeon.rooms.combat].sort((a, b) => b.w * b.h - a.w * a.h)[0];
     this.mode = 'A';
+    this.view = 'A';
+    this.art = 'flare';
     this.res = Math.min(window.devicePixelRatio || 1, 2);
     this.viewH = 420;
     this.enemies = [];
@@ -69,7 +80,7 @@ class QvTest {
     this.el.innerHTML = `
       <div class="qvt-fps">불러오는 중...</div>
       <div class="qvt-top">
-        <button data-a="mode">A 3/4 탑다운</button>
+        <button data-a="mode">A 3/4 탑다운</button><button data-a="modes">픽셀 D↔E</button>
         <button data-a="n" data-n="0">적 0</button><button data-a="n" data-n="50" class="on">적 50</button><button data-a="n" data-n="100">적 100</button><button data-a="n" data-n="150">적 150</button>
         <button data-a="boss">보스</button><button data-a="res">해상도 ${this.res}x</button><button data-a="zoom">확대 129%</button><button data-a="close">닫기</button>
       </div>
@@ -95,7 +106,8 @@ class QvTest {
       const a = b.dataset.a;
       if (a === 'close') this.close();
       if (!this.app) return;
-      if (a === 'mode') this.setMode({ A: 'B', B: 'C', C: 'A' }[this.mode]);
+      if (a === 'mode') this.setMode(NEXT[this.mode]);
+      if (a === 'modes') this.setMode(this.mode === 'D' ? 'E' : 'D');
       if (a === 'n') this.setEnemies(Number(b.dataset.n));
       if (a === 'boss') this.toggleBoss();
       if (a === 'res') this.setRes(this.res >= 2 ? 1 : this.res >= 1.5 ? 2 : 1.5);
@@ -124,13 +136,13 @@ class QvTest {
     await app.init({ resizeTo: this.el, background: '#0a0a10', antialias: false, resolution: this.res, autoDensity: true, preference: 'webgl', powerPreference: 'high-performance' });
     this.el.prepend(app.canvas);
     this.sheets = await fetch(BASE + 'sheets.json', { cache: 'no-cache' }).then((r) => r.json());
-    const files = [...Object.values(this.sheets).map((s) => s.image), 'fx_slash.png', 'fx_spin.png', 'fx_arc.png', 'fx_impact.png', 'fx_sparks.png'];
+    const files = [...Object.values(this.sheets).map((s) => s.image), 'fx_slash.png', 'fx_spin.png', 'fx_arc.png', 'fx_impact.png', 'fx_sparks.png', 'px_grass.png'];
     await P.Assets.load(files.map((f) => BASE + f));
     const tex = (f) => P.Assets.get(BASE + f);
     const cut = (src, x, y, w, h) => new P.Texture({ source: src, frame: new P.Rectangle(x, y, w, h) });
     for (const s of Object.values(this.sheets)) {
       const src = tex(s.image).source;
-      if (s.dirs === 1) src.scaleMode = 'nearest'; // pixel art
+      if (s.dirs === 1 || s.dir0 === 90) src.scaleMode = 'nearest'; // pixel art
       s.tex = Array.from({ length: 8 * s.perDir }, (_, i) => cut(src, (i % s.cols) * s.w, Math.floor(i / s.cols) * s.h, s.w, s.h));
     }
     const sparks = tex('fx_sparks.png').source, impact = tex('fx_impact.png').source;
@@ -150,7 +162,12 @@ class QvTest {
     this.floor = new P.Graphics();
     this.tele = new P.Graphics();
     this.groundFx = new P.Container();
-    this.ground.addChild(this.floor, this.tele, this.groundFx);
+    const grassTex = tex('px_grass.png');
+    grassTex.source.scaleMode = 'nearest';
+    this.grass = new P.TilingSprite({ texture: grassTex, width: this.room.w / 3, height: this.room.h / 3 });
+    this.grass.scale.set(3); // 16px tiles drawn 48 world px
+    this.grass.tint = 0x8a8f86;
+    this.ground.addChild(this.floor, this.grass, this.tele, this.groundFx);
     this.shadows = new P.Container();
     this.bodies = new P.Container();
     this.bodies.sortableChildren = true;
@@ -183,36 +200,39 @@ class QvTest {
   }
 
   // ---- projection ----
-  proj(x, y) { return this.mode !== 'B' ? { x, y } : { x: (x - y) * C, y: (x + y) * C * 0.5 }; }
+  proj(x, y) { return this.view !== 'B' ? { x, y } : { x: (x - y) * C, y: (x + y) * C * 0.5 }; }
   // a screen direction -> the world direction that moves the same way on screen
   unproj(dx, dy) {
-    if (this.mode !== 'B') { const l = len(dx, dy); return { x: dx / l, y: dy / l }; }
+    if (this.view !== 'B') { const l = len(dx, dy); return { x: dx / l, y: dy / l }; }
     const x = (dx + 2 * dy) / (2 * C), y = (2 * dy - dx) / (2 * C), l = len(x, y);
     return { x: x / l, y: y / l };
   }
-  // Flare rows: 0 W, 1 SW, 2 S, 3 SE, 4 E, 5 NE, 6 N, 7 NW (screen directions)
+  // 8-direction rows by screen angle: row 0 at the sheet's dir0 (Flare 180 = west, Puny 90 = south), then 45deg counter-clockwise
   faceTo(e, dx, dy) {
-    const p = this.mode !== 'B' ? { x: dx, y: dy } : { x: (dx - dy), y: (dx + dy) * 0.5 };
+    const p = this.view !== 'B' ? { x: dx, y: dy } : { x: (dx - dy), y: (dx + dy) * 0.5 };
     const deg = Math.atan2(p.y, p.x) * 180 / Math.PI;
-    e.face = (((Math.round((180 - deg) / 45)) % 8) + 8) % 8;
+    e.face = (((Math.round(((e.sh.dir0 != null ? e.sh.dir0 : 180) - deg) / 45)) % 8) + 8) % 8;
     const l = len(dx, dy);
     e.dx = dx / l; e.dy = dy / l;
   }
 
   setMode(m) {
     this.mode = m;
-    this.groundOuter.scale.set(1, m === 'B' ? 0.5 : 1);
-    this.ground.rotation = m === 'B' ? Math.PI / 4 : 0;
+    this.view = MODES[m].view;
+    this.art = MODES[m].art;
+    this.groundOuter.scale.set(1, this.view === 'B' ? 0.5 : 1);
+    this.ground.rotation = this.view === 'B' ? Math.PI / 4 : 0;
+    this.grass.visible = MODES[m].floor === 'grass';
     if (this.pillarGfx) for (const g of this.pillarGfx) g.destroy();
     this.pillarGfx = this.room.pillars.map((p) => this.drawPillar(p));
     for (const e of this.all()) { this.applySheet(e); this.faceTo(e, e.dx, e.dy); }
-    this.el.querySelector('[data-a="mode"]').textContent = MODE_LABEL[m];
+    this.el.querySelector('[data-a="mode"]').textContent = MODES[m].label;
   }
 
   applySheet(e) {
-    const k = KIND[e.kind], c = this.mode === 'C';
-    e.sh = this.sheets[c ? k.c : k.ab];
-    e.scl = c ? k.sC : k.sAB;
+    const [sheet, scl] = KIND[e.kind][this.art];
+    e.sh = this.sheets[sheet];
+    e.scl = scl;
     e.sprite.anchor.set(e.sh.anchor[0] / e.sh.w, e.sh.anchor[1] / e.sh.h);
     e.sprite.rotation = 0;
   }
@@ -233,7 +253,7 @@ class QvTest {
 
   drawPillar(p) {
     const g = new this.P.Graphics();
-    if (this.mode === 'C') { // straight down: the top and a cast shadow
+    if (this.view === 'C') { // straight down: the top and a cast shadow
       g.rect(p.x + 14, p.y + 14, p.w, p.h).fill({ color: 0x000000, alpha: 0.35 });
       g.rect(p.x, p.y, p.w, p.h).fill(0x4b4557).stroke({ width: 3, color: 0x5d5669 });
       g.zIndex = -1e6;
@@ -249,7 +269,7 @@ class QvTest {
       g.poly([a.x, a.y, b.x, b.y, b.x, b.y - PILLAR_H, a.x, a.y - PILLAR_H]).fill(col);
     }
     g.poly(s.flatMap((q) => [q.x, q.y - PILLAR_H])).fill(0x4b4557).stroke({ width: 2, color: 0x5d5669 });
-    g.zIndex = this.mode === 'A' ? Math.max(...s.map((q) => q.y)) : cy;
+    g.zIndex = this.view === 'A' ? Math.max(...s.map((q) => q.y)) : cy;
     this.bodies.addChild(g);
     return g;
   }
@@ -284,7 +304,7 @@ class QvTest {
   sync(e) {
     const p = this.proj(e.x, e.y), ks = 1 - Math.min(0.5, e.z / 220);
     e.sprite.zIndex = p.y;
-    if (this.mode === 'C') { // seen from above: a jump grows the body, the shadow stays on the floor
+    if (this.view === 'C') { // seen from above: a jump grows the body, the shadow stays on the floor
       e.sprite.position.set(p.x, p.y);
       e.sprite.scale.set(e.scl * (1 + e.z / 160));
       e.sprite.rotation = Math.atan2(e.dy, e.dx) + Math.PI / 2; // the art faces north
@@ -512,7 +532,7 @@ class QvTest {
     const sp = new this.P.Sprite(frames[0]);
     const p = this.proj(t.x, t.y);
     sp.anchor.set(0.5);
-    sp.position.set(p.x + rnd(-6, 6), p.y - (this.mode === 'C' ? 0 : t === this.boss ? 60 : 30));
+    sp.position.set(p.x + rnd(-6, 6), p.y - (this.view === 'C' ? 0 : t === this.boss ? 60 : 30));
     sp.scale.set(t === this.boss ? 1.6 : 1.1);
     this.addFx(sp, this.topFx, 0.22, null, frames);
   }
@@ -639,7 +659,7 @@ class QvTest {
     this.shakeAmp *= Math.exp(-dt / 0.08);
     const sx = (Math.random() * 2 - 1) * this.shakeAmp, sy = (Math.random() * 2 - 1) * this.shakeAmp;
     this.world.scale.set(zoom);
-    this.world.position.set(this.el.clientWidth / 2 - c.x * zoom + sx, this.el.clientHeight / 2 - (c.y - (this.mode === 'C' ? 0 : 30)) * zoom + sy);
+    this.world.position.set(this.el.clientWidth / 2 - c.x * zoom + sx, this.el.clientHeight / 2 - (c.y - (this.view === 'C' ? 0 : 30)) * zoom + sy);
   }
 
   measure(dt, ms) {

@@ -207,5 +207,119 @@
     16
    ]
   }
+ },
+ "pxHero": {
+  "image": "pxHero.png",
+  "w": 32,
+  "h": 32,
+  "cols": 24,
+  "perDir": 24,
+  "dir0": 90,
+  "anchor": [
+   16,
+   23
+  ],
+  "anims": {
+   "stand": [
+    0,
+    1
+   ],
+   "run": [
+    0,
+    4
+   ],
+   "swing": [
+    4,
+    4
+   ],
+   "cast": [
+    12,
+    3
+   ],
+   "block": [
+    15,
+    1
+   ],
+   "die": [
+    19,
+    5
+   ]
+  }
+ },
+ "pxEnemy": {
+  "image": "pxEnemy.png",
+  "w": 32,
+  "h": 32,
+  "cols": 24,
+  "perDir": 24,
+  "dir0": 90,
+  "anchor": [
+   16,
+   23
+  ],
+  "anims": {
+   "stand": [
+    0,
+    1
+   ],
+   "run": [
+    0,
+    4
+   ],
+   "swing": [
+    4,
+    4
+   ],
+   "cast": [
+    12,
+    3
+   ],
+   "block": [
+    15,
+    1
+   ],
+   "die": [
+    19,
+    5
+   ]
+  }
+ },
+ "pxBoss": {
+  "image": "pxBoss.png",
+  "w": 32,
+  "h": 32,
+  "cols": 24,
+  "perDir": 24,
+  "dir0": 90,
+  "anchor": [
+   16,
+   23
+  ],
+  "anims": {
+   "stand": [
+    0,
+    1
+   ],
+   "run": [
+    0,
+    4
+   ],
+   "swing": [
+    4,
+    4
+   ],
+   "cast": [
+    12,
+    3
+   ],
+   "block": [
+    15,
+    1
+   ],
+   "die": [
+    19,
+    5
+   ]
+  }
  }
 }

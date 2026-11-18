@@ -78,8 +78,9 @@ async function boot() {
   let started = false;
   let menu = null;
   let debugOpen = false; // the tuning panel is open: the game waits
+  let qvOpen = false; // debug screen test (PixiJS) is up: the game waits and is not drawn
   const updatePaused = () => {
-    game.paused = !started || (menu && menu.isOpen) || debugOpen;
+    game.paused = !started || (menu && menu.isOpen) || debugOpen || qvOpen;
   };
   // save slots: the vault in play is saved whenever it changes
   const store = new VaultStore(safeStorage());
@@ -313,6 +314,10 @@ async function boot() {
       config, game, onLayout: () => layout(),
       onGear: () => { if (forge.isOpen) forge.render(); },
       onOpenChange: (open) => { debugOpen = open; updatePaused(); },
+      onQvTest: () => {
+        qvOpen = true; updatePaused();
+        import('./qvtest/QvTest.js').then(({ openQvTest }) => openQvTest(stage, { config, toLocal, onClose: () => { qvOpen = false; updatePaused(); } }));
+      },
       // debug: the ending with this hero's names (the line goes on as if he had won)
       onEnding: () => {
         const l = game.vault.lineage, w = game.loadout.slots.weapon;
@@ -378,6 +383,7 @@ async function boot() {
     // one bad step must never stop the loop (a thrown error used to freeze the screen on black)
     update: (dt) => { try { game.update(dt); } catch (err) { if (!loopErr) { loopErr = true; console.error(err); } } },
     render: (alpha) => {
+      if (qvOpen) return; // the screen test draws on its own canvas
       const now = performance.now();
       music.setDuck((menu && menu.isOpen) || game.over);
       music.update(Math.min(0.1, (now - lastRender) / 1000));

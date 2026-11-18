@@ -3333,6 +3333,8 @@
   "spawnAheadDeg": 60,
   "despawnDistance": 1400,
   "deathTime": 0.35,
+  "hitFlash": 0.1,
+  "hitPush": { "distance": 6, "time": 0.35 },
   "hazardFlash": 0.15,
   "riposte": {
     "cooldown": 0.6,

@@ -22,7 +22,7 @@ export function featLine(entry, item, cfg) {
 export function itemCell(item, cfg, { cls = '', size = 22 } = {}) {
   const d = describeItem(item, cfg);
   const q = item.quality ? ` q${item.quality}` : '';
-  return `<button class="icell g-${item.grade}${q}${item.scar ? ' scar' : ''}${item.token ? ' tok' : ''} ${cls}" data-id="${item.id}" style="--gc:${d.gradeColor};--qc:${d.qualityColor || 'transparent'}">`
+  return `<button class="icell g-${item.grade}${q}${item.scar ? ' scar' : ''}${item.token ? ' tok' : ''}${item.passOn ? ' pass' : ''} ${cls}" data-id="${item.id}" style="--gc:${d.gradeColor};--qc:${d.qualityColor || 'transparent'}">`
     + `${item.enhance ? `<span class="ilv">+${item.enhance}</span>` : ''}${relicIcon(d.icon, size)}</button>`;
 }
 
@@ -42,6 +42,7 @@ export function itemDetail(item, cfg) {
     ${d.effectText ? `<div class="ieffect">${d.effectText}</div>` : ''}
     ${d.lostPower ? `<div class="ilost">${d.lostPower}</div>` : ''}
     ${d.token ? `<div class="itoken">${d.token}</div>` : ''}
+    ${d.passOn ? `<div class="itoken">${d.passOn}</div>` : ''}
     ${d.setText ? `<div class="iset">${t('item.set', { name: d.setText })}</div>` : ''}
     ${d.ringSet ? `<div class="iset">${t('item.ringSet', { name: d.ringSet })}</div>` : ''}
     ${d.setAngle ? `<div class="iset">${d.setAngle}</div>` : ''}

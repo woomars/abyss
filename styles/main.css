@@ -431,6 +431,8 @@ html, body {
 .fg-sv i { font-style: normal; font-size: 10px; font-weight: 700; margin-left: 3px; }
 .fg-sv b.gold { color: #f0d890; }
 .fg-warn { color: #ffb0a0; font-size: 11.5px; padding: 3px 4px 5px; }
+.fg-btns .fg-askrow { flex: 1 1 auto; min-width: 0; }
+.fg-btns .fg-ask { min-width: 0; padding: 0; line-height: 1.25; overflow: hidden; } /* 분해 question in the button panel */
 /* the doll fits its panel at any height (no scrolling): the slot size follows the panel height (cqh) */
 .fg-doll { flex: 1; min-height: 0; position: relative; display: grid; gap: 2px; container-type: size;
   grid-template-columns: 1fr 1fr 1fr; grid-template-rows: repeat(4, minmax(0, 1fr));
@@ -530,8 +532,8 @@ html, body {
 .fg-setn { color: #c27cff; font-size: 12px; margin-left: 8px; }
 .fg-pieces { display: flex; gap: 5px; margin: 4px 0 8px; }
 .fg-piece { flex: 1; min-width: 0; word-break: keep-all; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 2px; border-radius: 8px; border: 1px dashed #3a3346; color: #3f3850; font-size: 11px; text-align: center; }
-.fg-piece.seen { border-style: solid; border-color: #6b4b8c; color: #c27cff; }
-.fg-piece.on { background: rgba(194, 124, 255, 0.15); box-shadow: 0 0 10px rgba(194, 124, 255, 0.4); }
+.fg-piece.seen { border-style: solid; border-color: #8c5a2c; color: #ff9a3c; } /* set pieces are legendary */
+.fg-piece.on { background: rgba(255, 154, 60, 0.15); box-shadow: 0 0 10px rgba(255, 154, 60, 0.4); }
 .fg-bonuses { display: flex; flex-direction: column; gap: 3px; }
 .fg-bonus { color: #6d6380; }
 .fg-bonus.on { color: #e6c8ff; }
@@ -544,7 +546,7 @@ html, body {
 /* item pop-up: tap the shade around it to close */
 /* salvage: select-all / clear at the top left, the red salvage button at the bottom right — far apart */
 .fg-piece small { display: block; font-size: 10px; color: #9c91ad; }
-button.fg-piece.own { cursor: pointer; border: 1px solid #c9a86a; border-radius: 8px; background: rgba(60, 44, 20, 0.5); color: inherit; font: inherit; }
+button.fg-piece.own { cursor: pointer; border: 1px solid #c9a86a; border-radius: 8px; background: rgba(60, 44, 20, 0.5); color: #ff9a3c; font: inherit; }
 .fg-buyrow { display: flex; gap: 8px; align-items: center; }
 .fg-setlist { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
 .fg-setrow { display: flex; align-items: center; gap: 8px; width: 100%; flex: 1 1 0; min-height: 0; max-height: 40px; padding: 0 8px; border: 1px solid #2c2338; border-radius: 7px; background: #140f1a; color: #e8e3d6; font: inherit; text-align: left; }
@@ -552,8 +554,8 @@ button.fg-piece.own { cursor: pointer; border: 1px solid #c9a86a; border-radius:
 .fg-setrow small { color: #9c91ad; }
 .fg-dots { margin-left: auto; display: flex; gap: 3px; }
 .fg-dots i { width: 9px; height: 9px; border-radius: 50%; background: #2c2338; border: 1px solid #4a3d5c; }
-.fg-dots i.own { background: linear-gradient(90deg, #c9a0ff 50%, #2c2338 50%); border-color: #c9a0ff; }
-.fg-dots i.on { background: #c9a0ff; border-color: #c9a0ff; }
+.fg-dots i.own { background: linear-gradient(90deg, #ff9a3c 50%, #2c2338 50%); border-color: #ff9a3c; }
+.fg-dots i.on { background: #ff9a3c; border-color: #ff9a3c; }
 .fg-items > .fg-h { margin: 0; }
 .fg-items > .fg-h small { color: #9c91ad; font-weight: 400; }
 .fg-topgrade { color: #ffcf5a; white-space: nowrap; }
@@ -606,6 +608,7 @@ button.fg-piece.own { cursor: pointer; border: 1px solid #c9a86a; border-radius:
 .lg-pick { min-height: 16px; font-size: 13px; color: #f0e6cf; }
 .lg-empty { margin: 30px 0; color: #c9bfa8; }
 .lg-buttons { display: flex; gap: 10px; }
+.icell.pass::after { content: ''; position: absolute; left: 3px; bottom: 3px; width: 7px; height: 7px; border-radius: 50%; background: #ffcf5a; box-shadow: 0 0 4px #ffcf5a; } /* 전승 각인 (over a scar's dot) */
 .icell.tok { box-shadow: 0 0 0 2px #ffcf5a, 0 0 14px rgba(255, 207, 90, 0.8); }
 .idetail .itoken { font-size: 11px; color: #ffcf5a; margin-top: 3px; font-weight: 700; }
 .fg-token { color: #ffcf5a; border-color: #b8913a; }

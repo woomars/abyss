@@ -1,6 +1,6 @@
 // What an item gives (after grade, quality, level and enhancement) and how it reads on screen. Pure.
 import { zeroStats } from '../Stats.js';
-import { tr, trItemName } from '../../i18n/index.js';
+import { t, tr, trItemName } from '../../i18n/index.js';
 
 export function enhanceBonus(cfg, level) {
   return level > 0 ? cfg.enhance.bonus[Math.min(level, cfg.enhance.bonus.length) - 1] : 0;
@@ -39,8 +39,9 @@ export function describeItem(item, cfg) {
   const ringKeys = item.ringSet && cfg.ringTable && item.enhance > 0 ? Object.keys(cfg.ringTable.perLevel) : [];
   const lines = item.ringSet ? ringKeys.map((k) => formatStat(cfg, k, s[k])) : keys.map((k) => formatStat(cfg, k, s[k])); // a set ring: only its enhance bonus
   const set = item.set ? cfg.sets[item.set] : null;
+  const base = set && item.legendary ? t('item.setName', { set: tr(set.name), name: trItemName(item.name) }) : trItemName(item.name); // a set-engraved unique: the set name goes first
   return {
-    name: (item.enhance ? `+${item.enhance} ` : '') + trItemName(item.name),
+    name: (item.enhance ? `+${item.enhance} ` : '') + base,
     gradeLabel: tr(item.ringSet ? '초월' : g.label), gradeColor: item.ringSet ? '#ff5ad8' : g.color, // set rings are Transcendent qualityLabel: tr(q.label), qualityColor: q.color,
     partLabel: tr(cfg.parts[item.slot].label), icon: cfg.parts[item.slot].icon,
     lines,
@@ -53,6 +54,7 @@ export function describeItem(item, cfg) {
     heirloom: item.legacy && item.legacy.length ? item.legacy[item.legacy.length - 1] : null,
     lostPower: item.lostPower ? tr(item.lostPower) : null,
     token: item.token ? tr(cfg.legacyToken.text) : null,
+    passOn: item.passOn && !item.token ? t('item.passOn') : null,
     ringSet: item.ringSet && cfg.sets[item.ringSet] ? tr(cfg.sets[item.ringSet].name) : null,
   };
 }

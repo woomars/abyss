@@ -68,7 +68,7 @@ export function enhanceGold(econ, item, toLevel) {
   return g;
 }
 
-// salvaging costs gold by grade
+// salvaging gives gold by grade (economy.json dismantle)
 export function salvageGold(econ, items) {
   return items.reduce((s, it) => s + (econ.dismantle[it.grade] || 0), 0);
 }
@@ -97,14 +97,13 @@ export function salvagePreview(ctx, ids) {
 export function salvageItems(ctx, ids) {
   const { powder, count, gold } = salvagePreview(ctx, ids);
   if (!count) return { ok: false, powder };
-  if (ctx.vault.gold < gold) return { ok: false, reason: 'gold', powder, gold };
   for (const id of ids) {
     const f = findItem(ctx, id);
     if (!f || f.where === 'equipped') continue;
     pull(f.where === 'pocket' ? ctx.pocket : ctx.vault.stash, id);
   }
   for (let q = 0; q < 3; q++) ctx.vault.powder[q] += powder[q];
-  ctx.vault.gold -= gold;
+  ctx.vault.gold += gold;
   return { ok: true, powder, count, gold };
 }
 
@@ -118,6 +117,21 @@ export function applyToken(ctx, id) {
   f.item.scar = false;
   ctx.vault.tokens -= 1;
   return { ok: true, item: f.item };
+}
+
+// ---- 전승 각인: any item, gold by grade, no hammer; it passes down once for sure, then the mark is gone ----
+export function canLegacyEngrave(item) { return !!item && !item.token && !item.ringSet && !item.passOn; }
+
+export function legacyEngraveCost(econ, item) { return (econ.legacyEngrave && econ.legacyEngrave[item.grade]) || 0; }
+
+export function legacyEngraveItem(ctx, id) {
+  const f = findItem(ctx, id);
+  if (!f || !canLegacyEngrave(f.item)) return { ok: false };
+  const cost = legacyEngraveCost(ctx.econ, f.item);
+  if (ctx.vault.gold < cost) return { ok: false, reason: 'gold', cost };
+  ctx.vault.gold -= cost;
+  f.item.passOn = true;
+  return { ok: true, cost, item: f.item };
 }
 
 // every item the token could go on: worn, stash, pocket (with where it is)
@@ -176,6 +190,7 @@ export function enhanceItem(ctx, id, tier, count) {
 // ---- death ----
 export function survivalChance(item, cfg) {
   if (item.token || item.ringSet) return 1; // 유산의 증표 and set rings (8.5): always pass down
+  if (item.passOn) return 1; // 전승 각인 / 세트 각인: once, even over a scar
   if (item.scar) return 0;
   // set pieces have their own (high) chance; legendary gets its high chance from its grade
   const g = item.set ? cfg.setSurvive : cfg.grades[item.grade].survive;
@@ -202,7 +217,7 @@ export function resolveDeath(ctx, rng, record) {
   const cfg = ctx.cfg, survived = [], lost = [];
   // pocket: lost, except items carrying the legacy token (they go to the stash)
   for (const it of ctx.pocket) {
-    if (it.token || it.ringSet) { ctx.vault.stash.push(it); survived.push(it); } else lost.push(it);
+    if (it.token || it.ringSet || it.passOn) { ctx.vault.stash.push(it); survived.push(it); delete it.passOn; } else lost.push(it);
   }
   ctx.pocket.length = 0;
   for (const s of LOADOUT_SLOTS) {
@@ -210,6 +225,7 @@ export function resolveDeath(ctx, rng, record) {
     if (!it) continue;
     if (rng() < survivalChance(it, cfg)) {
       if (!it.token && !it.ringSet) it.scar = true; // the token (and a set ring) ignores the once-only rule
+      delete it.passOn; // an engraving passes it down once, then is gone
       (it.legacy = it.legacy || []).push({
         given: record.given, family: record.family, generation: record.generation, floor: record.floor,
         feat: isNotable(it, cfg) ? featText(it, cfg, record) : null,
@@ -238,9 +254,9 @@ export function compareSlots(loadout, item) {
   return item.slot === 'ring' ? ['ring1', 'ring2'] : [loadout.slotFor(item)];
 }
 
-// 분해 "모두 선택": everything shown except legacy-token gear and set pieces (those are picked one by one)
+// 분해 "모두 선택": everything shown except legacy-token gear, engraved gear and set pieces (those are picked one by one)
 export function salvageSelectAll(items) {
-  return items.filter((it) => !it.token && !it.set && !it.ringSet).map((it) => it.id);
+  return items.filter((it) => !it.token && !it.set && !it.ringSet && !it.passOn).map((it) => it.id);
 }
 
 // ---- +10 grade-up (one grade higher for gold; back to +0; the new grade's affix count) ----

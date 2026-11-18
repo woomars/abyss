@@ -223,7 +223,7 @@ export class SkillSystem {
       s.swept = Math.max(s.swept, firstRel);
       // a pause (with its hit stop) only while the budget lasts and the blade has turned far enough
       const left = maxPause - (s.paused || 0), stop = this.stopCost();
-      const pause = left > 1e-9 && (s.pausedAt == null || firstRel - s.pausedAt >= minTurn - 1e-9);
+      const pause = left > 1e-9 && left >= stop - 1e-9 && (s.pausedAt == null || firstRel - s.pausedAt >= minTurn - 1e-9);
       const damage = this.baseDamage('spin') * (1 + def.chainDamageStep * s.hits);
       const fd = Math.hypot(first.pos.x - p.x, first.pos.y - p.y);
       const stun = spinStun(fd, def.innerRadius || 0, def.innerStun || 0, (def.outerStun != null ? def.outerStun : this.cfg.stun ? this.cfg.stun.chance : 0) + (this.bonus().spinStun || 0)); // the storm set lifts only the outer ring

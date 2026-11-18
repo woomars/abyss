@@ -509,7 +509,8 @@ export class Renderer {
     for (const e of mgr.all()) {
       const r = e.radius;
       if (!this.isVisible(e.pos, r * 3)) continue;
-      const { x, y } = lerpPos(e.prevPos, e.pos, alpha);
+      let { x, y } = lerpPos(e.prevPos, e.pos, alpha);
+      if (e.push && e.push.t > 0) { const k = e.push.d * (e.push.t / e.push.max) ** 2; x += e.push.x * k; y += e.push.y * k; } // hit nudge, back in hitPush.time
       let size = r * 1.6;
       let a = e.fade == null ? 1 : e.fade;
       if (e.dying) {
@@ -573,11 +574,10 @@ export class Renderer {
         ctx.strokeStyle = '#c8b090'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(x + wob + r, y + r); ctx.lineTo(x + wob + r * 1.3, y - r * 1.3); ctx.stroke();
         ctx.fillStyle = '#d8a0ff'; ctx.beginPath(); ctx.arc(x + wob + r * 1.3, y - r * 1.4, 3.5, 0, Math.PI * 2); ctx.fill();
-      } else if (ai === 'clone') { // an assassin's decoy: see-through; the real one breathes
-        const k = e.real ? 1 + 0.05 * Math.sin(performance.now() / 260) : 1;
+      } else if (ai === 'clone') { // an assassin's decoy: see-through; all look the same, the real one must be found
         ctx.globalAlpha = a * 0.7;
         ctx.beginPath();
-        ctx.moveTo(x + wob, y - r * 1.2 * k); ctx.lineTo(x + wob + r * 0.8 * k, y); ctx.lineTo(x + wob, y + r * k); ctx.lineTo(x + wob - r * 0.8 * k, y); ctx.closePath();
+        ctx.moveTo(x + wob, y - r * 1.2); ctx.lineTo(x + wob + r * 0.8, y); ctx.lineTo(x + wob, y + r); ctx.lineTo(x + wob - r * 0.8, y); ctx.closePath();
         ctx.fill();
         ctx.strokeStyle = '#a090c0';
         ctx.stroke();

@@ -1,4 +1,4 @@
-// 각인 (Phase 6, 8.6): a set name engraved on a legendary of a set part. Gold first; the chance falls
+// 세트 각인 (Phase 6, 8.6): a set name engraved on a legendary of a set part. Gold first; the chance falls
 // with each try on the same item (tuning/engrave.json chance) and the hammer's three blows add to it.
 // Success: a set name at random (a different one if it already had one); its own effect stays.
 // Failure: the item is gone, and a generous heap of powder is left (gear with a legacy token stays).
@@ -61,6 +61,7 @@ export function engraveItem(ctx, ecfg, id, hits, rng) {
     it.set = sets[Math.floor(rng() * sets.length) % sets.length];
     if (!it.legendary) it.name = ctx.cfg.sets[it.set].pieces[it.slot]; // a set piece is named after its new set; a unique keeps its name
     it.engraves = (it.engraves || 0) + 1;
+    it.passOn = true; // a set engraving also passes it down once
     ctx.vault.markSeen(it);
     return { ok: true, success: true, chance, set: it.set, cost };
   }

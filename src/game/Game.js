@@ -393,6 +393,8 @@ export class Game {
   // ---- save slot, forge and the family line ----
   attachVault(vault) {
     this.vault = vault;
+    const st = this.config.tuning && this.config.tuning.economy && this.config.tuning.economy.stash;
+    if (st) vault.stashSlots = Math.max(vault.stashSlots, st.startSlots); // the free places every family has
     if (this.config.medals) {
       backfillMedals(vault, this.config.medals);
       checkTrophies(vault, this.config.medals, { roster: bossRoster(this.config.dungeon, this.config.enemies) }); // older families: what they already reached

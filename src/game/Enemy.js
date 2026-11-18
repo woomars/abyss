@@ -120,7 +120,9 @@ export class Enemy {
     }
     if (this.bubble && damage > 0) { this.bubble = false; damage = 0; this.lastBlocked = 'immune'; } // a shaman's bubble stops one blow
     this.hp -= damage;
-    this.flashTime = 0.08;
+    this.flashTime = this.root.hitFlash != null ? this.root.hitFlash : 0.1;
+    const hp = this.root.hitPush; // drawn only: nudged back, eased home (the real knockback is vel below)
+    if (hp) this.push = { x: knockDir.x, y: knockDir.y, t: hp.time, max: hp.time, d: hp.distance };
     const k = knockback * (1 - this.tcfg.knockbackResist) * this.root.knockbackDecay;
     this.vel.x += knockDir.x * k;
     this.vel.y += knockDir.y * k;
@@ -195,6 +197,7 @@ export class Enemy {
     this.prevPos.x = this.pos.x;
     this.prevPos.y = this.pos.y;
     if (this.flashTime > 0) this.flashTime -= dt;
+    if (this.push && this.push.t > 0) this.push.t -= dt;
     if (this.strikeTime > 0) this.strikeTime -= dt;
     if (this.counterTime > 0) this.counterTime -= dt;
     if (this.rearm > 0) { this.rearm -= dt; if (this.rearm <= 0 && this.counterTime > 0) this.canCounter = true; } // next beat of a mixed counter

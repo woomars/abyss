@@ -53,7 +53,7 @@ export class Camera {
   }
 
   addShake(amount) {
-    if (amount > this.shakeAmount) this.shakeAmount = amount;
+    if (amount > this.shakeAmount) { this.shakeAmount = amount; this.shakePeak = amount; }
   }
 
   setShakeEnabled(on) {
@@ -106,13 +106,13 @@ export class Camera {
     this.applyShake(dt);
   }
 
-  // shake: random offset, exponential decay
+  // shake: random offset, falling evenly from its peak to 0 over shake.decay seconds
   applyShake(dt) {
     const c = this.cfg;
     if (this.shakeEnabled && this.shakeAmount > 0.01) {
       const a = this.shakeAmount;
       this.renderPos = { x: this.pos.x + (this.rng() * 2 - 1) * a, y: this.pos.y + (this.rng() * 2 - 1) * a };
-      this.shakeAmount *= Math.exp(-dt / Math.max(c.shake.decay / 3, 1e-4));
+      this.shakeAmount = Math.max(0, this.shakeAmount - (this.shakePeak * dt) / Math.max(c.shake.decay, 1e-4));
     } else {
       this.shakeAmount = 0;
       this.renderPos = { x: this.pos.x, y: this.pos.y };

@@ -1,4 +1,4 @@
-// Hit stop = brief slow-motion (not a full freeze) so it never reads as a dropped frame.
+// Hit stop = the world stops for a moment on a hit (feedback.hitStopMs; hitStopScale 0 = a full stop).
 export class HitStop {
   constructor(cfg) {
     this.cfg = cfg; // config.feedback (live)

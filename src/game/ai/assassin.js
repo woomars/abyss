@@ -1,6 +1,6 @@
 // Assassin bosses (Phase 6, 2.1): keep a middle distance and now and then vanish into smoke — a shadow
 // shows behind or beside the player first, then the boss steps out of it. Its quest is its clones:
-// while they stand the boss cannot be hurt; hitting the real one (it breathes) opens it up.
+// while they stand the boss cannot be hurt; hitting the real one (they all look alike) opens it up.
 import { bossCore, keepBand, behindSpot, appear } from './bossCore.js';
 
 const SMOKE_EVERY = [4, 6]; // seconds between vanishings while it waits for its next pattern

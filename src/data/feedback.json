@@ -1,12 +1,12 @@
 {
   "hitStopMs": {
-    "normal": 20,
-    "strong": 45,
-    "crit": 60
+    "normal": 80,
+    "strong": 80,
+    "crit": 80
   },
-  "hitStopScale": 0.05,
+  "hitStopScale": 0,
   "comboWindow": 0.8,
-  "damageNumberLife": 0.7,
+  "damageNumberLife": 0.8,
   "afterimageCount": 6,
   "trailLife": 0.25,
   "particles": {

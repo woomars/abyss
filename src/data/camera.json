@@ -8,9 +8,10 @@
   "lookAheadTurnTime": 0.25,
   "freeRadiusFrac": 0.28,
   "shake": {
-    "strong": 4,
-    "crit": 9,
-    "decay": 0.18
+    "normal": 10,
+    "strong": 10,
+    "crit": 10,
+    "decay": 0.25
   },
   "boundsMargin": 50
 }

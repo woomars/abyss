@@ -2,10 +2,9 @@
 // abyss's glow, cycle n. A few seconds, or [건너뛰기].
 import { t, trPerson } from '../i18n/index.js';
 
-const LENGTH = 5.5; // seconds before it goes on by itself
-
 export class DepartureScene {
-  constructor(root) {
+  constructor(root, cfg) {
+    this.cfg = cfg; // look.ui.departure: length = seconds before it goes on by itself
     this.el = document.createElement('div');
     this.el.className = 'overlay departure-scene interactive hidden';
     root.appendChild(this.el);
@@ -22,7 +21,7 @@ export class DepartureScene {
     this.render();
     this.el.classList.remove('hidden');
     clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.finish(), LENGTH * 1000);
+    this.timer = setTimeout(() => this.finish(), this.cfg.length * 1000);
   }
 
   render() {

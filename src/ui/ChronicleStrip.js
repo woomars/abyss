@@ -2,10 +2,6 @@
 // the family's timeline — a boss to fight, a medal, a trophy, an ancestor's grave. It shares its clock with
 // the list above: scroll the list fast and the walk speeds up; leave it and the hero walks on slowly,
 // carrying the list along.
-const SPACING = 150;   // px between two events on the strip
-const WALK = 0.35;     // events per second when nobody scrolls
-const IDLE = 0.9;      // seconds after the last scroll before the slow walk takes over
-
 export class ChronicleStrip {
   // labelOf(event) -> short text shown over the event the hero stands at
   constructor(canvas, list, events, config, labelOf) {
@@ -13,6 +9,7 @@ export class ChronicleStrip {
     this.list = list;
     this.events = events;
     this.config = config;
+    this.cfg = config.look.ui.chronicle; // spacing (px between events), walk (events/s when nobody scrolls), idle (s after the last scroll before the walk)
     this.labelOf = labelOf;
     this.cursor = 0;   // where the hero is (event index, fractional)
     this.target = 0;   // where the list says the time is
@@ -41,14 +38,14 @@ export class ChronicleStrip {
     if (this.stopped) return;
     const now = performance.now() / 1000, dt = Math.min(0.1, now - this.t0), last = Math.max(0, this.events.length - 1);
     this.t0 = now;
-    if (now - this.lastUser > IDLE && this.target < last) { // nobody scrolls: walk on, and the list follows
-      this.target = Math.min(last, this.target + WALK * dt);
+    if (now - this.lastUser > this.cfg.idle && this.target < last) { // nobody scrolls: walk on, and the list follows
+      this.target = Math.min(last, this.target + this.cfg.walk * dt);
       const i = Math.floor(this.target), f = this.target - i, max = this.list.scrollHeight - this.list.clientHeight;
       const top = Math.min(max, this.rowTop(i) + f * (this.rowTop(i + 1) - this.rowTop(i) || 0)); // the last rows can never reach the top
       if (max > 0 && Math.abs(this.list.scrollTop - top) > 1) { this.wrote = top; this.list.scrollTop = top; }
     }
     const gap = this.target - this.cursor; // a fast scroll makes him hurry
-    const speed = Math.max(WALK, Math.abs(gap) * 4);
+    const speed = Math.max(this.cfg.walk, Math.abs(gap) * 4);
     this.cursor += Math.sign(gap) * Math.min(Math.abs(gap), speed * dt);
     this.walking = Math.abs(gap) > 0.01;
     this.draw(now);
@@ -65,21 +62,21 @@ export class ChronicleStrip {
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, '#120e1a'); g.addColorStop(1, '#1d1626');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    const ground = H * 0.72, heroX = W * 0.3, camX = this.cursor * SPACING - heroX;
+    const ground = H * 0.72, heroX = W * 0.3, camX = this.cursor * this.cfg.spacing - heroX;
     ctx.strokeStyle = 'rgba(201,168,106,0.35)'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(0, ground); ctx.lineTo(W, ground); ctx.stroke();
     // a stone every so often, sliding past as he walks
     ctx.fillStyle = 'rgba(255,255,255,0.06)';
     for (let k = Math.floor(camX / 60) - 1; k < (camX + W) / 60 + 1; k++) ctx.fillRect(k * 60 - camX, ground + 6 + ((k * 37) % 3) * 4, 18, 3);
     this.events.forEach((e, i) => {
-      const x = i * SPACING - camX;
+      const x = i * this.cfg.spacing - camX;
       if (x < -60 || x > W + 60) return;
       const near = Math.abs(this.cursor - i) < 0.35;
       this.drawEvent(ctx, e, x, ground, near, now);
       if (near) {
         ctx.font = '12px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
         ctx.fillStyle = '#ffe08a';
-        ctx.fillText(this.labelOf(e), x, ground - 46, SPACING * 1.6);
+        ctx.fillText(this.labelOf(e), x, ground - 46, this.cfg.spacing * 1.6);
       }
     });
     this.drawHero(ctx, heroX, ground, now);
@@ -100,7 +97,7 @@ export class ChronicleStrip {
     ctx.save();
     ctx.translate(x, y); ctx.scale(pulse, pulse);
     if (e.kind === 'boss') { // the boss in its own shape and colour
-      const t = this.config.enemies.types[e.key] || {}, r = 15, shape = t.shape || 'horned';
+      const t = this.config.look.enemies.types[e.key] || {}, r = 15, shape = t.shape || 'horned';
       ctx.fillStyle = t.color || '#8a3a3a'; ctx.strokeStyle = '#ffcf5a'; ctx.lineWidth = 2;
       ctx.beginPath();
       if (shape === 'robed') { ctx.moveTo(0, -r * 1.2); ctx.lineTo(r, r); ctx.lineTo(-r, r); }
@@ -111,11 +108,11 @@ export class ChronicleStrip {
       ctx.closePath(); ctx.fill(); ctx.stroke();
       if (near) { ctx.strokeStyle = 'rgba(255,240,200,0.9)'; ctx.beginPath(); ctx.moveTo(-26, -6); ctx.lineTo(-8, 4); ctx.stroke(); } // a blow
     } else if (e.kind === 'medal') {
-      const col = this.config.medals.tiers[e.medal.tier].color;
+      const col = this.config.look.medals.tiers[e.medal.tier].color;
       ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, -6, 10, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#5a2a3a'; ctx.fillRect(-4, 4, 8, 10);
     } else if (e.kind === 'trophy') {
-      ctx.fillStyle = this.config.medals.tiers[e.trophy.tier].color;
+      ctx.fillStyle = this.config.look.medals.tiers[e.trophy.tier].color;
       ctx.beginPath(); ctx.moveTo(-11, -14); ctx.lineTo(11, -14); ctx.lineTo(6, 2); ctx.lineTo(-6, 2); ctx.closePath(); ctx.fill();
       ctx.fillRect(-2, 2, 4, 8); ctx.fillRect(-8, 10, 16, 4);
     } else if (e.kind === 'death') { // a grave

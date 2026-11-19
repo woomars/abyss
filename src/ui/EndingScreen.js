@@ -7,8 +7,6 @@ import { storyText } from './storyText.js';
 import { t, trPerson, trItemName, getLang } from '../i18n/index.js';
 
 const ART = ['arrive', 'portal', 'cottage', 'couple'];
-const SPEED = 0.042; // share of the view height the text rises per second
-const FAST = 9;      // 건너뛰기: the credits run this many times faster
 
 const CREDITS = [
   ['t', () => t('app.title')],
@@ -39,7 +37,8 @@ export function endingLast(f) {
 
 export class EndingScreen {
   // story: () => config.tuning.story (the Korean text)
-  constructor(root, { music = null, onDone = () => {}, toLocal = null, story = () => null } = {}) {
+  constructor(root, { cfg, music = null, onDone = () => {}, toLocal = null, story = () => null } = {}) {
+    this.cfg = cfg; // look.ui: ending.speed = share of the view height the text rises per second, ending.fast = 건너뛰기 speed-up; scroller
     this.story = story;
     this.toLocal = toLocal; // screen -> stage coordinates
     this.music = music;
@@ -87,7 +86,7 @@ export class EndingScreen {
     this.finale = finale;
     this.replay = replay;
     this.y = 0;
-    this.scroller = new TextScroller({ auto: 0 });
+    this.scroller = new TextScroller({ ...this.cfg.scroller, auto: 0 });
     this.scroller.clampMin(0);
     this.last = null;
     this.fast = false;
@@ -141,7 +140,7 @@ export class EndingScreen {
     this.last = now;
     if (this.phase === 'roll') {
       const H = this.view.clientHeight || 390;
-      this.scroller.auto = H * SPEED * (this.fast ? FAST : 1);
+      this.scroller.auto = H * this.cfg.ending.speed * (this.fast ? this.cfg.ending.fast : 1);
       this.scroller.step(dt);
       this.y = this.scroller.pos;
       this.roll.style.transform = `translateY(${(H - this.y).toFixed(1)}px)`;

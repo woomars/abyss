@@ -1,7 +1,7 @@
 // The hall's timeline (Phase 6, 12): everything the family won, in time order — ancestors' deaths, medals,
 // trophies, bosses (the codex), essences handed down and past chronicles. Records from before times were
 // kept go by generation and floor. Pure: the hall screen lists these and the recollection strip walks them.
-import { bossRoster } from '../game/Medals.js';
+import { bossRoster } from '../logic/progress/Medals.js';
 
 const ORDER = { medal: 0, boss: 1, trophy: 2, essence: 3, death: 4, chronicle: 5 }; // same moment: what he won, then his death
 const TAB = { ancestors: 'death', essence: 'essence', medals: 'medal', trophies: 'trophy', bosses: 'boss', chronicle: 'chronicle' };

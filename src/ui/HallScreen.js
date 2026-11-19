@@ -2,10 +2,9 @@
 // ancestor won, how each fell), and along the bottom a strip where the hero walks through those same
 // moments in step with the list. Read-only view of one save slot.
 import { relicIcon } from './relicIcons.js';
-import { floorLabel } from '../core/floorLabel.js';
-import { bossRoster, backfillMedals } from '../game/Medals.js';
-import { formatValue } from '../game/Relics.js';
-import { t, tr, trItemName, trPerson, fullName, formatDate } from '../i18n/index.js';
+import { bossRoster, backfillMedals } from '../logic/progress/Medals.js';
+import { formatValue } from '../logic/progress/Relics.js';
+import { t, tr, trItemName, trPerson, fullName, formatDate, floorText } from '../i18n/index.js';
 import { buildTimeline } from './chronicle.js';
 import { ChronicleStrip } from './ChronicleStrip.js';
 
@@ -74,7 +73,7 @@ export class HallScreen {
   medal(id) { return this.config.medals.list.find((m) => m.id === id); }
 
   medalBadge(m, earned = true, size = 30) {
-    const t = this.config.medals.tiers[m.tier];
+    const t = this.config.look.medals.tiers[m.tier];
     return `<span class="hl-badge${earned ? '' : ' locked'}" style="--mc:${t.color};width:${size}px;height:${size}px">${relicIcon(m.icon, Math.round(size * 0.55))}</span>`;
   }
 
@@ -117,19 +116,19 @@ export class HallScreen {
   label(e) {
     const name = e.kind === 'boss' ? tr(e.boss.name) : e.kind === 'medal' ? tr(e.medal.name) : e.kind === 'trophy' ? tr(e.trophy.name)
       : e.kind === 'essence' ? tr((this.config.relics.list[e.key] || {}).name || '') : e.kind === 'chronicle' ? t('hall.chronicleHead', { n: e.chronicle.cycle, family: trPerson(e.chronicle.family, 'family') })
-        : e.kind === 'now' ? t('hall.evNow') : t('hall.fell', { floor: floorLabel(e.floor), killer: e.killer ? tr(e.killer) : '' });
+        : e.kind === 'now' ? t('hall.evNow') : t('hall.fell', { floor: floorText(e.floor), killer: e.killer ? tr(e.killer) : '' });
     return `${genName(e.who)} · ${name}`;
   }
 
   // one row of the timeline: what, who, where, when (an ancestor's row opens his whole story)
   eventRow(e, i) {
-    const who = genName(e.who), where = e.floor ? floorLabel(e.floor) : '', when = e.at ? day(e.at) : '';
+    const who = genName(e.who), where = e.floor ? floorText(e.floor) : '', when = e.at ? day(e.at) : '';
     const sub = [who, where, when].filter(Boolean).join(' · ');
     let icon, title;
-    if (e.kind === 'death') { icon = '<span class="hl-grave">✝</span>'; title = t('hall.fell', { floor: floorLabel(e.floor), killer: e.killer ? esc(tr(e.killer)) : '' }); }
+    if (e.kind === 'death') { icon = '<span class="hl-grave">✝</span>'; title = t('hall.fell', { floor: floorText(e.floor), killer: e.killer ? esc(tr(e.killer)) : '' }); }
     else if (e.kind === 'now') { icon = '<span class="hl-grave live">➤</span>'; title = t('hall.evNow'); }
-    else if (e.kind === 'medal') { icon = this.medalBadge(e.medal, true, 26); title = `<span style="color:${this.config.medals.tiers[e.medal.tier].color}">${esc(tr(e.medal.name))}</span>`; }
-    else if (e.kind === 'trophy') { const c = this.config.medals.tiers[e.trophy.tier].color; icon = `<span class="hl-cup" style="--mc:${c}">${relicIcon('trophy', 18)}</span>`; title = `<span style="color:${c}">${esc(tr(e.trophy.name))}</span>`; }
+    else if (e.kind === 'medal') { icon = this.medalBadge(e.medal, true, 26); title = `<span style="color:${this.config.look.medals.tiers[e.medal.tier].color}">${esc(tr(e.medal.name))}</span>`; }
+    else if (e.kind === 'trophy') { const c = this.config.look.medals.tiers[e.trophy.tier].color; icon = `<span class="hl-cup" style="--mc:${c}">${relicIcon('trophy', 18)}</span>`; title = `<span style="color:${c}">${esc(tr(e.trophy.name))}</span>`; }
     else if (e.kind === 'boss') { icon = `<span class="hl-bicon sm">${relicIcon(TYPE_ICON[e.boss.type] || 'fang', 20)}</span>`; title = `${t('hall.evBoss', { name: esc(tr(e.boss.name)) })} <small>${t(`btype.${e.boss.type}`)}</small>`; }
     else if (e.kind === 'essence') { const d = this.config.relics.list[e.key] || {}; icon = `<span class="hl-eicon">${relicIcon(d.icon || 'flame', 20)}</span>`; title = t('hall.evEssence', { name: esc(tr(d.name || e.key)), n: e.count }); }
     else { icon = `<span class="hl-cup" style="--mc:#c9a86a">${relicIcon('trophy', 18)}</span>`; title = t('hall.chronicleHead', { n: e.chronicle.cycle, family: esc(trPerson(e.chronicle.family, 'family')) }); }
@@ -143,7 +142,7 @@ export class HallScreen {
   // a past chronicle opened: from the founder to the last, what the line won, the child and the heirloom
   chronicleStory(c) {
     const e = c.ending || {};
-    const people = (c.people || []).map((p) => `${t('gen', { n: p.generation })} ${esc(trPerson(p.given, 'given'))}${p.reached ? '' : ` <small>${floorLabel(p.floor || 1)}</small>`}`).join(' · ');
+    const people = (c.people || []).map((p) => `${t('gen', { n: p.generation })} ${esc(trPerson(p.given, 'given'))}${p.reached ? '' : ` <small>${floorText(p.floor || 1)}</small>`}`).join(' · ');
     return `<div>${t('hall.chronicleLine', { first: esc(trPerson(c.founder, 'given')), gen: c.generations, last: esc(trPerson(c.last, 'given')) })}</div>
       <div class="dim">${t('hall.chronicleStats', { level: c.level, medals: c.medals, trophies: c.trophies, bosses: c.bosses })}</div>
       <div class="dim">${people}</div>
@@ -166,8 +165,8 @@ export class HallScreen {
 
   renderPerson(p) {
     const fell = p.living
-      ? (p.state === 'rest' ? t('where.rest', { floor: floorLabel(p.floor) }) : p.state === 'run' ? (p.saved ? t('where.saved', { floor: floorLabel(p.floor) }) : p.auto ? t('where.resume', { floor: floorLabel(p.floor) }) : t('where.run')) : t('where.idleHall'))
-      : `${t('hall.fell', { floor: floorLabel(p.floor), killer: p.killer ? esc(tr(p.killer)) : '' })}${p.at ? ` <small>${day(p.at)}</small>` : ''}`;
+      ? (p.state === 'rest' ? t('where.rest', { floor: floorText(p.floor) }) : p.state === 'run' ? (p.saved ? t('where.saved', { floor: floorText(p.floor) }) : p.auto ? t('where.resume', { floor: floorText(p.floor) }) : t('where.run')) : t('where.idleHall'))
+      : `${t('hall.fell', { floor: floorText(p.floor), killer: p.killer ? esc(tr(p.killer)) : '' })}${p.at ? ` <small>${day(p.at)}</small>` : ''}`;
     const medals = (p.medals || []).map((id) => this.medal(id)).filter(Boolean);
     const bosses = Object.values(p.bosses || {});
     const nBoss = bosses.reduce((n, b) => n + b.count, 0);
@@ -182,7 +181,7 @@ export class HallScreen {
       <div class="hl-medals">${medals.length ? medals.map((m) => `<span class="hl-chip">${this.medalBadge(m, true, 22)}${esc(tr(m.name))}</span>`).join('') : `<span class="dim">${t('hall.noneYet')}</span>`}</div>
       <div class="hl-sec">${t('hall.slain')}</div>
       <div class="hl-bosses">${bosses.length
-        ? bosses.map((b) => `<div><b>${esc(tr(b.name))}</b> <small>${esc(tr(b.title))}</small> ×${b.count} <small>· ${t('hall.deepest', { floor: floorLabel(b.deepest) })}</small></div>`).join('')
+        ? bosses.map((b) => `<div><b>${esc(tr(b.name))}</b> <small>${esc(tr(b.title))}</small> ×${b.count} <small>· ${t('hall.deepest', { floor: floorText(b.deepest) })}</small></div>`).join('')
         : `<span class="dim">${old ? t('hall.noRecord') : t('none')}</span>`}</div>
       <div class="hl-sec">${t('hall.essenceLeft')}</div>
       <div class="hl-bosses">${Object.keys(p.essences || {}).length

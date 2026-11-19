@@ -1,8 +1,0 @@
-{
-  "directionThresholdPx": 18,
-  "recentWindowPx": 40,
-  "strokeWindowSec": 1.0,
-  "flickMaxTime": 0.25,
-  "flickMinPx": 30,
-  "flickMinSpeed": 500
-}

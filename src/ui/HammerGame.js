@@ -2,28 +2,30 @@
 // as they meet (± tolerance). Each blow has its own speed (normal, or now and then fast / slow). Sound and
 // a shake for every blow; when all three are done, onDone(hits).
 import { t } from '../i18n/index.js';
-import { judgeHit } from '../game/items/engrave.js';
+import { judgeHit } from '../logic/items/engrave.js';
 
-const OVERSHOOT = 0.35; // seconds the band keeps closing past the target before the blow counts as missed
-const PAUSE = 0.55;     // seconds between blows
 const BAND_AT_TARGET = 88 / 212; // the band (212 px across its middle) shrunk onto the gold ring (88 px across its middle)
 
 export class HammerGame {
   // speeds: three seconds-to-target; onBlow(good); onDone(hits)
-  constructor(parent, { speeds, tolerance, onBlow = () => {}, onDone = () => {} }) {
+  constructor(parent, { speeds, tolerance, overshoot, pause, countStep = 0, onBlow = () => {}, onDone = () => {} }) {
+    this.countStep = countStep; // seconds each of 3, 2, 1 shows before the first blow (none between blows)
     this.speeds = speeds;
     this.tol = tolerance;
+    this.overshoot = overshoot; // seconds the band keeps closing past the target before the blow counts as missed
+    this.pause = pause;         // seconds between blows
     this.onBlow = onBlow;
     this.onDone = onDone;
     this.results = [];
     this.el = document.createElement('div');
     this.el.className = 'hm-wrap';
     this.el.innerHTML = `<div class="hm-panel"><div class="hm-hint">${t('fg.hammerHint')}</div>
-      <div class="hm-field"><div class="hm-target"></div><div class="hm-band"></div><div class="hm-flash"></div></div>
+      <div class="hm-field"><div class="hm-target"></div><div class="hm-band"></div><div class="hm-flash"></div><div class="hm-count"></div></div>
       <div class="hm-marks"></div><button class="fg-btn pri hm-strike">${t('fg.hammerStrike')}</button></div>`;
     parent.appendChild(this.el);
     this.band = this.el.querySelector('.hm-band');
     this.flash = this.el.querySelector('.hm-flash');
+    this.count = this.el.querySelector('.hm-count');
     this.marks = this.el.querySelector('.hm-marks');
     this.el.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); this.press(); });
     this.el.addEventListener('click', (e) => e.stopPropagation());
@@ -35,7 +37,7 @@ export class HammerGame {
   next() {
     this.blow = this.results.length;
     this.t0 = performance.now() / 1000;
-    this.wait = this.blow === 0 ? 0.4 : PAUSE; // a breath before the band starts
+    this.wait = this.blow === 0 ? (this.countStep > 0 ? 3 * this.countStep : 0.4) : this.pause; // the count (first blow only), or a breath
     this.pressed = false;
   }
 
@@ -45,11 +47,13 @@ export class HammerGame {
   frame() {
     if (this.done) return;
     const T = this.speeds[this.blow], e = this.elapsed();
+    const n = this.blow === 0 && this.countStep > 0 && e < 0 ? Math.min(3, Math.ceil(-e / this.countStep)) : 0;
+    if (this.count.textContent !== (n ? String(n) : '')) this.count.textContent = n ? String(n) : '';
     if (e >= 0 && !this.pressed) {
       const k = 2.2 - 1.2 * (e / T); // band radius in target radii: 2.2 -> 1 at T -> past it
       this.band.style.transform = `translate(-50%, -50%) scale(${(Math.max(0.3, k) * BAND_AT_TARGET)})`; // k = 1: the band sits on the middle of the gold ring
       this.band.style.opacity = '1';
-      if (e > T + OVERSHOOT) this.resolve(false); // too late
+      if (e > T + this.overshoot) this.resolve(false); // too late
     } else if (e < 0) this.band.style.opacity = '0';
     this.raf = requestAnimationFrame(() => this.frame());
   }

@@ -1,28 +1,28 @@
 import { relicIcon } from './relicIcons.js';
 import { itemCell, itemDetail } from './itemView.js';
-import { itemStats, formatStat, describeItem } from '../game/items/itemStats.js';
-import { LOADOUT_SLOTS } from '../game/items/Loadout.js';
+import { itemStats } from '../logic/items/itemStats.js';
+import { formatStat, describeItem } from '../look/text/itemText.js';
+import { LOADOUT_SLOTS } from '../logic/items/Loadout.js';
 import {
   findItem, equipItem, unequipItem, storeItem, takeItem, salvagePreview, salvageItems, enhancePreview, enhanceItem,
   compareSlots, salvageSelectAll, gradeUpPreview, gradeUpItem, stashPrice, buyStashSlot,
   canLegacyEngrave, legacyEngraveCost, legacyEngraveItem,
-} from '../game/items/Forge.js';
-import { sortItems, applyAutoEquip, snapshotGear, restoreGear, setPieceOwners, equipSet } from '../game/items/gear.js';
+} from '../logic/items/Forge.js';
+import { sortItems, applyAutoEquip, snapshotGear, restoreGear, setPieceOwners, equipSet } from '../logic/items/gear.js';
 import { captureScroll, restoreScroll } from './scrollKeep.js';
-import { setLabel } from '../game/items/setLabels.js';
-import { canEngrave, engraveCost, engraveChance, hammerSpeeds, engraveItem } from '../game/items/engrave.js';
+import { setLabel } from '../look/text/setLabels.js';
+import { canEngrave, engraveCost, engraveChance, hammerSpeeds, engraveItem } from '../logic/items/engrave.js';
 import { HammerGame } from './HammerGame.js';
-import { canForgeRing, forgeRing } from '../game/items/secrets.js';
-import { STAT_KEYS } from '../game/Stats.js';
-import { floorLabel } from '../core/floorLabel.js';
-import { t, tr, fullName } from '../i18n/index.js';
+import { canForgeRing, forgeRing } from '../logic/items/secrets.js';
+import { STAT_KEYS } from '../logic/run/Stats.js';
+import { t, tr, fullName, floorText } from '../i18n/index.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const slotLabel = (s) => t(`slot.${s}`);
-const SLOT_ICON = { weapon: 'sword', helm: 'helm', armor: 'shield', gloves: 'gloves', boots: 'boots', amulet: 'amulet', ring1: 'ring', ring2: 'ring' };
+const SLOT_ICON = { weapon: 'sword', helm: 'helm', armor: 'armor', gloves: 'shield', boots: 'boots', amulet: 'amulet', ring1: 'ring', ring2: 'ring' };
 const TIER = ['일반', '상급', '최상급']; // powder tiers (shown through tr)
 const tierLabel = (q) => tr(TIER[q]);
-const TABS = [['equip', 'fg.tabEquip'], ['salvage', 'fg.tabSalvage'], ['enhance', 'fg.tabEnhance'], ['engrave', 'fg.tabEngrave'], ['sets', 'fg.tabSets']];
+const TABS = [['equip', 'fg.tabEquip'], ['salvage', 'fg.tabSalvage'], ['enhance', 'fg.tabEnhance'], ['sets', 'fg.tabSets']]; // [강화/각인] holds both engravings
 const pct = (p) => `${Math.round(p * 100)}%`;
 const SCROLLERS = ['.fg-scroll', '.fg-gear', '.fg-sdet'];
 // the full stats sheet ([상세]): attack first, then these
@@ -51,7 +51,6 @@ export class ForgeScreen {
     this.tier = 0;
     this.count = 1;
     this.confirm = false;
-    this.engMode = 'legacy'; // 각인 tab: 'legacy' (전승 각인) | 'set' (세트 각인)
     this.scrolls = {};     // tab:bag -> remembered scroll positions (a redraw must not jump to the top)
     this.scrollKey = null;
     this.el = document.createElement('div');
@@ -62,6 +61,7 @@ export class ForgeScreen {
   }
 
   get cfg() { return this.game.config.items; }
+  get look() { return this.game.config.look.items; } // grade colours and labels, part icons, stat labels
   get ctx() { return this.game.forgeCtx(); }
   get isOpen() { return !this.el.classList.contains('hidden'); }
 
@@ -102,7 +102,7 @@ export class ForgeScreen {
     if (this.freshDetail && this.scrollKey) this.scrolls[this.scrollKey].delete('.fg-gear');
     this.freshDetail = false;
     if (this.sel != null && !findItem(this.ctx, this.sel)) this.sel = null;
-    const v = this.tab === 'salvage' ? this.salvageView() : this.tab === 'enhance' ? this.enhanceView() : this.tab === 'engrave' ? this.engraveView() : this.tab === 'sets' ? this.setsView() : this.equipView();
+    const v = this.tab === 'salvage' ? this.salvageView() : this.tab === 'enhance' ? this.enhanceView() : this.tab === 'sets' ? this.setsView() : this.equipView();
     this.pv = this.previewBonus(); // the bonus after the pending action (for the +/- on the stats)
     this.el.innerHTML = `
       <div class="fg-bg"></div>
@@ -114,7 +114,7 @@ export class ForgeScreen {
         <span class="fg-gold">${relicIcon('gold', 13)} ${g.vault.gold}</span>
         ${g.vault.tokens > 0 ? `<button class="fg-btn fg-token" data-act="token">${tr(this.cfg.legacyToken.label)} ×${g.vault.tokens}</button>` : ''}
         <button class="fg-btn small" data-act="title">${t('fg.toTitle')}</button>
-        <button class="fg-btn pri" data-act="depart">${t('toFloor', { floor: floorLabel(this.start ? 1 : g.dungeon.floor + 1) })} ▶</button>
+        <button class="fg-btn pri" data-act="depart">${t('toFloor', { floor: floorText(this.start ? 1 : g.dungeon.floor + 1) })} ▶</button>
       </div>
       <div class="fg-body">
         <div class="fg-col">
@@ -138,7 +138,7 @@ export class ForgeScreen {
 
   grid(items, { check = false, off = null } = {}) {
     if (!items.length) return `<div class="fg-empty">${t('fg.empty')}</div>`;
-    return `<div class="fg-grid">${sortItems(items, this.sortMode(), this.cfg).map((it) => itemCell(it, this.cfg, {
+    return `<div class="fg-grid">${sortItems(items, this.sortMode(), this.cfg).map((it) => itemCell(it, this.cfg, this.look, {
       cls: `${this.sel === it.id ? 'sel' : ''} ${check && this.checked.has(it.id) ? 'chk' : ''} ${off && off(it) ? 'off' : ''}`, size: 22,
     })).join('')}</div>`;
   }
@@ -159,7 +159,7 @@ export class ForgeScreen {
     const lo = this.ctx.loadout;
     const slot = (s) => {
       const it = lo.slots[s];
-      return `<div class="fg-slot fs-${s}">${it ? itemCell(it, this.cfg, { cls: this.sel === it.id ? 'sel' : '', size: 24 })
+      return `<div class="fg-slot fs-${s}">${it ? itemCell(it, this.cfg, this.look, { cls: this.sel === it.id ? 'sel' : '', size: 24 })
         : `<span class="fg-slot-empty">${relicIcon(SLOT_ICON[s], 20)}</span>`}<span class="fg-slot-name">${slotLabel(s)}</span></div>`;
     };
     return `<div class="fg-doll"><div class="fg-sil"></div>${LOADOUT_SLOTS.map(slot).join('')}<div class="fs-set">${this.setButton()}</div></div>`;
@@ -222,13 +222,13 @@ export class ForgeScreen {
     const s = sign && v > 0 ? '+' : v < 0 ? '-' : '';
     const a = Math.abs(v);
     if (k === 'chain') return `${s}${t('fg.times', { n: Math.round(a) })}`;
-    const fmt = k === 'attack' ? 'int' : (this.cfg.statLabels[k] || [k, 'int'])[1];
+    const fmt = k === 'attack' ? 'int' : (this.look.statLabels[k] || [k, 'int'])[1];
     return fmt === 'int' ? `${s}${Math.round(a)}` : `${s}${Math.round(a * 1000) / 10}%`;
   }
 
   statsDetail() {
     const b = this.game.bonusStats, gear = this.ctx.loadout.summary().stats;
-    const label = (k) => (k === 'attack' ? tr('공격력') : tr((this.cfg.statLabels[k] || [k])[0]));
+    const label = (k) => (k === 'attack' ? tr('공격력') : tr((this.look.statLabels[k] || [k])[0]));
     return `<div class="fg-h">${t('fg.allStats')} <small>${t('fg.gearShare')}</small><button class="fg-btn small" data-act="statsOpen">${t('fg.close')}</button></div>
       <div class="fg-allstats">${['attack', ...DETAIL].map((k) => {
         const v = this.total(k, b), d = this.pv ? this.total(k, this.pv) - v : 0;
@@ -277,12 +277,12 @@ export class ForgeScreen {
       const targets = f.where === 'equipped' ? [] : compareSlots(lo, it), one = targets.length === 1;
       const cmp = targets.map((target) => {
         const worn = lo.slots[target];
-        return `<div class="fg-cmp">${worn ? `<div class="fg-cmp-h">${t('fg.wornIn', { slot: slotLabel(target) })}</div>${itemDetail(worn, this.cfg)}` : `<div class="fg-cmp-h">${t('fg.slotEmpty', { slot: slotLabel(target) })}</div>`}
+        return `<div class="fg-cmp">${worn ? `<div class="fg-cmp-h">${t('fg.wornIn', { slot: slotLabel(target) })}</div>${itemDetail(worn, this.cfg, this.look)}` : `<div class="fg-cmp-h">${t('fg.slotEmpty', { slot: slotLabel(target) })}</div>`}
           ${one ? '' : `<div class="fg-delta">${this.deltaLines(it, worn)}</div>`}</div>`;
       }).join('');
       const delta = one ? `<div class="fg-delta wide">${this.deltaLines(it, lo.slots[targets[0]])}</div>` : '';
       gear = `<div class="fg-h">${t(f.where === 'equipped' ? 'fg.wornItem' : 'fg.pickedItem')}${this.backBtn()}</div>
-        <div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>${cmp}</div>${delta}${this.ringButton(it)}`;
+        <div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg, this.look)}${this.ringButton(it)}</div>${cmp}</div>${delta}`;
     }
     const items = `${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: `${c.vault.stash.length}/${c.vault.stashSlots}` })]])}
       ${this.bag === 'stash' ? this.stashBuy() : ''}
@@ -302,10 +302,10 @@ export class ForgeScreen {
     return { gear: gear || this.doll(), doll: !gear, items, btns: `<span class="fg-act-l">${left}</span><span class="fg-act-r">${right}</span>` };
   }
 
-  // the hidden set ring (8.5): no word of explanation, only a ring and the set's name
+  // the hidden set ring (8.5): no word of explanation, only a small ring button at the top right of the set piece's card
   ringButton(it) {
     if (!it.set || !canForgeRing(this.ctx, it.set)) return '';
-    return `<div class="fg-ringrow"><button class="fg-btn fg-ringbtn" data-act="forgeRing" data-v="${it.set}">💍 ${esc(tr(this.cfg.sets[it.set].name))}</button></div>`;
+    return `<button class="fg-btn small fg-ringbtn" data-act="forgeRing" data-v="${it.set}">💍 ${esc(tr(this.cfg.sets[it.set].name))}</button>`;
   }
 
   // stash tab: buy one more place (price grows each time)
@@ -322,7 +322,7 @@ export class ForgeScreen {
     for (const k of STAT_KEYS) {
       const d = sa[k] - (sb ? sb[k] : 0);
       if (Math.abs(d) < 1e-9) continue;
-      const txt = formatStat(this.cfg, k, Math.abs(d)).replace('+', '').replace('-', '');
+      const txt = formatStat(this.cfg, this.look, k, Math.abs(d)).replace('+', '').replace('-', '');
       const good = d > 0;
       out.push(`<span class="${good ? 'up' : 'down'}">${good ? '▲' : '▼'} ${txt}</span>`);
     }
@@ -333,7 +333,7 @@ export class ForgeScreen {
     const c = this.ctx, pre = salvagePreview(c, [...this.checked]);
     const f = this.sel != null && this.checked.has(this.sel) ? findItem(c, this.sel) : null;
     const ask = `${picked(c, this.checked, (it) => it.token) ? t('fg.tokenWarn') : ''}${picked(c, this.checked, (it) => it.passOn && !it.token) ? t('fg.passWarn') : ''}${picked(c, this.checked, (it) => it.set) ? t('fg.setWarn') : ''}${t('fg.askSalvage')}`;
-    const gear = f ? `<div class="fg-h">${t('fg.selected', { n: pre.count })}</div><div class="fg-detail"><div class="fg-detail-main">${itemDetail(f.item, this.cfg)}</div></div>` : this.doll();
+    const gear = f ? `<div class="fg-h">${t('fg.selected', { n: pre.count })}</div><div class="fg-detail"><div class="fg-detail-main">${itemDetail(f.item, this.cfg, this.look)}</div></div>` : this.doll();
     const items = `${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: c.vault.stash.length })]])}
       <div class="fg-scroll">${this.grid(this.bagItems(), { check: true })}</div>
       <div class="fg-note">${t('fg.salvageNote')}</div>`;
@@ -347,22 +347,34 @@ export class ForgeScreen {
     return { gear, doll: !f, items, gain, btns };
   }
 
-  // +10: one grade up for gold (legendary is the top)
+  // +10: the [강화] button turns into [승급] (one grade up for gold; legendary is the top)
   gradeUpButton(it) {
     const p = gradeUpPreview(this.ctx, it.id);
-    if (p.reason === 'maxGrade') return `<b class="fg-topgrade">${t('fg.maxGrade')}</b>`;
+    if (p.reason === 'maxGrade') return `<button class="fg-btn promote" disabled>${t('fg.maxGrade')}</button>`;
     const short = p.reason === 'gold' ? `<small class="down">${t('fg.needGold', { n: p.cost - this.ctx.vault.gold })}</small>` : '';
-    return `${short}<button class="fg-btn pri" data-act="gradeUp" ${p.ok ? '' : 'disabled'}>${t('fg.gradeUp', { grade: tr(this.cfg.grades[p.to].label), n: p.cost })}</button>`;
+    return `${short}<button class="fg-btn promote" data-act="gradeUp" ${p.ok ? '' : 'disabled'}>${t('fg.gradeUp', { grade: tr(this.look.grades[p.to].label), n: p.cost })}</button>`;
+  }
+
+  // the left one of the pair: [전승 각인], or [세트 각인] on a legendary +10 of a set part
+  engraveButton(it) {
+    const c = this.ctx;
+    if (it && canEngrave(this.cfg, it)) {
+      const cost = engraveCost(c.econ, it), short = c.vault.gold < cost;
+      return `${short ? `<small class="down">${t('fg.needGold', { n: cost - c.vault.gold })}</small>` : ''}<button class="fg-btn red" data-act="engrave" ${short ? 'disabled' : ''}>${t('fg.engGo', { n: cost })}</button>`;
+    }
+    if (!it || !canLegacyEngrave(it)) return `<button class="fg-btn" disabled>${t('fg.lgGoPlain')}</button>`;
+    const cost = legacyEngraveCost(c.econ, it), short = c.vault.gold < cost;
+    return `<button class="fg-btn" data-act="legacyEngrave" ${short ? 'disabled' : ''}>${t('fg.lgGo', { n: cost })}</button>`;
   }
 
   // the item as it would be at +to: each line at its new value with the gain beside it
   growCard(it, to, caption) {
-    const cfg = this.cfg, d = describeItem(it, cfg), now = itemStats(it, cfg), next = itemStats({ ...it, enhance: to }, cfg);
+    const cfg = this.cfg, d = describeItem(it, cfg, this.look), now = itemStats(it, cfg), next = itemStats({ ...it, enhance: to }, cfg);
     const keys = [...new Set([it.base.stat, ...it.affixes.map((a) => a.stat)])];
     const lines = keys.map((k) => {
-      const int = (cfg.statLabels[k] || [k, 'int'])[1] === 'int';
+      const int = (this.look.statLabels[k] || [k, 'int'])[1] === 'int';
       const gain = int ? Math.round(next[k]) - Math.round(now[k]) : Math.round((next[k] - now[k]) * 1000) / 10;
-      return `<div class="iline fg-grow"><span>${formatStat(cfg, k, next[k])}</span>${gain > 0 ? `<b class="up">+${gain}${int ? '' : '%'}</b>` : ''}</div>`;
+      return `<div class="iline fg-grow"><span>${formatStat(cfg, this.look, k, next[k])}</span>${gain > 0 ? `<b class="up">+${gain}${int ? '' : '%'}</b>` : ''}</div>`;
     }).join('');
     return `<div class="idetail"><div class="fg-cmp-h">${caption}</div><div class="iname" style="color:${d.gradeColor}">${d.name}</div>${lines}${d.effectText ? `<div class="ieffect">${d.effectText}</div>` : ''}</div>`;
   }
@@ -378,10 +390,11 @@ export class ForgeScreen {
     if (!f) {
       return {
         gear: this.doll(), doll: true, items,
-        btns: `<span class="fg-act-l"><span class="fg-stepper"><button disabled>−</button><b>-</b><button disabled>+</button><button disabled>${t('fg.max')}</button></span></span><span class="fg-act-r"><button class="fg-btn pri" disabled>${t('fg.enhance')}</button></span>`,
+        btns: `<span class="fg-act-l"><span class="fg-stepper"><button disabled>−</button><b>-</b><button disabled>+</button><button disabled>${t('fg.max')}</button></span></span><span class="fg-act-r">${this.engraveButton(null)}<button class="fg-btn pri" disabled>${t('fg.enhance')}</button></span>`,
       };
     }
     const it = f.item, pre = enhancePreview(c, it.id, this.tier, this.count), maxed = it.enhance >= e.max;
+    if (canEngrave(this.cfg, it)) return this.setEngraveView(it, items);
     const need = maxed ? 0 : e.need[it.enhance];
     const cur = need ? (it.points / need) * 100 : 100;
     const after = pre.ok ? (pre.to > it.enhance ? 100 : (pre.points / need) * 100) : cur;
@@ -391,68 +404,27 @@ export class ForgeScreen {
         <div class="fg-gauge"><i style="width:${cur}%"></i>${pre.ok ? `<i class="add" style="left:${cur}%;width:${Math.max(0, after - cur)}%"></i>` : ''}</div></div>
       <div class="fg-chips">${[0, 1, 2].map((q) => `<button class="fg-chip${this.tier === q ? ' on' : ''}" data-act="tier" data-v="${q}" ${have[q] ? '' : 'disabled'}>
         <span><span class="pw t${q}"></span>${tierLabel(q)} ${t('fg.count', { n: have[q] })}</span><small>${t('fg.perOne', { n: e.points[q] })}</small></button>`).join('')}</div>
-      <div class="fg-detail">${maxed ? `<div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>`
+      <div class="fg-detail">${maxed ? `<div class="fg-detail-main">${itemDetail(it, this.cfg, this.look)}</div>`
         : this.growCard(it, to, `${t('fg.atLevel', { n: to })}${pre.ok && pre.to > it.enhance ? '' : ` · ${t('fg.needMore')}`}`)}</div>`;
     const right = maxed ? this.gradeUpButton(it)
       : `${pre.reason === 'gold' ? `<small class="down">${t('fg.needGold', { n: pre.gold - c.vault.gold })}</small>` : ''}<button class="fg-btn pri" data-act="enhance" ${pre.ok ? '' : 'disabled'}>${t('fg.enhance')}${pre.gold ? ` · ◆${pre.gold}` : ''}</button>`;
     const btns = `<span class="fg-act-l"><span class="fg-stepper"><button data-act="cnt" data-v="-1">−</button><b>${pre.use || 0}</b><button data-act="cnt" data-v="1">+</button><button data-act="cnt" data-v="99">${t('fg.max')}</button></span></span>
-      <span class="fg-act-r">${right}</span>`;
+      <span class="fg-act-r">${this.engraveButton(it)}${right}</span>`;
     return { gear, doll: false, items, btns };
   }
 
-  // 각인 tab: 전승 각인 (any item, sure to pass down once) or 세트 각인 (the hammer); the mode tabs sit bottom left
-  engModeTabs() {
-    return `<span class="fg-bagtabs">${[['legacy', 'fg.lgTab'], ['set', 'fg.setEngTab']].map(([k, n]) => `<button class="fg-bagtab${this.engMode === k ? ' on' : ''}" data-act="engMode" data-v="${k}">${t(n)}</button>`).join('')}</span>`;
-  }
-
-  engraveView() { return this.engMode === 'set' ? this.setEngraveView() : this.legacyEngraveView(); }
-
-  legacyEngraveView() {
-    const c = this.ctx;
-    if (this.bag !== 'worn' && this.bag !== 'pocket' && this.bag !== 'stash') this.bag = 'worn';
-    const f = this.sel != null ? findItem(c, this.sel) : null, ok = f && canLegacyEngrave(f.item);
-    const items = `${this.bagTabs([['worn', t('where.equipped')], ['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: c.vault.stash.length })]])}
-      <div class="fg-scroll">${this.grid(this.bagItems(), { off: (it) => !canLegacyEngrave(it) })}</div>
-      <div class="fg-note">${t('fg.lgDim')}</div>`;
-    const left = `<span class="fg-act-l">${this.engModeTabs()}</span>`;
-    if (!ok) {
-      return {
-        gear: `${f ? `<div class="fg-warn">${t('fg.lgPick')}</div>` : ''}${this.doll()}`, doll: true, items,
-        btns: `${left}<span class="fg-act-r"><button class="fg-btn pri" disabled>${t('fg.lgGoPlain')}</button></span>`,
-      };
-    }
-    const it = f.item, cost = legacyEngraveCost(c.econ, it), short = c.vault.gold < cost;
-    const gear = `<div class="fg-h">${t('fg.lgTab')}${this.backBtn()}</div>
-      <div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>
-        <div class="fg-engbox"><div class="fg-engrow"><span>${t('fg.engCost')}</span><b class="gold">◆ ${cost}</b></div>
-          <div class="fg-engsub">${t('fg.lgNote')}</div></div></div>`;
-    const btns = `${left}<span class="fg-act-r">${short ? `<small class="down">${t('fg.needGold', { n: cost - c.vault.gold })}</small>` : ''}<button class="fg-btn pri" data-act="legacyEngrave" ${short ? 'disabled' : ''}>${t('fg.lgGo', { n: cost })}</button></span>`;
-    return { gear, doll: false, items, btns };
-  }
-
-  // 세트 각인: a legendary of a set part gets a set name (random) — or breaks into powder
-  setEngraveView() {
+  // 세트 각인 (a legendary +10 of a set part): a set name at random — or it breaks into powder
+  setEngraveView(it, items) {
     const c = this.ctx, ecfg = this.game.config.tuning.engrave;
-    if (this.bag !== 'worn' && this.bag !== 'pocket' && this.bag !== 'stash') this.bag = 'worn';
-    const f = this.sel != null ? findItem(c, this.sel) : null, ok = f && canEngrave(this.cfg, f.item);
-    const items = `${this.bagTabs([['worn', t('where.equipped')], ['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: c.vault.stash.length })]])}
-      <div class="fg-scroll">${this.grid(this.bagItems(), { off: (it) => !canEngrave(this.cfg, it) })}</div>
-      <div class="fg-note">${t('fg.engDim')}</div>`;
-    if (!ok) {
-      return {
-        gear: `${f ? `<div class="fg-warn">${t('fg.engPick')}</div>` : ''}${this.doll()}`, doll: true, items,
-        btns: `<span class="fg-act-l">${this.engModeTabs()}</span><span class="fg-act-r"><button class="fg-btn red" disabled>${t('fg.engGoPlain')}</button></span>`,
-      };
-    }
-    const it = f.item, cost = engraveCost(c.econ, it), base = engraveChance(ecfg, it, 1), short = c.vault.gold < cost;
-    const gear = `<div class="fg-h">${t('fg.tabEngrave')} <small>${t('fg.engNth', { n: (it.engraves || 0) + 1 })}</small>${this.backBtn()}</div>
-      <div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg)}</div>
+    const cost = engraveCost(c.econ, it), base = engraveChance(ecfg, it, 1);
+    const gear = `<div class="fg-h">${t('fg.setEngTab')} <small>${t('fg.engNth', { n: (it.engraves || 0) + 1 })}</small>${this.backBtn()}</div>
+      <div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg, this.look)}</div>
         <div class="fg-engbox"><div class="fg-engrow"><span>${t('fg.engChance')}</span><b>${pct(base)}</b></div>
           <div class="fg-engsub">${t('fg.engHammer', { lo: pct(engraveChance(ecfg, it, 0)), hi: pct(engraveChance(ecfg, it, 3)) })}</div>
           <div class="fg-engrow"><span>${t('fg.engCost')}</span><b class="gold">◆ ${cost}</b></div>
           <div class="fg-engsub">${t('fg.engRandom')}</div><div class="fg-engsub">${t('fg.engPass')}</div><div class="fg-warn">${t(it.token ? 'fg.engTokenSafe' : 'fg.engFail')}</div></div></div>`;
-    const btns = `<span class="fg-act-l">${this.engModeTabs()}</span><span class="fg-act-r">${short ? `<small class="down">${t('fg.needGold', { n: cost - c.vault.gold })}</small>` : ''}<button class="fg-btn red" data-act="engrave" ${short ? 'disabled' : ''}>${t('fg.engGo', { n: cost })}</button></span>`;
-    return { gear, doll: false, items, btns, tint: (1 - base) * ecfg.redTint }; // the likelier the break, the redder the forge
+    const btns = `<span class="fg-act-l"></span><span class="fg-act-r">${this.engraveButton(it)}${this.gradeUpButton(it)}</span>`;
+    return { gear, doll: false, items, btns, tint: (1 - base) * this.game.config.look.engrave.redTint }; // the likelier the break, the redder the forge
   }
 
   startEngrave() {
@@ -460,14 +432,15 @@ export class ForgeScreen {
     if (!f || !canEngrave(this.cfg, f.item) || this.hammer) return;
     const id = f.item.id;
     const h = this.hammer = new HammerGame(this.el, {
-      speeds: hammerSpeeds(ecfg, f.item, this.game.rng), tolerance: ecfg.tolerance,
+      speeds: hammerSpeeds(ecfg, f.item, this.game.rng), tolerance: ecfg.tolerance, overshoot: ecfg.overshoot, pause: ecfg.pause,
+      countStep: this.game.config.look.engrave.countStep,
       onBlow: (good) => this.game.events.emit('hammerBlow', { good }),
       onDone: (hits) => { if (this.hammer === h) this.finishEngrave(id, hits); }, // (left the forge meanwhile: nothing happens)
     });
   }
 
   finishEngrave(id, hits) {
-    const ecfg = this.game.config.tuning.engrave, f = findItem(this.ctx, id), name = f ? describeItem(f.item, this.cfg).name : '';
+    const ecfg = this.game.config.tuning.engrave, f = findItem(this.ctx, id), name = f ? describeItem(f.item, this.cfg, this.look).name : '';
     this.stopHammer();
     const r = engraveItem(this.ctx, ecfg, id, hits, this.game.rng);
     if (!r.ok) { this.render(); return; }
@@ -503,7 +476,7 @@ export class ForgeScreen {
     const pieces = Object.entries(s.pieces).map(([slot, name]) => {
       const o = owners[slot], on = o && o.where === 'equipped', own = o && !on;
       if (own) canWear = true;
-      const label = `${relicIcon(cfg.parts[slot].icon, 22)}<span>${seen[slot] || o ? esc(tr(name)) : '???'}</span><small>${t(on ? 'fg.pieceWorn' : own ? 'fg.pieceOwn' : 'fg.pieceNone')}</small>`;
+      const label = `${relicIcon(this.look.parts[slot].icon, 22)}<span>${seen[slot] || o ? esc(tr(name)) : '???'}</span><small>${t(on ? 'fg.pieceWorn' : own ? 'fg.pieceOwn' : 'fg.pieceNone')}</small>`;
       // an owned piece not worn: tap to wear just that one
       return own ? `<button class="fg-piece seen own" data-act="wearPiece" data-v="${o.item.id}">${label}</button>`
         : `<div class="fg-piece${seen[slot] || on ? ' seen' : ''}${on ? ' on' : ''}">${label}</div>`;
@@ -531,8 +504,7 @@ export class ForgeScreen {
     if (cell && !b) { this.pickCell(Number(cell.dataset.id)); return; }
     if (!b || b.disabled) return;
     const a = b.dataset.act, v = b.dataset.v, c = this.ctx;
-    if (a === 'tab') { this.tab = v; this.sel = null; this.checked.clear(); this.confirm = false; if (v === 'enhance' || v === 'engrave') this.bag = 'worn'; else if (this.bag === 'worn') this.bag = 'pocket'; this.render(); }
-    else if (a === 'engMode') { this.engMode = v; this.render(); }
+    if (a === 'tab') { this.tab = v; this.sel = null; this.checked.clear(); this.confirm = false; if (v === 'enhance') this.bag = 'worn'; else if (this.bag === 'worn') this.bag = 'pocket'; this.render(); }
     else if (a === 'legacyEngrave') { const r = legacyEngraveItem(c, this.sel); if (r.ok) { this.changed('legacyEngrave'); this.flash(t('fg.lgDone'), true); } }
     else if (a === 'engrave') { const f = findItem(c, this.sel); if (f && (f.item.engraves || 0) >= 1) { this.engAsk = true; this.render(); } else this.startEngrave(); }
     else if (a === 'forgeRing') { if (forgeRing(c, v)) { this.sel = null; this.game.events.emit('setRing', { set: v }); this.changed('ring'); } }

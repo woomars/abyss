@@ -1,0 +1,17 @@
+{
+  "_설명": "화면 조각(DOM) 수치: 회상 띠, 엔딩·이야기·출발 장면, 특수기 버튼, 글 롤링, 세로 화면 돌리기.",
+  "_chronicle": "회상 띠: 사건 사이 간격(px), 가만히 둘 때 걷는 속도(사건/초), 스크롤 멈춘 뒤 걷기 시작하기까지(초)",
+  "chronicle": { "spacing": 150, "walk": 0.35, "idle": 0.9 },
+  "_ending": "엔딩 글 롤링: speed = 초당 화면 높이의 몇 배만큼 올라가는지, fast = 건너뛰기 때 몇 배 빠르게",
+  "ending": { "speed": 0.042, "fast": 9 },
+  "_story": "시작 이야기 글 롤링: speed = 초당 올라가는 px (전체 약 1분)",
+  "story": { "speed": 15 },
+  "_departure": "새 주기 출발 장면: length = 저절로 넘어가기까지 초",
+  "departure": { "length": 5.5 },
+  "_skillButtons": "특수기 버튼: aimDeadzone = 조준으로 치는 최소 끌기 거리(px). 그냥 누르고 떼면 조준 안 함",
+  "skillButtons": { "aimDeadzone": 30 },
+  "_scroller": "손으로 미는 글 롤링: holdGap = 이 초 동안 안 움직이다 떼면 잡고 있던 것(던짐 아님), still = 이 px 보다 덜 움직이면 스와이프가 아님, decay = 던진 뒤 잦아드는 속도(1/초)",
+  "scroller": { "holdGap": 0.1, "still": 8, "decay": 4 },
+  "_orientation": "세로 화면 돌리기: gravitySwitch = 기기 x 방향 중력(m/s²)이 이 값을 넘으면 그쪽으로 돌림",
+  "orientation": { "gravitySwitch": 6 }
+}

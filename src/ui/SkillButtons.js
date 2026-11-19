@@ -9,10 +9,10 @@ const ICONS = {
   spin: '⟳', rushStrike: '⇧',
   bladeWave: '<svg class="wv-ic" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#9fd8ff" stroke-width="1.6" stroke-linejoin="round"><path d="M2.0 25.0 L10.0 25.0 Q9.6 18.6 3.2 16.2 Q4.8 21.0 2.0 25.0 Z"/><path d="M8.0 25.0 L20.0 25.0 Q19.4 15.4 9.8 11.8 Q12.2 19.0 8.0 25.0 Z"/><path d="M14.0 25.0 L31.0 25.0 Q30.1 11.4 16.6 6.3 Q19.9 16.5 14.0 25.0 Z"/></g></svg>', // 질풍 베기: three shark-fin outlines, small to large — a gale in flight (still image)
 };
-const AIM_DEADZONE = 30; // px of drag before the aim counts (a plain press-and-release never aims)
 
 export class SkillButtons {
-  constructor(root, skills, { toLocal = (x, y) => ({ x, y }) } = {}) {
+  constructor(root, skills, { toLocal = (x, y) => ({ x, y }), cfg } = {}) {
+    this.cfg = cfg; // look.ui.skillButtons: aimDeadzone = px of drag before the aim counts (a plain press-and-release never aims)
     this.skills = skills;
     this.toLocal = toLocal;
     this.root = root;
@@ -66,7 +66,7 @@ export class SkillButtons {
       const p = this.toLocal(e.clientX, e.clientY);
       const dx = p.x - a.center.x, dy = p.y - a.center.y;
       const jump = this.skills.cfg.slots[i] === 'rushStrike';
-      if (Math.hypot(dx, dy) < AIM_DEADZONE) { a.dir = null; if (jump) this.skills.setAim(i, null); else this.skills.clearAim(); return; }
+      if (Math.hypot(dx, dy) < this.cfg.aimDeadzone) { a.dir = null; if (jump) this.skills.setAim(i, null); else this.skills.clearAim(); return; }
       a.dir = { x: dx, y: dy, len: Math.hypot(dx, dy) }; // the jump reads how far the finger went
       this.skills.setAim(i, a.dir);
     });

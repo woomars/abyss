@@ -1,0 +1,916 @@
+import { Arena } from '../world/Arena.js';
+import { Player } from '../player/Player.js';
+import { StrokeTracker } from '../combat/StrokeTracker.js';
+import { MovementController } from '../player/MovementController.js';
+import { Camera } from '../world/Camera.js';
+import { EnemyManager } from '../enemies/EnemyManager.js';
+import { CombatController } from '../combat/CombatController.js';
+import { HitStop } from '../combat/HitStop.js';
+import { SkillSystem } from '../combat/SkillSystem.js';
+import { Combo } from '../combat/Combo.js';
+import { Dungeon } from '../world/Dungeon.js';
+import { Hazards } from '../world/Hazards.js';
+import { Relics } from '../progress/Relics.js';
+import { zeroStats, addStats } from './Stats.js';
+import { Loot } from '../progress/Loot.js';
+import { Loadout } from '../items/Loadout.js';
+import { Vault } from '../items/Vault.js';
+import { resolveDeath, applyToken } from '../items/Forge.js';
+import { cycleKeepers, founderGift } from '../items/secrets.js';
+import { skillUps, owedPicks, rollSkillCards } from '../combat/SkillGrowth.js';
+import { installMedals, emptyRunStats, backfillMedals, noteEssence, checkTrophies, bossRoster } from '../progress/Medals.js';
+import { addXp, xpForKill, levelStats } from './Progress.js';
+import { succeed, randomGiven } from './Family.js';
+import { newCycle } from './Cycle.js';
+import { floorInfo } from './floorPlan.js';
+import { installGearEffects, evades, abyssRingBonus } from '../items/effects.js';
+
+// Assembles all game systems. No DOM access here.
+export class Game {
+  constructor(config, { events, rng }) {
+    this.config = config;
+    this.events = events;
+    this.rng = rng;
+    this.paused = false;
+    this.time = 0;
+    this.arena = new Arena(config.movement.arena);
+    this.player = new Player(config.movement, this.center());
+    this.strokes = new StrokeTracker(config.input, events);
+    this.movement = new MovementController(config.movement, this.player, this.arena, events);
+    this.enemies = new EnemyManager(config.enemies, this.arena, rng);
+    this.camera = new Camera(config.camera);
+    this.camera.snapTo(this.player.pos);
+    // treasures picked this run (treasure-room cards); their bonuses feed combat, skills, movement
+    this.relics = new Relics(config.relics, () => this.vault.essence);
+    this.bonusStats = zeroStats(); // cards + equipment, rebuilt by refreshBonus()
+    const bonus = () => this.currentBonus();
+    this.movement.speedMul = () => 1 + this.bonusStats.speed;
+    this.offer = null; // cards on screen: the world waits until one is picked
+    this.combat = new CombatController(config.combat, {
+      player: this.player, movement: this.movement, enemies: this.enemies, camera: this.camera, events, rng,
+      viewRect: () => this.viewRect(), bonus,
+    });
+    this.skills = new SkillSystem(config.skills, {
+      player: this.player, movement: this.movement, enemies: this.enemies, combat: this.combat,
+      combatCfg: config.combat, events, rng, arena: this.arena, bonus,
+      ups: () => this.skillGrowth || {},
+      gear: () => this.gearEffects, gearCfg: () => this.config.items.effects,
+      stopCost: () => Math.max(this.config.feedback.hitStopMs.strong || 0, this.config.feedback.hitStopMs.crit || 0) / 1000,
+    });
+    this.hitStop = new HitStop(config.feedback);
+    this.combo = new Combo(config.feedback);
+    this.pendingStroke = null;
+    events.on('stroke', (s) => this.queueStroke(s));
+    this.pendingFlick = null;
+    events.on('flick', (f) => { this.pendingFlick = { x: f.dir.x, y: f.dir.y }; });
+    events.on('hit', (h) => this.onHit(h));
+    this.stats = emptyRunStats();
+    // equipment on the floor and this run's pocket
+    // the save slot in play (main attaches the real one); worn gear; the forge screen when open
+    this.vault = new Vault({ family: '', given: '' });
+    this.loadout = new Loadout(config.items);
+    this.gearEffects = new Set();
+    this.gearSets = {};
+    this.forge = null; // { start: bool } while the forge screen is open — the world waits
+    this.tokenScene = false; // the legacy-token scene is open — the world waits
+    this.finalAsk = null; // floor 100 lost: the founder's question is up (the world waits)
+    this.ropeOffer = null; // the rope's floor list is up (10.4) — the world waits
+    this.founderDeath = null; // the founder's death scene (11.2): { boss, pos, lines, t, line, phase }
+    this.finale = null;   // floor 100 won: { family, father, child, sex, item } for the ending
+    this.ending = false;  // the ending is playing
+    this.tokenFloors = new Set(); // floors that already gave a token this run
+    this.loot = new Loot(config.items, this);
+    events.on('kill', (e) => { this.loot.onKill(e.enemy); this.gainXp(e.enemy); this.splitSlime(e.enemy); });
+    events.on('roomCleared', () => { this.loot.magnet(); this.offerSkillGrowth(); });
+    events.on('kill', (e) => {
+      // hp is precious: lifesteal only works on mid-boss-class kills and up
+      if (this.bonusStats.lifesteal && !this.over && e.enemy && e.enemy.isBoss) this.healFlat(this.bonusStats.lifesteal);
+      this.stats.kills += 1;
+    });
+    events.on('hit', () => { this.stats.bestCombo = Math.max(this.stats.bestCombo, this.combo.count); });
+    // player health: enemy counterattacks hurt, a short invulnerability follows; it only comes back from cards
+    this.over = false;
+    this.resetHealth();
+    this.enemies.onAttack = (e, riposte = false) => {
+      const r = this.config.enemies.riposte;
+      this.damagePlayer(e.attack * (riposte && r ? r.damageMul : 1), e, { riposte });
+    };
+    this.enemies.onStrike = (e, hit, riposte = false) => events.emit('enemyStrike', { enemy: e, pos: { x: e.pos.x, y: e.pos.y }, hit, riposte });
+    // enemy attacks in the world (arrows, telegraphed areas)
+    this.hazards = new Hazards(this.arena, config.enemies);
+    this.hazards.onHit = (dmg, h) => this.damagePlayer(dmg, { pos: { x: h.x, y: h.y } });
+    this.enemies.game = this;
+    events.on('floorStart', (e) => {
+      // floor 100: whole again on arrival, and the moment is kept — closing the game here is no death
+      if (e.final && this.mode === 'dungeon') {
+        this.player.hp = this.player.maxHp;
+        this.player.invuln = 0;
+      }
+      if (this.vault.state !== 'run') return;
+      this.vault.lastFloor = e.floor;
+      if (e.final) this.vault.run = { ...this.snapshotRun(), final: true };
+      this.saveVault();
+    });
+    // practice arena by default (endless enemies); startRun() switches to the dungeon
+    this.mode = 'practice';
+    this.dungeon = new Dungeon(config.dungeon, this);
+    installGearEffects(this);
+    installMedals(this);
+  }
+
+  // begin a dungeon run at the given floor (debug can start deeper)
+  startRun(floor = 1) {
+    this.mode = 'dungeon';
+    this.enemies.autoSpawn = false;
+    this.resetRun();
+    this.dungeon.start(floor);
+  }
+
+  startPractice() {
+    this.mode = 'practice';
+    this.enemies.autoSpawn = true;
+    this.arena.clearTemps();
+    this.arena.cfg = this.config.movement.arena;
+    this.camera.setBounds(null);
+    this.dungeon.reset();
+    this.resetRun();
+    this.player.reset(this.center());
+    this.camera.snapTo(this.player.pos);
+  }
+
+  // place the player at a new room's start (called by Dungeon behind the fade)
+  loadRoom(room) {
+    this.allies = [];
+    this.fields = [];
+    this.enemies.clear();
+    this.loot.clearGround();
+    this.hazards.clear();
+    this.arena.clearTemps();
+    this.arena.cfg = room.arena;
+    this.player.reset(room.start);
+    this.movement.burstTime = Infinity;
+    this.combat.reset();
+    this.skills.cancelActive();
+    this.combo.reset();
+    this.events.emit('roomReset');
+    this.camera.setMode('normal');
+    this.camera.setBounds({ w: room.arena.width, h: room.arena.height });
+    this.camera.snapTo(this.camera.clampPoint(this.player.pos));
+    this.pendingStroke = null;
+    this.pendingFlick = null;
+  }
+
+  healPlayer(frac) {
+    const p = this.player;
+    p.hp = Math.min(p.maxHp, p.hp + p.maxHp * frac);
+  }
+
+  // sum of every bonus source; call whenever cards or equipment change
+  refreshBonus() {
+    const s = addStats(zeroStats(), this.relics.stats);
+    addStats(s, this.vault.essence.stats); // essences handed down the line
+    this.skillGrowth = skillUps(this.config.skills.growth, this.vault.skillUps);
+    const sum = this.loadout.summary();
+    addStats(s, sum.stats);
+    addStats(s, levelStats(this.config.progress, this.vault.progress.level));
+    this.gearEffects = sum.effects;
+    this.gearSets = sum.sets;
+    if (sum.effects.has('comboRise')) s.comboStep += this.config.items.effects.comboRise.comboStep; // 광란의 목걸이
+    this.bonusStats = s;
+  }
+
+  // max hp follows the bonus; gaining max hp also gains that much current hp
+  // keepMissing (forge): the same hp stays missing, so swapping gear never heals
+  applyMaxHp(keepMissing = false) {
+    const p = this.player, max = this.config.combat.player.maxHp + this.bonusStats.maxHp;
+    if (keepMissing) p.hp = Math.max(1, max - (p.maxHp - p.hp));
+    else if (max > p.maxHp) p.hp += max - p.maxHp;
+    p.maxHp = max;
+    p.hp = Math.min(p.hp, max);
+  }
+
+  // a splitting slime falls in two, twice (9.7): smaller, weaker, quicker, and worth nothing
+  splitSlime(enemy) {
+    const sm = this.config.dungeon.mobs && this.config.dungeon.mobs.slime;
+    if (!sm || !enemy || !enemy.tcfg || enemy.tcfg.ai !== 'slime' || (enemy.mods.split || 0) >= sm.splits) return;
+    const m = enemy.mods, gen = (m.split || 0) + 1;
+    for (const side of [-1, 1]) {
+      const pos = { x: enemy.pos.x + side * sm.spread, y: enemy.pos.y + side * sm.spread * 0.3 };
+      const kid = this.enemies.spawnAt('slime', pos, { ...m, hp: m.hp * sm.shrink, attack: m.attack * sm.shrink, size: (m.size || 1) * sm.shrink, speed: m.speed * sm.speedUp, split: gen, noReward: true });
+      kid.aggressive = true; // its parent was struck down: the halves come at the hero
+    }
+    this.events.emit('slimeSplit', { pos: { x: enemy.pos.x, y: enemy.pos.y }, radius: enemy.radius });
+  }
+
+  gainXp(enemy) {
+    if (this.mode !== 'dungeon' || !enemy || this.over || (enemy.mods && enemy.mods.noReward)) return;
+    const cfg = this.config.progress;
+    const n = addXp(cfg, this.vault.progress, xpForKill(cfg, enemy, this.dungeon.floor));
+    if (n > 0) {
+      this.refreshBonus();
+      this.applyMaxHp();
+      if (cfg.levelUpHeal) this.healPlayer(cfg.levelUpHeal * n); // part of the hp comes back, never all of it
+      this.events.emit('levelUp', { level: this.vault.progress.level, pos: { x: this.player.pos.x, y: this.player.pos.y } });
+      if (this.vault.state === 'run') this.saveVault(); // levels survive even a closed game
+    }
+  }
+
+  // put a legacy token on an item (from the scene); returns the item or null
+  useToken(id) {
+    const r = applyToken(this.forgeCtx(), id);
+    if (!r.ok) return null;
+    this.saveVault();
+    this.events.emit('tokenApplied', { item: r.item });
+    if (this.finale) this.finale.item = r.item.name; // told in the ending's last line
+    return r.item;
+  }
+
+  closeTokenScene() {
+    this.tokenScene = false;
+    this.saveVault();
+    if (this.finale && !this.finale.shown) this.startEnding();
+  }
+
+  // ---- floor 100: the founder, the ending and the next cycle ----
+  // who waits on floor 100: the family's first knight in the records, or the hero's own shadow
+  founderOf() {
+    const l = this.vault.lineage, h = l.history && l.history[0];
+    return h ? { family: h.family || l.family, given: h.given, generation: h.generation || 1, shadow: false }
+      : { family: l.family, given: l.given, generation: l.generation, shadow: true };
+  }
+
+  // the hero fell to the founder: no death yet — the founder asks whether to give up or try again
+  askFinal() {
+    const d = this.dungeon;
+    this.finalAsk = { founder: d.boss && d.boss.founder ? d.boss.founder : this.founderOf() };
+    this.combat.cancel();
+    this.skills.cancelActive();
+    this.hazards.clear();
+    this.events.emit('finalDefeat', this.finalAsk);
+  }
+
+  retryFinal() {
+    if (!this.finalAsk) return;
+    this.finalAsk = null;
+    this.combat.reset();
+    this.player.hp = this.player.maxHp;
+    this.player.invuln = 0;
+    this.dungeon.retryFinal();
+  }
+
+  // giving up on floor 100 is a death like any other
+  giveUpFinal() {
+    if (!this.finalAsk) return;
+    this.finalAsk = null;
+    this.player.hp = 0;
+    this.die();
+  }
+
+  // the founder falls (11.2): he kneels, his last words pass over his head one by one (the clue changes with
+  // how many times he has fallen), he fades into light, and his gift drops — then the legacy token
+  founderFalls(boss) {
+    const words = this.config.tuning.story.founderWords, n = (this.vault.chronicles || []).length;
+    this.combat.cancel();
+    boss.alive = false; // only the kneeling founder of the scene is drawn
+    if (this.vault.state === 'run' && this.vault.run) { this.vault.run.fell = true; this.saveVault(); } // closed during the scene: the win is kept
+    this.founderDeath = { boss, pos: { x: boss.pos.x, y: boss.pos.y }, lines: words[Math.min(n, words.length - 1)], t: 0, line: -1, phase: 'kneel' };
+    this.events.emit('founderDeath', { pos: { ...this.founderDeath.pos }, lines: this.founderDeath.lines });
+  }
+
+  // a tap: the next line (or out of the kneel)
+  founderSkip() {
+    const d = this.founderDeath, c = this.config.tuning.founder.death;
+    if (!d || !c.skippable) return;
+    if (d.phase === 'kneel') { d.phase = 'words'; d.line = 0; d.t = 0; }
+    else if (d.phase === 'words') { d.line += 1; d.t = 0; if (d.line >= d.lines.length) { d.phase = 'fade'; d.t = 0; } }
+  }
+
+  stepFounderDeath(dt) {
+    const d = this.founderDeath, c = this.config.tuning.founder.death;
+    d.t += dt;
+    if (d.phase === 'kneel' && d.t >= c.kneel) { d.phase = 'words'; d.line = 0; d.t = 0; }
+    else if (d.phase === 'words' && d.t >= c.lineTime + c.lineGap) { d.line += 1; d.t = 0; if (d.line >= d.lines.length) { d.phase = 'fade'; d.t = 0; } }
+    else if (d.phase === 'fade' && d.t >= c.fade) {
+      this.founderDeath = null;
+      const item = founderGift(this.forgeCtx(), this.rng, this.dungeon.floor);
+      this.events.emit('founderGift', { item, pos: { ...d.pos } });
+      this.finalVictory();
+    }
+    this.combo.update(dt);
+  }
+
+  // the founder falls: the child is named now (the ending tells it), then the legacy token scene
+  finalVictory() {
+    const l = this.vault.lineage, sex = this.rng() < 0.5 ? 'son' : 'daughter';
+    this.finale = {
+      family: l.family, father: l.given, generation: l.generation, sex, heroSex: l.sex || null,
+      child: randomGiven(this.config.names, this.rng, l.given, sex), item: null, floor: this.dungeon.floor, at: Date.now(),
+    };
+    if (this.vault.state === 'run' && this.vault.run) this.vault.run.won = this.finale; // closing now goes straight to the ending
+    this.vault.tokens += 1;
+    this.tokenScene = true;
+    this.combat.cancel();
+    this.saveVault();
+    this.events.emit('finalVictory', { finale: this.finale });
+    this.events.emit('legacyToken', { floor: this.dungeon.floor, tokens: this.vault.tokens, final: true });
+  }
+
+  startEnding() {
+    const f = this.finale;
+    f.shown = true;
+    if (!f.item) { const w = this.loadout.slots.weapon; f.item = w ? w.name : null; } // no token put on: the sword he carried
+    this.ending = true;
+    this.saveVault();
+    this.events.emit('endingStart', { ...f });
+  }
+
+  // a run saved after the founder fell (the game was closed during the token scene or the ending)
+  resumeFinale(run) {
+    this.enterLimbo();
+    this.loot.pocket.push(...(run.pocket || [])); // what he carried (set rings, token gear)
+    this.finale = { ...run.won, shown: false };
+    this.dungeon.floor = run.floor;
+    this.startEnding();
+  }
+
+  // the ending is over: the child starts the next cycle as the first of a new line
+  startNewCycle() {
+    const f = this.finale, l = this.vault.lineage;
+    // only the founder's gifts, legacy-token gear and set rings go on (11.3); gold stays, the rest goes
+    const lo = this.loadout, v = this.vault;
+    for (const s of Object.keys(lo.slots)) if (lo.slots[s] && !cycleKeepers([lo.slots[s]]).length) lo.slots[s] = null;
+    const bag = cycleKeepers([...this.loot.pocket, ...v.stash, ...(v.carry || [])]);
+    this.loot.pocket.length = 0;
+    v.stash.splice(0, v.stash.length, ...bag);
+    v.stashSlots = this.config.tuning.economy.stash.startSlots;
+    v.powder = [0, 0, 0];
+    const survived = [...lo.items(), ...bag];
+    const chronicle = newCycle(this.vault, f, { survived: survived.map((i) => i.name) });
+    this.finale = null;
+    this.ending = false;
+    this.over = false;
+    this.refreshBonus();
+    this.resetHealth();
+    this.saveVault();
+    this.events.emit('newCycle', { chronicle, lineage: { ...this.vault.lineage } });
+    return chronicle;
+  }
+
+  // a floor-100 run saved on arrival: back into the founder's room, whole
+  resumeFinal(run) {
+    this.mode = 'dungeon';
+    this.enemies.autoSpawn = false;
+    this.resetRun();
+    const d = this.dungeon;
+    d.reset();
+    d.floor = run.floor; d.startFloor = run.startFloor;
+    d.info = floorInfo(run.floor, d.cfg);
+    this.loot.pocket.push(...(run.pocket || []));
+    Object.assign(this.relics.owned, run.relics.owned);
+    Object.assign(this.relics.stats, run.relics.stats);
+    Object.assign(this.stats, run.stats);
+    this.refreshBonus();
+    this.resetHealth();
+    this.vault.state = 'run';
+    d.enterRoom('boss');
+    if (run.fell) { // closed during his last words: straight on to the gift and the legacy token
+      d.boss.alive = false;
+      d.cleared = true;
+      const item = founderGift(this.forgeCtx(), this.rng, d.floor);
+      this.events.emit('founderGift', { item, pos: { x: d.boss.pos.x, y: d.boss.pos.y } });
+      this.finalVictory();
+    }
+  }
+
+  // ---- save slot, forge and the family line ----
+  attachVault(vault) {
+    this.vault = vault;
+    const st = this.config.tuning && this.config.tuning.economy && this.config.tuning.economy.stash;
+    if (st) vault.stashSlots = Math.max(vault.stashSlots, st.startSlots); // the free places every family has
+    if (this.config.medals) {
+      backfillMedals(vault, this.config.medals);
+      checkTrophies(vault, this.config.medals, { roster: bossRoster(this.config.dungeon, this.config.enemies) }); // older families: what they already reached
+    }
+    this.loadout = Loadout.fromJSON(vault.equipped, this.config.items);
+    this.refreshBonus();
+    this.resetHealth();
+  }
+
+  // put a new item on at once; whatever it replaces goes into the pocket (debug item grant)
+  wearNew(item) {
+    const old = this.loadout.equip(item);
+    if (old) this.loot.pocket.push(old);
+    this.vault.markSeen(item);
+    this.refreshBonus();
+    this.applyMaxHp(true);
+    if (this.vault.state !== 'idle' || this.forge) this.saveVault();
+    return old;
+  }
+
+  forgeCtx() { return { cfg: this.config.items, econ: this.config.tuning.economy, rng: this.rng, loadout: this.loadout, pocket: this.loot.pocket, vault: this.vault }; }
+
+  saveVault() {
+    this.vault.equipped = this.loadout.toJSON();
+    if (this.vault.state === 'rest') this.vault.run = this.snapshotRun();
+    if (this.vault.state === 'run') this.vault.runStats = JSON.parse(JSON.stringify(this.stats));
+    if (this.forge && this.forge.start) this.vault.carry = this.loot.pocket.slice();
+    this.events.emit('vaultChanged', { vault: this.vault });
+  }
+
+  // after any forge action: stats, hp and the save follow the new gear
+  forgeChanged() {
+    const before = { ...this.gearSets };
+    this.refreshBonus();
+    this.applyMaxHp(true);
+    for (const [id, n] of Object.entries(this.gearSets)) {
+      const total = Object.keys(this.config.items.sets[id].pieces).length;
+      if (n >= total && (before[id] || 0) < total) this.events.emit('setComplete', { id, name: this.config.items.sets[id].name });
+    }
+    this.saveVault();
+  }
+
+  // between runs (heir screen): no practice enemies, nothing moving
+  enterLimbo() {
+    this.mode = 'dungeon';
+    this.enemies.autoSpawn = false;
+    this.resetRun();
+    this.dungeon.reset();
+  }
+
+  // any gear to manage before setting out (worn, stashed or set aside)
+  hasGear() { return this.loadout.items().length > 0 || this.vault.stash.length > 0 || this.vault.carry.length > 0; }
+
+  // start a run: through the start forge when there is gear to manage, else straight to floor 1
+  beginRun() {
+    if (this.hasGear()) { this.openStartForge(); return true; }
+    this.openStartForge({ silent: true });
+    this.departForge();
+    return false;
+  }
+
+  // the forge before floor 1 (new hero or a new run)
+  openStartForge({ silent = false } = {}) {
+    this.mode = 'dungeon';
+    this.enemies.autoSpawn = false;
+    this.resetRun();
+    this.dungeon.reset();
+    this.loot.pocket.push(...this.vault.carry);
+    this.forge = { start: true };
+    this.vault.state = 'idle';
+    this.vault.run = null;
+    this.saveVault();
+    if (!silent) this.events.emit('forgeOpen', { start: true, floor: 0 });
+  }
+
+  // the forge after a boss / floor 15 (called by Dungeon): the run is saved whole while resting here
+  openForge() {
+    this.forge = { start: false };
+    this.combat.reset();
+    this.hazards.clear();
+    this.vault.state = 'rest';
+    this.saveVault();
+    this.events.emit('forgeOpen', { start: false, floor: this.dungeon.floor });
+  }
+
+  departForge() {
+    const start = this.forge && this.forge.start;
+    this.forge = null;
+    this.vault.state = 'run';
+    this.vault.run = null;
+    if (start) {
+      const pocket = this.loot.pocket.slice(); // what was set aside at the start forge comes along
+      this.vault.lastFloor = 1;
+      this.vault.carry = [];
+      this.saveVault();
+      this.startRun(1);
+      this.loot.pocket.push(...pocket);
+    } else {
+      this.vault.lastFloor = this.dungeon.floor + 1;
+      this.saveVault();
+      this.dungeon.leaveForge();
+    }
+  }
+
+  snapshotRun() {
+    const d = this.dungeon;
+    return {
+      floor: d.floor, startFloor: d.startFloor || 1, hp: this.player.hp, stageTrack: d.stageTrack, stageCycle: d.stageCycle,
+      pocket: this.loot.pocket.slice(), relics: { owned: { ...this.relics.owned }, stats: { ...this.relics.stats } },
+      stats: JSON.parse(JSON.stringify(this.stats)),
+      // what the run remembers: boss types met this cycle, the last boss per tier, the timed-wave clock
+      memory: {
+        ...JSON.parse(JSON.stringify(d.entryMemory || { cycleTypes: d.cycleTypes, lastBoss: d.lastBoss })), // as when this floor began
+        waveTimes: d.waveTimes.slice(), lastInterval: d.lastInterval,
+        bossTypes: d.roomKind === 'boss' && d.bosses.length ? d.bosses.map((b) => b.type) : null,
+      },
+    };
+  }
+
+  // put a saved run's memory back into the dungeon (saves from before stage 5 have none)
+  restoreMemory(snap) {
+    const d = this.dungeon, m = snap.memory;
+    if (!m) return;
+    if (m.cycleTypes) d.cycleTypes = { ...m.cycleTypes, pairs: m.cycleTypes.pairs || [] };
+    if (m.lastBoss) d.lastBoss = { ...m.lastBoss };
+    if (Array.isArray(m.waveTimes)) d.waveTimes = m.waveTimes.slice();
+    if (Number.isFinite(m.lastInterval)) d.lastInterval = m.lastInterval;
+    if (Array.isArray(m.bossTypes)) d.forceList = m.bossTypes.slice();
+  }
+
+  // Ariadne's rope: the list from the warp zone; a pick goes to that floor's start, cancel stays
+  openRope(floors, current = this.dungeon.floor) {
+    this.ropeOffer = { floors: floors.slice(), current };
+    this.events.emit('ropeOffer', { floors: floors.slice(), current });
+  }
+
+  chooseRope(floor) {
+    if (!this.ropeOffer) return;
+    this.ropeOffer = null;
+    this.dungeon.warpTo(floor);
+  }
+
+  cancelRope() { this.ropeOffer = null; }
+
+  // [저장하고 나가기] (10.1): in the middle of a dungeon fight (not floor 100, saved on arrival anyway)
+  canSaveNow() {
+    const d = this.dungeon;
+    return this.mode === 'dungeon' && !this.over && !!this.vault && this.vault.state === 'run' && !d.rush && !d.isFinal
+      && (d.roomKind === 'combat' || d.roomKind === 'boss') && d.startFloor !== -1 && !this.ropeOffer && !d.cleared && d.state !== 'fadeOut';
+  }
+
+  // a checkpoint at the start of every dungeon floor (and before the next floor, at a treasure room):
+  // a game closed mid-fight comes back there — what was found on that floor is not kept
+  checkpoint(nextFloor = null) {
+    const d = this.dungeon, v = this.vault;
+    if (this.mode !== 'dungeon' || !v || v.state !== 'run' || d.rush || d.startFloor === -1 || d.isFinal) return;
+    const snap = this.snapshotRun();
+    if (nextFloor != null) { // between floors: the memory as it is now, the next floor's start
+      snap.floor = nextFloor;
+      snap.memory = { ...snap.memory, cycleTypes: JSON.parse(JSON.stringify(d.cycleTypes)), lastBoss: { ...d.lastBoss }, bossTypes: null };
+    }
+    v.run = { ...snap, auto: true };
+    this.saveVault();
+  }
+
+  saveAndQuit() {
+    if (!this.canSaveNow()) return false;
+    const start = this.vault.run && this.vault.run.auto ? this.vault.run : this.snapshotRun(); // back to the floor's start
+    this.vault.run = { ...start, auto: false, saved: true };
+    this.saveVault();
+    this.enterLimbo();
+    return true;
+  }
+
+  // continue a run saved with [저장하고 나가기]: the same knight, from the start of that floor (once)
+  resumeSaved(run) {
+    this.mode = 'dungeon';
+    this.enemies.autoSpawn = false;
+    this.resetRun();
+    const d = this.dungeon;
+    d.reset();
+    d.floor = run.floor; d.startFloor = run.startFloor;
+    d.stageTrack = run.stageTrack != null ? run.stageTrack : null; d.stageCycle = run.stageCycle != null ? run.stageCycle : null;
+    d.info = floorInfo(run.floor, d.cfg);
+    this.restoreMemory(run);
+    this.loot.pocket.push(...(run.pocket || []));
+    Object.assign(this.relics.owned, run.relics.owned);
+    Object.assign(this.relics.stats, run.relics.stats);
+    Object.assign(this.stats, run.stats);
+    this.refreshBonus();
+    this.resetHealth();
+    this.player.hp = Math.min(this.player.maxHp, run.hp);
+    this.vault.state = 'run';
+    this.vault.run = null; // from here a closed game is a death again
+    this.saveVault();
+    d.enterRoom(d.info.kind);
+  }
+
+  // reopen a run saved while resting at a forge
+  restoreRun(snap) {
+    this.mode = 'dungeon';
+    this.enemies.autoSpawn = false;
+    this.resetRun();
+    const d = this.dungeon;
+    d.reset();
+    d.floor = snap.floor; d.startFloor = snap.startFloor;
+    d.stageTrack = snap.stageTrack != null ? snap.stageTrack : null; d.stageCycle = snap.stageCycle != null ? snap.stageCycle : null; // the cycle keeps its track
+    d.info = floorInfo(snap.floor, d.cfg);
+    this.restoreMemory(snap);
+    d.roomKind = 'forge'; d.state = 'forge'; d.fade = 1;
+    this.loot.pocket.push(...snap.pocket);
+    Object.assign(this.relics.owned, snap.relics.owned);
+    Object.assign(this.relics.stats, snap.relics.stats);
+    Object.assign(this.stats, snap.stats);
+    this.refreshBonus();
+    this.resetHealth();
+    this.player.hp = Math.min(this.player.maxHp, snap.hp);
+    this.forge = { start: false };
+    this.events.emit('forgeOpen', { start: false, floor: snap.floor, resumed: true });
+  }
+
+  // the hero fell (or the run was cut short): keep what survives, pass the line to the heir
+  endRunByDeath(floor = this.dungeon.floor) {
+    const l = this.vault.lineage;
+    const record = {
+      given: l.given, family: l.family, generation: l.generation, sex: l.sex || null, level: this.vault.progress.level,
+      floor: floor || this.vault.lastFloor || 1, kills: this.stats.kills, bestCombo: this.stats.bestCombo,
+      medals: (this.stats.medals || []).slice(), bosses: JSON.parse(JSON.stringify(this.stats.bosses || {})),
+      killer: this.stats.killer || null, at: Date.now(), essences: JSON.parse(JSON.stringify(this.stats.essences || {})),
+    };
+    const { survived, lost } = resolveDeath(this.forgeCtx(), this.rng, record);
+    record.survived = survived.map((i) => i.name);
+    record.lost = lost.length;
+    const heir = succeed(this.vault, this.config.names, this.rng, record, this.config.progress.historyMax);
+    this.vault.state = 'idle';
+    this.vault.run = null;
+    this.vault.lastFloor = 0;
+    this.vault.carry = [];
+    this.vault.runStats = null;
+    // the new generation may reach a family milestone (counted from the records only)
+    if (this.config.medals) {
+      const got = checkTrophies(this.vault, this.config.medals, { roster: bossRoster(this.config.dungeon, this.config.enemies) }, record.floor);
+      for (const tr of got) this.events.emit('trophy', { trophy: tr, heir: true });
+      this.lastTrophies = got;
+    }
+    this.refreshBonus();
+    this.saveVault();
+    const trophies = this.lastTrophies || [];
+    this.lastTrophies = null;
+    return { record, heir, survived, lost, trophies };
+  }
+
+  // the bonus read by combat and skills at this moment (effects that depend on state adjust it)
+  // combo multiplier: each combo step adds `step` (+ comboStep from cards/gear), counted up to `cap`
+  // the multiplier rises one step every `every` combo, counted up to `cap`
+  comboMult() {
+    const c = this.config.combat.combo;
+    if (!c) return 1;
+    const steps = Math.floor(Math.min(this.combo.count, c.cap) / (c.every || 1));
+    return 1 + steps * (c.step + this.bonusStats.comboStep);
+  }
+
+  currentBonus() {
+    const extra = abyssRingBonus(this), m = this.comboMult();
+    if (extra <= 0 && m === 1) return this.bonusStats;
+    // damage is (1 + damage) x combo multiplier
+    return { ...this.bonusStats, damage: (1 + this.bonusStats.damage + extra) * m - 1 };
+  }
+
+  allocItemId() { return this.vault.allocId(); }
+
+  healFlat(amount) {
+    const p = this.player;
+    p.hp = Math.min(p.maxHp, p.hp + amount);
+  }
+
+  // show treasure cards; the world pauses until chooseRelic(). ctx: { goldMult, floor, boss }
+  offerRelics(ctx) {
+    const offers = this.relics.roll(this.rng, ctx);
+    if (!offers.length) return false;
+    this.offer = { offers, ctx, rerolls: 0 };
+    this.offer.cost = this.rerollCost();
+    this.combat.cancel();
+    this.events.emit('relicOffer', { offers, cost: this.offer.cost, gold: this.dungeon.gold });
+    return true;
+  }
+
+  // every 10 family levels: a special-attack growth card (shown once the room is clear; the world waits)
+  owedSkillPicks() { return owedPicks(this.config.skills.growth, this.vault.progress.level, this.vault.skillUps); }
+
+  offerSkillGrowth() {
+    const g = this.config.skills.growth;
+    if (!g || this.mode !== 'dungeon' || this.over || this.offer || this.skillOffer || this.forge || this.tokenScene) return false;
+    if (this.owedSkillPicks() <= 0) return false;
+    const defs = this.config.skills.defs;
+    const offers = rollSkillCards(g, this.rng).map((c) => ({
+      id: c.id, skill: c.skill, kind: c.kind, value: c.add, stun: c.stun || 0, icon: c.icon, name: defs[c.skill].name,
+      rarity: 'epic', tier: 0, owned: this.vault.skillUps[c.id] || 0, skillCard: true,
+    }));
+    this.skillOffer = { offers };
+    this.combat.cancel();
+    this.events.emit('skillOffer', { offers, level: this.vault.progress.level });
+    return true;
+  }
+
+  chooseSkill(i) {
+    const o = this.skillOffer && this.skillOffer.offers[i];
+    if (!o) return null;
+    this.vault.skillUps[o.id] = (this.vault.skillUps[o.id] || 0) + 1;
+    this.skillOffer = null;
+    this.refreshBonus();
+    this.saveVault();
+    this.pendingStroke = null;
+    this.pendingFlick = null;
+    this.combat.reset();
+    this.events.emit('skillUp', { card: o });
+    return o;
+  }
+
+  // price of drawing three new cards: grows with depth (gold multiplier) and with each redraw
+  rerollCost() {
+    const r = this.config.relics.reroll, o = this.offer;
+    return Math.round(r.base * (o.ctx.goldMult || 1) * (1 + r.growth * o.rerolls));
+  }
+
+  rerollRelics() {
+    const o = this.offer;
+    if (!o || this.dungeon.gold < o.cost) return false;
+    this.dungeon.gold -= o.cost;
+    o.rerolls += 1;
+    o.offers = this.relics.roll(this.rng, o.ctx);
+    o.cost = this.rerollCost();
+    this.events.emit('relicReroll', { offers: o.offers, cost: o.cost, gold: this.dungeon.gold });
+    return true;
+  }
+
+  chooseRelic(i) {
+    if (!this.offer) return null;
+    const o = this.offer.offers[i];
+    if (!o) return null;
+    this.relics.take(o, this);
+    if (o.essence) noteEssence(this.stats, o);
+    this.refreshBonus();
+    this.saveVault(); // an essence belongs to the family at once
+    this.offer = null;
+    this.pendingStroke = null;
+    this.pendingFlick = null;
+    this.combat.reset();
+    this.events.emit('relicPick', { relic: o, pos: { x: this.player.pos.x, y: this.player.pos.y } });
+    if (this.mode === 'dungeon' && this.dungeon.state === 'treasure') this.dungeon.advance(); // on to the next room
+    return o;
+  }
+
+  resetHealth() {
+    const c = this.config.combat.player;
+    this.player.maxHp = c.maxHp + this.bonusStats.maxHp;
+    this.player.hp = this.player.maxHp;
+    this.player.invuln = 0;
+    this.sinceHit = Infinity;
+  }
+
+  // returns true if the damage landed
+  // in the air (점프) the hero cannot be touched — except by a riposte
+  dashInvuln() { return !!this.skills.rush; }
+
+  damagePlayer(amount, source, { riposte = false } = {}) {
+    const p = this.player;
+    if (this.over || p.invuln > 0 || amount <= 0) return false;
+    if (this.mode === 'dungeon' && this.dungeon.state === 'fadeOut') return false; // already leaving
+    if (this.dashInvuln()) return false; // in the air nothing lands, not even a riposte (Phase 6)
+    if (evades(this)) { // 망령의 갑옷
+      p.invuln = this.config.items.effects.wraithArmor.invuln;
+      this.events.emit('evade', { pos: { x: p.pos.x, y: p.pos.y } });
+      return false;
+    }
+    amount *= Math.max(0.2, 1 - this.bonusStats.armor);
+    const ls = this.gearEffects.has('lastStand') ? this.config.items.effects.lastStand : null; // 망령 군주의 왕관
+    if (ls && p.hp <= p.maxHp * ls.threshold) amount *= 1 - ls.reduce;
+    p.hp = Math.max(0, p.hp - amount);
+    this.combat.interrupt(); // a blow taken mid dash/chain breaks the chain
+    p.invuln = this.config.combat.player.hurtInvuln;
+    this.sinceHit = 0;
+    const from = source ? { x: source.pos.x, y: source.pos.y } : null;
+    this.events.emit('playerHit', { damage: amount, pos: { x: p.pos.x, y: p.pos.y }, from, hp: p.hp, maxHp: p.maxHp });
+    this.hitStop.trigger('normal');
+    if (p.hp <= 0) {
+      // who struck the last blow (area attacks in a boss room belong to the boss)
+      const d = this.dungeon, boss = d && d.roomKind === 'boss' && d.boss ? d.boss : null;
+      this.stats.killer = source && source.tcfg ? source.tcfg.name : boss ? boss.tcfg.name : null;
+      if (this.mode === 'dungeon' && d.isFinal && d.roomKind === 'boss') this.askFinal(); // floor 100: asked, not killed
+      else this.die();
+    }
+    return true;
+  }
+
+  die() {
+    this.over = true;
+    this.ropeOffer = null;
+    this.combat.cancel();
+    const run = this.mode === 'dungeon';
+    const fate = run ? this.endRunByDeath() : null;
+    this.events.emit('playerDown', { kills: this.stats.kills, bestCombo: this.stats.bestCombo, floor: run ? this.dungeon.floor : 0, startFloor: run ? this.dungeon.startFloor : 0, fate });
+  }
+
+  // pause menu "포기하기": a dungeon run counts as a death; the practice arena just restarts
+  giveUp() {
+    if (this.forge || this.founderDeath) return; // nothing to give up at a forge, nor once the founder has fallen
+    if (this.mode !== 'dungeon') { this.restart(); return; }
+    if (this.over) return;
+    this.player.hp = 0;
+    this.die();
+  }
+
+  updateHealth(dt) {
+    const p = this.player, c = this.config.combat.player;
+    if (p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
+    this.sinceHit += dt;
+    if (this.sinceHit >= c.regenDelay && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + c.regenPerSec * dt);
+  }
+
+  restart() {
+    if (this.mode === 'dungeon') { this.startRun(1); return; }
+    this.startPractice();
+  }
+
+  // shared reset for a new run or practice session
+  resetRun() {
+    this.enemies.clear();
+    this.hazards.clear();
+    this.ropeOffer = null;
+    this.founderDeath = null;
+    this.player.reset(this.center());
+    this.movement.burstTime = Infinity;
+    this.combat.reset();
+    this.skills.reset();
+    this.hitStop.reset();
+    this.combo.reset();
+    this.events.emit('runReset');
+    this.camera.setMode('normal');
+    this.camera.snapTo(this.player.pos);
+    this.pendingStroke = null;
+    this.pendingFlick = null;
+    Object.assign(this.stats, emptyRunStats());
+    this.time = 0;
+    this.over = false;
+    this.offer = null;
+    this.forge = null;
+    this.tokenScene = false;
+    this.tokenFloors = new Set();
+    this.finalAsk = null;
+    this.finale = null;
+    this.ending = false;
+    this.skillOffer = null;
+    this.loot.reset();
+    this.relics.reset();
+    this.refreshBonus();
+    this.resetHealth();
+  }
+
+  onHit(h) {
+    const kind = h.crit ? 'crit' : h.strong ? 'strong' : 'normal';
+    this.combo.hit();
+    if (!h.noStop) this.hitStop.trigger(kind); // a spin blade passing through a crowd does not stop on each one
+  }
+
+  center() {
+    return { x: this.arena.width / 2, y: this.arena.height / 2 };
+  }
+
+  // Strokes are applied at the start of the next logic step (and held during hit stop).
+  queueStroke(s) {
+    const prevNew = this.pendingStroke ? this.pendingStroke.isNew : false;
+    this.pendingStroke = { dir: s.dir, isNew: s.isNew || prevNew };
+  }
+
+  applyPendingStroke() {
+    const s = this.pendingStroke;
+    if (s) {
+      this.pendingStroke = null;
+      this.combat.onStroke(s);
+      this.movement.setDirection(s.dir, { burst: true });
+    }
+    const f = this.pendingFlick;
+    if (f) {
+      this.pendingFlick = null;
+      this.combat.onFlick(f);
+      this.movement.setDirection(f, { burst: true });
+    }
+  }
+
+  // the world waits: paused, or cards / forge / legacy token / floor-100 question / ending / rope list are up
+  get waiting() {
+    return this.paused || !!(this.offer || this.skillOffer || this.forge || this.tokenScene || this.finalAsk || this.ending || this.ropeOffer);
+  }
+
+  update(realDt) {
+    if (this.waiting) return;
+    if (this.over) { this.combo.update(realDt); return; }
+    if (this.founderDeath) { this.stepFounderDeath(realDt); return; } // the world holds still for his last words
+    const dt = this.hitStop.update(realDt);
+    this.time += dt;
+    this.player.savePrev();
+    this.updateHealth(dt);
+    // input that arrives during hit stop is applied once it ends
+    if (!this.hitStop.active) this.applyPendingStroke();
+    this.skills.update(dt);
+    if (this.gearTick) this.gearTick(dt); // burning ash, allied wraiths
+    if (this.skills.spinning) {
+      this.movement.update(dt); // keep moving while the blade spins
+    } else if (!this.skills.busy) {
+      this.combat.update(dt);
+      if (!this.combat.inCombat) this.movement.update(dt);
+    }
+    this.enemies.update(dt, this.player.pos, this.viewRect(), this.combat.inputDir, this.player.radius);
+    this.hazards.update(dt, this.player);
+    this.arena.update(dt); // golem boulders crumble
+    if (this.mode === 'dungeon') { this.dungeon.update(dt); this.loot.update(dt); }
+    this.camera.update(dt, this.player);
+    this.combo.update(realDt);
+  }
+
+  // world-space rectangle currently visible on screen
+  viewRect() {
+    const c = this.camera;
+    return { x: c.pos.x - c.viewW / 2, y: c.pos.y - c.viewH / 2, w: c.viewW, h: c.viewH };
+  }
+}

@@ -1,0 +1,540 @@
+{
+  "_설명": "장비 규칙: 부위, 등급, 품질, 능력치, 전설, 세트, 강화. 이름 색·아이콘은 look/items.json. '_' 로 시작하는 칸은 설명이다.",
+  "_slots": "장비 부위",
+  "slots": [
+    "weapon",
+    "helm",
+    "armor",
+    "gloves",
+    "boots",
+    "amulet",
+    "ring"
+  ],
+  "_loadoutSlots": "장착 칸 (반지는 둘)",
+  "loadoutSlots": [
+    "weapon",
+    "helm",
+    "armor",
+    "gloves",
+    "boots",
+    "amulet",
+    "ring1",
+    "ring2"
+  ],
+  "_parts": "부위별 이름표와 장비 이름 목록",
+  "parts": {
+    "weapon": {
+      "label": "무기",
+      "names": [
+        "장검",
+        "도끼",
+        "단검",
+        "대검"
+      ]
+    },
+    "helm": {
+      "label": "투구",
+      "names": [
+        "투구",
+        "두건",
+        "철모"
+      ]
+    },
+    "armor": {
+      "label": "갑옷",
+      "names": [
+        "갑옷",
+        "사슬 갑옷",
+        "판금"
+      ]
+    },
+    "gloves": {
+      "label": "장갑",
+      "names": [
+        "장갑",
+        "건틀릿"
+      ]
+    },
+    "boots": {
+      "label": "신발",
+      "names": [
+        "장화",
+        "군화",
+        "신발"
+      ]
+    },
+    "amulet": {
+      "label": "목걸이",
+      "names": [
+        "목걸이",
+        "부적"
+      ]
+    },
+    "ring": {
+      "label": "반지",
+      "names": [
+        "반지",
+        "인장 반지"
+      ]
+    }
+  },
+  "_grades": "등급별 추가 능력 수, 배율, 분해 가루, 죽을 때 대를 이을 확률. set(세트)은 전설 위 등급: 전설 +10에 세트 각인이 성공하면 되고(engraveOnly: 금화 승급으로는 못 감), 될 때 추가 능력이 붙고 배율이 오른다. 대를 이을 확률은 setSurvive",
+  "grades": {
+    "common": {
+      "affixes": 0,
+      "mult": 1,
+      "powder": 1,
+      "survive": 0
+    },
+    "uncommon": {
+      "affixes": 1,
+      "mult": 1.15,
+      "powder": 1,
+      "survive": 0
+    },
+    "rare": {
+      "affixes": 2,
+      "mult": 1.3,
+      "powder": 2,
+      "survive": 0.1
+    },
+    "epic": {
+      "affixes": 3,
+      "mult": 1.5,
+      "powder": 3,
+      "survive": 0.25
+    },
+    "legendary": {
+      "affixes": 3,
+      "mult": 1.75,
+      "powder": 5,
+      "survive": 0.8
+    },
+    "set": {
+      "affixes": 4,
+      "mult": 2,
+      "powder": 8,
+      "survive": 1,
+      "engraveOnly": true
+    }
+  },
+  "_gradeOrder": "등급 순서 (낮음 → 높음)",
+  "gradeOrder": [
+    "common",
+    "uncommon",
+    "rare",
+    "epic",
+    "legendary",
+    "set"
+  ],
+  "_qualities": "품질(순서대로 보통·상급·최상급) 배율과 대를 이을 확률에 더하는 몫",
+  "qualities": [
+    {
+      "mult": 1,
+      "survive": 0
+    },
+    {
+      "mult": 1.25,
+      "survive": 0.05
+    },
+    {
+      "mult": 1.5,
+      "survive": 0.1
+    }
+  ],
+  "_base": "부위별 기본 능력치",
+  "base": {
+    "weapon": {
+      "stat": "attackFlat",
+      "value": 3
+    },
+    "helm": {
+      "stat": "maxHp",
+      "value": 12
+    },
+    "armor": {
+      "stat": "armor",
+      "value": 0.04
+    },
+    "gloves": {
+      "stat": "crit",
+      "value": 0.03
+    },
+    "boots": {
+      "stat": "speed",
+      "value": 0.04
+    },
+    "amulet": {
+      "stat": "skillDamage",
+      "value": 0.08
+    },
+    "ring": {
+      "stat": null,
+      "value": 0
+    }
+  },
+  "_perLevel": "장비 레벨당 기본 능력치 증가 비율",
+  "perLevel": 0.05,
+  "_affixes": "추가 능력: 값과 이름 앞말",
+  "affixes": {
+    "damage": {
+      "value": 0.05,
+      "prefix": "날카로운"
+    },
+    "range": {
+      "value": 0.06,
+      "prefix": "넓게 베는"
+    },
+    "attackSpeed": {
+      "value": 0.06,
+      "prefix": "재빠른"
+    },
+    "chain": {
+      "value": 1,
+      "minGrade": "rare",
+      "fixed": true,
+      "prefix": "연쇄하는"
+    },
+    "chainRange": {
+      "value": 0.08,
+      "prefix": "뻗어 가는"
+    },
+    "chainDamage": {
+      "value": 0.08,
+      "prefix": "몰아치는"
+    },
+    "speed": {
+      "value": 0.04,
+      "prefix": "가벼운"
+    },
+    "dashRange": {
+      "value": 0.08,
+      "prefix": "질주하는"
+    },
+    "crit": {
+      "value": 0.03,
+      "prefix": "정확한"
+    },
+    "critDamage": {
+      "value": 0.15,
+      "prefix": "잔혹한"
+    },
+    "armor": {
+      "value": 0.03,
+      "prefix": "단단한"
+    },
+    "maxHp": {
+      "value": 10,
+      "prefix": "강인한"
+    },
+    "lifesteal": {
+      "value": 12,
+      "minGrade": "epic",
+      "prefix": "피에 굶주린"
+    },
+    "knockback": {
+      "value": 0.1,
+      "prefix": "육중한"
+    },
+    "cooldown": {
+      "value": 0.05,
+      "prefix": "현자의"
+    },
+    "comboStep": {
+      "value": 0.05,
+      "prefix": "몰아붙이는"
+    }
+  },
+  "_legendaries": "전설 장비: 이름, 부위, 효과",
+  "legendaries": {
+    "stormblade": {
+      "name": "폭풍의 대검",
+      "slot": "weapon",
+      "effect": "storm"
+    },
+    "vampLord": {
+      "name": "흡혈 군주의 검",
+      "slot": "weapon",
+      "effect": "vampLord"
+    },
+    "earthshatter": {
+      "name": "대지 파쇄자",
+      "slot": "gloves",
+      "effect": "earthshatter"
+    },
+    "wraithArmor": {
+      "name": "망령의 갑옷",
+      "slot": "armor",
+      "effect": "wraithArmor"
+    },
+    "abyssRing": {
+      "name": "심연의 반지",
+      "slot": "ring",
+      "effect": "abyssRing"
+    },
+    "ashenSigil": {
+      "name": "재의 인장",
+      "slot": "amulet",
+      "effect": "chainField"
+    },
+    "wraithCrown": {
+      "name": "망령 군주의 왕관",
+      "slot": "helm",
+      "effect": "lastStand"
+    },
+    "quakestride": {
+      "name": "지진의 장화",
+      "slot": "boots",
+      "effect": "earthStep"
+    },
+    "thunderMaul": {
+      "name": "천둥 망치",
+      "slot": "weapon",
+      "effect": "stunUp"
+    },
+    "frenzyPendant": {
+      "name": "광란의 목걸이",
+      "slot": "amulet",
+      "effect": "comboRise"
+    },
+    "shadowMail": {
+      "name": "그림자 갑주",
+      "slot": "armor",
+      "effect": "dashEvade"
+    }
+  },
+  "_effects": "장비 효과: 설명과 수치",
+  "effects": {
+    "storm": {
+      "label": "연쇄 공격이 번개로 바뀌어 근처 적 하나에게 튄다 · 연쇄 거리 +30%",
+      "chainRange": 0.3,
+      "zapDamage": 0.5,
+      "zapRadius": 140
+    },
+    "vampLord": {
+      "label": "중간 보스 이상을 쓰러뜨리면 최대 체력의 25% 회복",
+      "heal": 0.25
+    },
+    "earthshatter": {
+      "label": "돌진 경로를 따라 충격파가 일어난다",
+      "damage": 0.6,
+      "width": 45
+    },
+    "wraithArmor": {
+      "label": "15% 확률로 받는 피해를 무효로 한다",
+      "chance": 0.15,
+      "invuln": 0.3
+    },
+    "abyssRing": {
+      "label": "체력이 낮을수록 공격력 증가 (30% 이하에서 +40%)",
+      "max": 0.4,
+      "fullAt": 0.3
+    },
+    "setBlast": {
+      "label": "연쇄 마지막 타격에서 폭발",
+      "radius": 110,
+      "damage": 2
+    },
+    "chainField": {
+      "label": "연쇄 타격 자리에 1.5초 동안 타오르는 재가 남아 적을 태운다",
+      "radius": 60,
+      "life": 1.5,
+      "every": 0.25,
+      "damage": 0.15
+    },
+    "thrall": {
+      "label": "쓰러뜨린 적이 6초 동안 아군 망령이 되어 싸운다 (최대 3)",
+      "life": 6,
+      "max": 3,
+      "every": 0.8,
+      "range": 160,
+      "damage": 0.6,
+      "speed": 230
+    },
+    "stunUp": {
+      "label": "특수기 기절 시간 +50%",
+      "mult": 1.5
+    },
+    "comboRise": {
+      "label": "콤보 5마다 공격력이 20% 더 오른다",
+      "comboStep": 0.2
+    },
+    "dashEvade": {
+      "label": "돌진을 시작할 때 0.25초 무적 (2초마다)",
+      "invuln": 0.25,
+      "cooldown": 2
+    },
+    "earthStep": {
+      "label": "연쇄 대시 거리 +20%, 넉백 +30%",
+      "dashRange": 0.2,
+      "knockback": 0.3
+    },
+    "lastStand": {
+      "label": "체력이 30% 이하일 때 받는 피해 -30%",
+      "threshold": 0.3,
+      "reduce": 0.3
+    }
+  },
+  "_sets": "세트: 이름, 부위별 이름, 단계 문구 (단계 수치는 rules/sets.json)",
+  "sets": {
+    "abyss": {
+      "name": "번개",
+      "pieces": {
+        "weapon": "번개 검",
+        "helm": "번개 투구",
+        "armor": "번개 갑옷",
+        "gloves": "번개 방패",
+        "boots": "번개 장화"
+      },
+      "bonuses": {
+        "5": {
+          "effect": "setBlast"
+        }
+      },
+      "labels": {
+        "1": "연쇄 타격 기절 +5%",
+        "2": "공격력 +10%, 연쇄 기절 +10%",
+        "3": "연쇄 횟수 +1, 연쇄 기절 +15%",
+        "4": "연쇄 피해 +25%, 연쇄 기절 +20%",
+        "5": "연쇄 마지막 타격에서 앞쪽 원뿔로 번개가 터지고, 원뿔 안의 적은 반드시 기절"
+      }
+    },
+    "arcaneVeil": {
+      "name": "폭풍",
+      "pieces": {
+        "weapon": "폭풍 검",
+        "helm": "폭풍 투구",
+        "armor": "폭풍 갑옷",
+        "gloves": "폭풍 방패",
+        "boots": "폭풍 장화"
+      },
+      "bonuses": {
+        "5": {
+          "effect": "twinBlade"
+        }
+      },
+      "labels": {
+        "1": "회전 베기 칼날 +3%, 기절 +5% (바깥 고리)",
+        "2": "칼날 +6%, 기절 +10%",
+        "3": "칼날 +9%, 기절 +15%",
+        "4": "칼날 +12%, 기절 +20%",
+        "5": "칼날 +15%, 기절 +40%, 칼날 둘이 서로 반대로 돈다"
+      }
+    },
+    "meteor": {
+      "name": "유성",
+      "pieces": {
+        "weapon": "유성 검",
+        "helm": "유성 투구",
+        "armor": "유성 갑옷",
+        "gloves": "유성 방패",
+        "boots": "유성 장화"
+      },
+      "bonuses": {
+        "5": {
+          "effect": "meteorPull"
+        }
+      },
+      "labels": {
+        "1": "점프 착지: 가운데 기절 범위 32%, 범위 110%, 점프 거리 +5%, 밀어내기 +10%",
+        "2": "가운데 44%, 범위 120%, 거리 +5%, 밀어내기 +10%",
+        "3": "가운데 56%, 범위 130%, 거리 +5%, 밀어내기 +10%",
+        "4": "가운데 68%, 범위 140%, 거리 +5%, 밀어내기 +10%",
+        "5": "가운데 80%, 범위 150%, 거리 +5% — 착지하면 주변 적을 가운데로 빨아들인다"
+      }
+    },
+    "galeHunter": {
+      "name": "질풍",
+      "pieces": {
+        "weapon": "질풍 검",
+        "helm": "질풍 투구",
+        "armor": "질풍 갑옷",
+        "gloves": "질풍 방패",
+        "boots": "질풍 장화"
+      },
+      "labels": {
+        "1": "칼 거리 안 기절 +5%",
+        "2": "질풍 베기 피해 +15%, 기절 +10%",
+        "3": "거리에 따른 감소 -25%, 기절 +15%",
+        "4": "피해 +15%, 거리 감소 -25%, 기절 +20%",
+        "5": "기절 +40% (칼 거리 안의 적은 반드시 기절)"
+      },
+      "angleLabel": "질풍 세트 장비 개수에 따라 질풍 베기 각도 80° · 90° · 100° · 110° · 120° (기본 60°)"
+    },
+    "gravecall": {
+      "name": "망령",
+      "pieces": {
+        "weapon": "망령 검",
+        "helm": "망령 투구",
+        "armor": "망령 갑옷",
+        "gloves": "망령 방패",
+        "boots": "망령 장화"
+      },
+      "bonuses": {
+        "1": {
+          "effect": "wraithSet"
+        }
+      },
+      "labels": {
+        "1": "쓰러뜨린 적 하나가 1초 동안 망령이 되어 싸운다 (망령의 공격은 반격을 부르지 않는다)",
+        "2": "최대 체력 +20, 망령 1명 2초",
+        "3": "공격력 +3, 망령 2명 (1초·2초)",
+        "4": "공격력 +10%, 망령 2명 2초",
+        "5": "망령 3명 2초"
+      }
+    }
+  },
+  "_pickup": "줍기: 끌어오는 반지름(px), 날아오는 시간(초), 떨어질 때 흩어짐(px)",
+  "pickup": {
+    "radius": 90,
+    "flyTime": 0.28,
+    "scatter": 40
+  },
+  "_pocketSize": "주머니 칸 수",
+  "pocketSize": 30,
+  "_enhance": "강화: 최대 단계, 가루 점수, 단계별 필요 점수, 단계별 능력치 보너스",
+  "enhance": {
+    "max": 10,
+    "points": [
+      5,
+      12,
+      30
+    ],
+    "need": [
+      10,
+      15,
+      20,
+      25,
+      30,
+      40,
+      50,
+      60,
+      75,
+      90
+    ],
+    "bonus": [
+      0.05,
+      0.1,
+      0.15,
+      0.2,
+      0.3,
+      0.4,
+      0.5,
+      0.6,
+      0.75,
+      1
+    ],
+    "refund": 0.5
+  },
+  "_inheritNote": "흡혈의 힘이 대를 잇지 못했을 때 문구",
+  "inheritNote": "흡혈의 힘은 대를 잇지 못했다",
+  "_legacyToken": "유산의 증표: 몇 층마다, 이름, 설명",
+  "legacyToken": {
+    "every": 100,
+    "label": "유산의 증표",
+    "text": "유산의 증표 — 분해하지 않는 한 영원히 대를 잇는다"
+  },
+  "_setSurvive": "세트 장비가 죽을 때 대를 이을 확률",
+  "setSurvive": 0.6,
+  "effectHit": { "_설명": "세트·장비 효과가 적을 칠 때 주는 넉백과 경직", "_knockback": "넉백", "knockback": 60, "_stagger": "경직(초)", "stagger": 0.1 }
+}

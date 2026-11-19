@@ -6,14 +6,14 @@ import { storyText } from './storyText.js';
 
 const ART = ['abyss', 'fallen', 'treasure', 'gate'];
 const ART_OF = [0, 1, 1, 2, 3]; // painting behind each paragraph
-const SPEED = 15; // px per second the text rises (the whole story takes about a minute)
 
 // the story plays by itself only when no save slot has anything to continue
 export function autoStory(slots) { return !slots.some((r) => r && r.summary); }
 
 export class StoryScreen {
   // story: () => config.tuning.story (the Korean text; other languages come from the dictionaries)
-  constructor(root, { onDone = () => {}, music = null, toLocal = null, story = () => null } = {}) {
+  constructor(root, { cfg, onDone = () => {}, music = null, toLocal = null, story = () => null } = {}) {
+    this.cfg = cfg; // look.ui: story.speed = px per second the text rises (the whole story takes about a minute); scroller
     this.story = story;
     this.toLocal = toLocal; // screen -> stage coordinates
     this.onDone = onDone;
@@ -54,7 +54,7 @@ export class StoryScreen {
   show() {
     this.y = null;
     this.last = null;
-    this.scroller = new TextScroller({ auto: SPEED });
+    this.scroller = new TextScroller({ ...this.cfg.scroller, auto: this.cfg.story.speed });
     this.scroller.clampMin(0);
     this.done = false;
     this.art = -1;

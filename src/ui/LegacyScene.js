@@ -1,8 +1,7 @@
 import { itemCell, itemLabel } from './itemView.js';
-import { describeItem } from '../game/items/itemStats.js';
-import { tokenCandidates, canTakeToken } from '../game/items/Forge.js';
-import { floorLabel } from '../core/floorLabel.js';
-import { t, tr } from '../i18n/index.js';
+import { describeItem } from '../look/text/itemText.js';
+import { tokenCandidates, canTakeToken } from '../logic/items/Forge.js';
+import { t, tr, floorText } from '../i18n/index.js';
 
 const WHERE = { equipped: 'where.equipped', stash: 'where.stash', pocket: 'where.pocket' };
 
@@ -52,12 +51,12 @@ export class LegacyScene {
   relabel() { if (this.isOpen && this.list) this.render(); }
 
   render() {
-    const cfg = this.game.config.items, tokens = this.game.vault.tokens;
+    const cfg = this.game.config.items, look = this.game.config.look.items, tokens = this.game.vault.tokens;
     const cards = this.list.map((c, i) => {
-      const d = describeItem(c.item, cfg), sealed = !canTakeToken(c.item);
+      const d = describeItem(c.item, cfg, look), sealed = !canTakeToken(c.item);
       return `<div class="lg-card${sealed ? ' sealed' : ''}" data-i="${i}" style="--gc:${d.gradeColor}">
         <div class="lg-where">${t(WHERE[c.where])}</div>
-        ${itemCell(c.item, cfg, { size: 34 })}
+        ${itemCell(c.item, cfg, look, { size: 34 })}
         <div class="lg-name" style="color:${d.gradeColor}">${d.name}</div>
         <div class="lg-sub">${d.gradeLabel}${d.qualityLabel ? ' · ' + d.qualityLabel : ''} ${d.partLabel}</div>
         <div class="lg-lines">${d.lines.slice(0, 3).map((l) => `<div>${l}</div>`).join('')}</div>
@@ -67,7 +66,7 @@ export class LegacyScene {
     this.el.innerHTML = `
       <div class="lg-wrap">
         <div class="lg-title">${tr(cfg.legacyToken.label)} <span>×${tokens}</span></div>
-        <div class="lg-sub2">${this.floor ? t('lg.reached', { floor: floorLabel(this.floor) }) : ''}${t('lg.note')}</div>
+        <div class="lg-sub2">${this.floor ? t('lg.reached', { floor: floorText(this.floor) }) : ''}${t('lg.note')}</div>
         ${this.list.length ? `
           <div class="lg-stage">
             <button class="lg-arrow" data-act="prev">‹</button>
@@ -100,7 +99,7 @@ export class LegacyScene {
     const btn = this.el.querySelector('[data-act="apply"]');
     if (btn) btn.disabled = !c || !canTakeToken(c.item) || this.game.vault.tokens <= 0;
     const pick = this.el.querySelector('.lg-pick');
-    if (pick && c) pick.textContent = canTakeToken(c.item) ? itemLabel(c.item, this.game.config.items) : t('lg.has');
+    if (pick && c) pick.textContent = canTakeToken(c.item) ? itemLabel(c.item, this.game.config.items, this.game.config.look.items) : t('lg.has');
   }
 
   turn(step) {

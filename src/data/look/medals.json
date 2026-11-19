@@ -1,0 +1,15 @@
+{
+  "_설명": "훈장 색 (그림 전용). 훈장 목록과 조건은 rules/medals.json. '_' 로 시작하는 칸은 설명이다.",
+  "_tiers": "단계별 색 (동·은·금)",
+  "tiers": {
+    "bronze": {
+      "color": "#c98a5a"
+    },
+    "silver": {
+      "color": "#c9d2dc"
+    },
+    "gold": {
+      "color": "#ffd166"
+    }
+  }
+}

@@ -1,9 +1,12 @@
-// Debug [튜닝] tab (Korean only): every table of src/data/tuning as a form — the "_" notes shown above
-// the values they explain. [적용] puts the tab's table into the running game, [기본값] brings back the
+// Debug [튜닝] tab (Korean only): every table of src/data (rules/ and look/) as a form — the "_" notes shown
+// above the values they explain. [적용] puts the tab's table into the running game, [기본값] brings back the
 // shipped file, [전체 저장] writes every table (notes kept) to a folder the player picks (or the share
 // sheet / downloads where folders cannot be picked).
-import { TUNING_FILES } from '../game/config.js';
+import { DATA_TABLES } from '../logic/run/config.js';
 import { setAt, applyEdit } from './tuningEdit.js';
+
+// tab name -> table: 'rules/economy' -> { folder, file, key }
+const TABLES = new Map(DATA_TABLES.map((t) => [`${t.folder}/${t.file}`, t]));
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const enc = (path) => encodeURIComponent(JSON.stringify(path));
@@ -15,7 +18,7 @@ export class TuningEditor {
     this.el = el;
     this.config = config;
     this.onApplied = onApplied;
-    this.cur = TUNING_FILES[0];
+    this.cur = 'rules/economy';
     this.base = {};  // name -> the shipped file (with notes)
     this.edit = {};  // name -> the table being edited
     this.dirty = new Set(); // edited since the last [적용]
@@ -33,7 +36,7 @@ export class TuningEditor {
 
   async load(name) {
     if (this.base[name]) return;
-    const r = await fetch(`src/data/tuning/${name}.json`, { cache: 'no-store' });
+    const r = await fetch(`src/data/${name}.json`, { cache: 'no-store' });
     this.base[name] = await r.json();
     this.edit[name] = structuredClone(this.base[name]);
   }
@@ -45,7 +48,7 @@ export class TuningEditor {
 
   apply(name) {
     if (!this.edit[name]) return;
-    applyEdit(this.config, name, this.edit[name]);
+    applyEdit(this.config, TABLES.get(name).key, this.edit[name]);
     this.dirty.delete(name);
     this.onApplied();
     this.msg = `${name}.json 적용됨`;
@@ -73,21 +76,23 @@ export class TuningEditor {
     this.el.querySelector(`[data-tab="${this.cur}"]`).classList.add('dirty');
   }
 
-  // every table, notes kept, as files named like the originals (so they can go back into src/data/tuning)
+  // every table, notes kept, as files named like the originals in rules/ and look/ (so they can go back into src/data);
+  // where folders cannot be picked the folder goes in front of the name (rules-economy.json)
   async saveAll() {
     try {
-      for (const n of TUNING_FILES) await this.load(n);
-      const files = TUNING_FILES.map((n) => ({ name: `${n}.json`, text: JSON.stringify(this.edit[n], null, 2) + '\n' }));
+      for (const n of TABLES.keys()) await this.load(n);
+      const files = [...TABLES].map(([n, t]) => ({ folder: t.folder, name: `${t.file}.json`, text: JSON.stringify(this.edit[n], null, 2) + '\n' }));
       if (window.showDirectoryPicker) {
         const dir = await window.showDirectoryPicker({ id: 'abyss-tuning', mode: 'readwrite' });
         for (const f of files) {
-          const w = await (await dir.getFileHandle(f.name, { create: true })).createWritable();
+          const sub = await dir.getDirectoryHandle(f.folder, { create: true });
+          const w = await (await sub.getFileHandle(f.name, { create: true })).createWritable();
           await w.write(f.text);
           await w.close();
         }
         this.msg = `폴더 "${dir.name}"에 ${files.length}개 저장함`;
       } else {
-        const list = files.map((f) => new File([f.text], f.name, { type: 'application/json' }));
+        const list = files.map((f) => new File([f.text], `${f.folder}-${f.name}`, { type: 'application/json' }));
         if (navigator.canShare && navigator.canShare({ files: list })) {
           await navigator.share({ files: list, title: 'abyss tuning' }); // "파일에 저장"에서 폴더를 고른다
           this.msg = '공유 화면으로 보냄 — "파일에 저장"에서 폴더를 고르세요';
@@ -95,7 +100,7 @@ export class TuningEditor {
           for (const f of files) {
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([f.text], { type: 'application/json' }));
-            a.download = f.name;
+            a.download = `${f.folder}-${f.name}`;
             a.click();
             setTimeout(() => URL.revokeObjectURL(a.href), 2000);
           }
@@ -140,7 +145,7 @@ export class TuningEditor {
     const top = form && this.shown === this.cur ? form.scrollTop : 0; // a redraw keeps the place in the same table
     this.shown = this.cur;
     this.el.innerHTML = `
-      <div class="ttabs">${TUNING_FILES.map((n) => `<button data-tab="${n}" class="${n === this.cur ? 'on' : ''}${this.dirty.has(n) ? ' dirty' : ''}">${n}</button>`).join('')}</div>
+      <div class="ttabs">${[...TABLES.keys()].map((n) => `<button data-tab="${n}" class="${n === this.cur ? 'on' : ''}${this.dirty.has(n) ? ' dirty' : ''}">${n}</button>`).join('')}</div>
       <div class="tacts"><button data-tact="apply">적용</button><button data-tact="reset">기본값</button><span class="tsp"></span><button data-tact="save">전체 저장</button></div>
       ${this.msg ? `<div class="tmsg">${esc(this.msg)}</div>` : ''}
       <div class="tform">${t ? this.tree(t, []) : '불러오는 중…'}</div>`;

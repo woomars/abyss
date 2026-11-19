@@ -1,15 +1,14 @@
 // ?debug=1 — FPS and a few helpers: go to a room (floor 100 too), set the level, get an item (worn at once),
 // set the special-attack growth cards, play the ending; and the hero's numbers (with the gear's share).
 import { heroSheet } from './debugSheet.js';
-import { owedPicks, picksTaken } from '../game/SkillGrowth.js';
+import { owedPicks, picksTaken } from '../logic/combat/SkillGrowth.js';
 import { TuningEditor } from './TuningEditor.js';
-import { bossRoster } from '../game/Medals.js';
+import { bossRoster } from '../logic/progress/Medals.js';
 
 // growth cards by name (debug is Korean only)
 const CARD = { spinRadius: '회전 베기 반경', spinCooldown: '회전 베기 쿨타임', rushDistance: '점프 거리', rushCooldown: '점프 쿨타임', waveRange: '질풍 베기 사거리·기절', waveCooldown: '질풍 베기 쿨타임' };
 export class DebugPanel {
-  constructor(root, { config, game, onLayout, onFloor = null, onBoss = null, onOpenChange = () => {}, onGear = () => {}, onEnding = () => {}, onQvTest = () => {} }) {
-    this.onQvTest = onQvTest; // debug: the quarter-view screen test (PixiJS)
+  constructor(root, { config, game, onLayout, onFloor = null, onBoss = null, onOpenChange = () => {}, onGear = () => {}, onEnding = () => {} }) {
     this.onBoss = onBoss; // debug: a fight with the chosen boss
     this.onEnding = onEnding; // debug: play the ending
     this.onGear = onGear; // an item was put on (the HUD / forge refresh)
@@ -33,7 +32,10 @@ export class DebugPanel {
         <div class="dbtns">장비 지급 <select data-act="grant"><option value="">고르기</option><option value="common">일반</option><option value="uncommon">고급</option><option value="rare">희귀</option><option value="epic">영웅</option><option value="legendary">전설</option><option value="set">세트</option></select></div>
         <div class="dbtns">세트 전체 장착 <select data-act="grantSet"><option value="">고르기</option></select> 강화 <input type="number" class="dsetup" min="0" max="10" step="1" value="0" inputmode="numeric" style="width:44px;user-select:text;-webkit-user-select:text"></div>
         <div class="dbtns">내 레벨 <input type="number" class="dlevel" min="1" step="1" value="1" inputmode="numeric" style="width:56px;user-select:text;-webkit-user-select:text"><button data-act="setLevel">적용</button><span class="dlevel-now"></span></div>
-        <div class="dbtns"><button data-act="ending">엔딩 보기</button><button data-act="qvtest">화면 테스트 (픽셀)</button></div>
+        <div class="dbtns">금화 <input type="number" class="dgold" min="0" step="1" value="0" inputmode="numeric" style="width:96px;user-select:text;-webkit-user-select:text"></div>
+        <div class="dbtns">가루 <small>(일반 · 상급 · 최상급)</small></div>
+        <div class="dbtns"><input type="number" class="dpw0" min="0" step="1" value="0" inputmode="numeric" title="일반" style="width:46px;user-select:text;-webkit-user-select:text"><input type="number" class="dpw1" min="0" step="1" value="0" inputmode="numeric" title="상급" style="width:46px;user-select:text;-webkit-user-select:text"><input type="number" class="dpw2" min="0" step="1" value="0" inputmode="numeric" title="최상급" style="width:46px;user-select:text;-webkit-user-select:text"><button data-act="setPurse">적용</button></div>
+        <div class="dbtns"><button data-act="ending">엔딩 보기</button></div>
         <div class="dsec">특수기술 성장 <span class="dups-note"></span></div>
         <div class="dups"></div>
         <div class="dsec">내 수치 <span class="dnote">(초록 = 장비가 더한 몫)</span></div>
@@ -73,8 +75,8 @@ export class DebugPanel {
       if (b.dataset.act === 'toggle') this.setOpen(this.el.classList.contains('collapsed'));
       if (b.dataset.act === 'view') this.view(b.dataset.v);
       if (b.dataset.act === 'ending') { this.setOpen(false); this.onEnding(); }
-      if (b.dataset.act === 'qvtest') { this.setOpen(false); this.onQvTest(); }
       if (b.dataset.act === 'setLevel') this.setLevel(Number(this.el.querySelector('.dlevel').value));
+      if (b.dataset.act === 'setPurse') this.setPurse();
       if (b.dataset.act === 'up') this.setUp(b.dataset.card, Number(b.dataset.v));
     });
   }
@@ -123,6 +125,16 @@ export class DebugPanel {
     this.refresh();
   }
 
+  // debug: the family's gold and the three powders, as typed (the forge redraws)
+  setPurse() {
+    const g = this.game, num = (c) => Math.max(0, Math.round(Number(this.el.querySelector(c).value)) || 0);
+    g.vault.gold = num('.dgold');
+    for (let q = 0; q < 3; q++) g.vault.powder[q] = num(`.dpw${q}`);
+    if (g.vault.state !== 'idle' || g.forge) g.saveVault();
+    this.onGear();
+    this.refresh();
+  }
+
   // debug: a growth card's count (the skill grows at once; the level's owed cards follow what is left)
   setUp(card, dv) {
     const g = this.game, ups = g.vault.skillUps || (g.vault.skillUps = {});
@@ -139,6 +151,8 @@ export class DebugPanel {
     const g = this.game, growth = g.config.skills.growth, ups = g.vault.skillUps || {};
     const lv = g.vault.progress.level;
     this.el.querySelector('.dlevel').value = lv;
+    this.el.querySelector('.dgold').value = g.vault.gold;
+    for (let q = 0; q < 3; q++) this.el.querySelector(`.dpw${q}`).value = g.vault.powder[q];
     this.el.querySelector('.dups-note').textContent = `(Lv ${lv}: 받을 카드 ${Math.floor(lv / growth.every)} · 고름 ${picksTaken(ups, growth)} · 남음 ${owedPicks(growth, lv, ups)})`;
     this.el.querySelector('.dups').innerHTML = growth.cards.map((c) => `<div class="dup"><span>${CARD[c.id] || c.id}</span><button data-act="up" data-card="${c.id}" data-v="-1">−</button><b>${ups[c.id] || 0}</b><button data-act="up" data-card="${c.id}" data-v="1">+</button></div>`).join('');
     const sh = heroSheet(g);
@@ -156,7 +170,7 @@ export class DebugPanel {
   // every piece of one set, legendary, worn at once (strengthened to `enhance`)
   grantSet(setId, enhance) {
     const g = this.game, cfg = this.config.items, floor = g.dungeon && g.dungeon.floor > 0 ? g.dungeon.floor : 1;
-    import('../game/items/ItemFactory.js').then(({ createItem }) => {
+    import('../logic/items/ItemFactory.js').then(({ createItem }) => {
       for (const slot of Object.keys(cfg.sets[setId].pieces)) {
         const it = createItem(cfg, Math.random, { id: g.allocItemId(), level: floor, set: setId, slot });
         it.enhance = Math.max(0, Math.min(cfg.enhance.max, enhance));
@@ -173,7 +187,7 @@ export class DebugPanel {
     const floor = g.dungeon && g.dungeon.floor > 0 ? g.dungeon.floor : 1;
     const opts = { id: g.allocItemId(), level: floor, quality: Math.floor(Math.random() * 3) };
     if (grade === 'set') opts.set = Object.keys(cfg.sets)[Math.floor(Math.random() * Object.keys(cfg.sets).length)]; else opts.grade = grade;
-    import('../game/items/ItemFactory.js').then(({ createItem }) => {
+    import('../logic/items/ItemFactory.js').then(({ createItem }) => {
       g.wearNew(createItem(cfg, Math.random, opts));
       this.onGear();
       this.refresh();

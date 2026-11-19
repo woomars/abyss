@@ -1,8 +1,7 @@
 // Ariadne's rope (10.4): where the hero is, and the family's rope floors on a wheel — turn it left or
 // right to the floor wanted, then [이동]. It starts on the floor the hero is on, so a stray tap moves
 // nowhere.
-import { t } from '../i18n/index.js';
-import { floorLabel } from '../core/floorLabel.js';
+import { t, floorText } from '../i18n/index.js';
 
 export class RopePicker {
   constructor(root, { onPick, onCancel }) {
@@ -37,9 +36,9 @@ export class RopePicker {
   render() {
     const f = this.list[this.i], here = f === this.current;
     this.el.innerHTML = `<div class="panel rp-panel"><h2>${t('rope.title')}</h2>
-      <p>${t('rope.here')}: <b>${floorLabel(this.current)}</b></p>
+      <p>${t('rope.here')}: <b>${floorText(this.current)}</b></p>
       <div class="rp-wheel"><button data-act="prev" aria-label="◀">◀</button>
-        <div class="rp-floor${here ? ' here' : ''}"><b>${floorLabel(f)}</b>${here ? `<small>${t('rope.here')}</small>` : ''}</div>
+        <div class="rp-floor${here ? ' here' : ''}"><b>${floorText(f)}</b>${here ? `<small>${t('rope.here')}</small>` : ''}</div>
         <button data-act="next" aria-label="▶">▶</button></div>
       <p class="rp-dots">${this.list.map((x, k) => `<i class="${k === this.i ? 'on' : ''}${x === this.current ? ' cur' : ''}"></i>`).join('')}</p>
       <p>${t('rope.pick')}</p>

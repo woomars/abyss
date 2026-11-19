@@ -2,8 +2,8 @@
 // Everything is read through the live game (combat, skills, armor), once as is and once with the gear
 // taken off, so each row shows the total and the gear's share. With a boss in the room it also shows
 // how many hits the boss would take.
-import { zeroStats, addStats } from '../game/Stats.js';
-import { levelStats } from '../game/Progress.js';
+import { zeroStats, addStats } from '../logic/run/Stats.js';
+import { levelStats } from '../logic/run/Progress.js';
 
 const pct = (v) => `${Math.round(v * 1000) / 10}%`;
 const num = (v) => (Math.abs(v) >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10));

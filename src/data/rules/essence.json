@@ -1,0 +1,22 @@
+{
+  "_설명": "정수 표 (기획서 7.5). 보물방·보스 상자의 능력치 카드를 고르면 가문 정수에 더해져 대를 잇는다. 사용자 요청으로 지금 값의 1/10 (연쇄만 예외). 품질 배율(상급 ×1.5, 최상급 ×2)은 relics.json 그대로. '_' 로 시작하는 칸은 설명이다.",
+
+  "_rule": "add = 카드 한 장(일반 품질)이 올리는 양. 0.015 = 1.5%. inherit = true면 대를 잇고, false면 이 생에서만",
+
+  "whetstone": { "_설명": "칼날의 정수 — 공격력%", "stat": "damage",    "add": 0.015, "inherit": true },
+  "heart":     { "_설명": "생명의 정수 — 최대 체력", "stat": "maxHp",     "add": 2,     "inherit": true },
+  "eye":       { "_설명": "매의 정수 — 치명타 확률", "stat": "crit",      "add": 0.006, "inherit": true },
+  "boots":     { "_설명": "바람의 정수 — 이동 속도%", "stat": "speed",     "add": 0.008, "inherit": true },
+  "hourglass": { "_설명": "시간의 정수 — 특수기 재사용 대기 감소", "stat": "cooldown", "add": 0.012, "inherit": true },
+  "plate":     { "_설명": "강철의 정수 — 받는 피해 감소", "stat": "armor",     "add": 0.01,  "inherit": true },
+  "fervor":    { "_설명": "열기의 정수 — 콤보 5마다 배수 증가 (기본 0.5에 맞춰 0.01)", "stat": "comboStep", "add": 0.01, "inherit": true },
+  "fang":      { "_설명": "피의 정수 — 보스 처치 때 회복 (이 생에서만, 정수로 보여서 15의 1/10을 반올림한 2)", "stat": "lifesteal", "add": 2, "inherit": false },
+  "chain":     { "_설명": "연쇄의 정수 — 연쇄 횟수 (예외: 1개씩 그대로)", "stat": "chain", "add": 1, "inherit": true },
+  "leap":      { "_설명": "점프의 정수 — 점프 피해 지역 반지름% (착지 피해% 에서 바뀜)", "stat": "jumpRadius", "add": 0.01, "inherit": true },
+
+  "migrate": {
+    "_설명": "기존 저장의 가문 정수 합계에 곱하는 값. 0.1 = 1/10로 줄임. 연쇄는 1(그대로). 점프의 정수는 개수만큼 새 효과로 옮긴다",
+    "scale": 0.1,
+    "keep": ["chain"]
+  }
+}

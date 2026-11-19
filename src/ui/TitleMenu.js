@@ -1,14 +1,13 @@
 // Title inside the (landscape) stage: 이어하기 / 새로하기, the save-slot list, and naming a new family.
 // store: VaultStore; names: config.names; onContinue(slot); onHall(slot); onNew(slot, family, given); onGuide(); onStory()
-import { floorLabel } from '../core/floorLabel.js';
-import { t, getLang, setLang, LANGS, LANG_NAMES, fullName, trPerson, nameList, formatDate } from '../i18n/index.js';
+import { t, getLang, setLang, LANGS, LANG_NAMES, fullName, trPerson, nameList, formatDate, floorText } from '../i18n/index.js';
 import { LANG_FLAGS } from './langFlags.js';
 
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const when = (ms) => formatDate(ms);
-const whereText = (s) => (s.final ? t('final.resume') : s.state === 'rest' ? t('where.rest', { floor: floorLabel(s.floor) }) : s.state === 'run' ? (s.saved ? t('where.saved', { floor: floorLabel(s.floor) }) : s.auto ? t('where.resume', { floor: floorLabel(s.floor) }) : t('where.run')) : t('where.idle'));
+const whereText = (s) => (s.final ? t('final.resume') : s.state === 'rest' ? t('where.rest', { floor: floorText(s.floor) }) : s.state === 'run' ? (s.saved ? t('where.saved', { floor: floorText(s.floor) }) : s.auto ? t('where.resume', { floor: floorText(s.floor) }) : t('where.run')) : t('where.idle'));
 
 // start screen: three small flag buttons (Korea · USA · Japan), named in their own language
 function flagSwitch() {

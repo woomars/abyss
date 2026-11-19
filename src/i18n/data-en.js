@@ -1,13 +1,13 @@
-// English for the Korean display strings in src/data/*.json (keyed by the Korean text), and the
+// English for the Korean display strings in src/data/rules|look json (keyed by the Korean text), and the
 // name lists (index-aligned with names.json).
 export default {
   text: {
     // items: parts and base names
-    '무기': 'Weapon', '투구': 'Helm', '갑옷': 'Armor', '장갑': 'Gloves', '신발': 'Boots', '목걸이': 'Amulet', '반지': 'Ring',
+    '무기': 'Weapon', '투구': 'Helm', '갑옷': 'Armor', '장갑': 'Gloves', '방패': 'Shield', '신발': 'Boots', '목걸이': 'Amulet', '반지': 'Ring',
     '장검': 'Longsword', '도끼': 'Axe', '단검': 'Dagger', '대검': 'Greatsword',
     '두건': 'Hood', '철모': 'Iron Cap',
     '사슬 갑옷': 'Chainmail', '판금': 'Plate',
-    '건틀릿': 'Gauntlets',
+    '건틀릿': 'Gauntlets', '대방패': 'Tower Shield',
     '장화': 'High Boots', '군화': 'War Boots',
     '부적': 'Talisman',
     '인장 반지': 'Signet Ring',
@@ -18,7 +18,7 @@ export default {
     '공격 범위': 'Attack Range', '돌진 거리': 'Dash Range', '넉백': 'Knockback', '기본 공격 속도': 'Attack Speed',
     '특수기 피해': 'Skill Damage', '콤보 5마다 공격력': 'Attack per 5 Combo',
     // grades and qualities (items and treasure cards)
-    '일반': 'Common', '고급': 'Uncommon', '희귀': 'Rare', '영웅': 'Epic', '전설': 'Legendary',
+    '일반': 'Common', '고급': 'Uncommon', '희귀': 'Rare', '영웅': 'Epic', '전설': 'Legendary', '세트': 'Set',
     '상급': 'Fine', '최상급': 'Superior',
     // legendaries, effects, sets
     '폭풍의 대검': 'Stormblade', '흡혈 군주의 검': 'Sword of the Vampire Lord', '대지 파쇄자': 'Earthshatter',
@@ -66,6 +66,7 @@ export default {
     "번개 투구": "Lightning Helm",
     "번개 갑옷": "Lightning Armor",
     "번개 장갑": "Lightning Gloves",
+    "번개 방패": "Lightning Shield",
     "번개 장화": "Lightning Boots",
     "연쇄 타격 기절 +5%": "Chain hits stun +5%",
     "공격력 +10%, 연쇄 기절 +10%": "Attack +10%, chain stun +10%",
@@ -77,6 +78,7 @@ export default {
     "폭풍 투구": "Storm Helm",
     "폭풍 갑옷": "Storm Armor",
     "폭풍 장갑": "Storm Gloves",
+    "폭풍 방패": "Storm Shield",
     "폭풍 장화": "Storm Boots",
     "회전 베기 칼날 +3%, 기절 +5% (바깥 고리)": "Spin blade +3%, stun +5% (outer ring)",
     "칼날 +6%, 기절 +10%": "Blade +6%, stun +10%",
@@ -88,6 +90,7 @@ export default {
     "유성 투구": "Meteor Helm",
     "유성 갑옷": "Meteor Armor",
     "유성 장갑": "Meteor Gloves",
+    "유성 방패": "Meteor Shield",
     "유성 장화": "Meteor Boots",
     "점프 착지: 가운데 기절 범위 32%, 범위 110%, 점프 거리 +5%, 밀어내기 +10%": "Jump landing: sure-stun core 32%, area 110%, jump distance +5%, push +10%",
     "가운데 44%, 범위 120%, 거리 +5%, 밀어내기 +10%": "Core 44%, area 120%, distance +5%, push +10%",
@@ -99,6 +102,7 @@ export default {
     "질풍 투구": "Gale Helm",
     "질풍 갑옷": "Gale Armor",
     "질풍 장갑": "Gale Gloves",
+    "질풍 방패": "Gale Shield",
     "질풍 장화": "Gale Boots",
     "칼 거리 안 기절 +5%": "Stun within sword reach +5%",
     "질풍 베기 피해 +15%, 기절 +10%": "Gale Slash damage +15%, stun +10%",
@@ -110,6 +114,7 @@ export default {
     "망령 투구": "Wraith Helm",
     "망령 갑옷": "Wraith Armor",
     "망령 장갑": "Wraith Gloves",
+    "망령 방패": "Wraith Shield",
     "망령 장화": "Wraith Boots",
     "쓰러뜨린 적 하나가 1초 동안 망령이 되어 싸운다 (망령의 공격은 반격을 부르지 않는다)": "A felled foe fights as a wraith for 1s (wraith blows never anger foes)",
     "최대 체력 +20, 망령 1명 2초": "Max HP +20, 1 wraith for 2s",

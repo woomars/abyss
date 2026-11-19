@@ -1,5 +1,5 @@
 // Opening story and ending paragraphs in the current language: Korean straight from
-// src/data/tuning/story.json (the developer's text), English and Japanese from the i18n dictionaries.
+// src/data/rules/story.json (the developer's text), English and Japanese from the i18n dictionaries.
 const ENDING_KEYS = ['p1', 'p2', 'p3.wife', 'p3.husband', 'p4'];
 
 export function storyText(lang, story, t) {

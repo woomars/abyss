@@ -1,6 +1,5 @@
 import { relicIcon } from './relicIcons.js';
-import { floorLabel } from '../core/floorLabel.js';
-import { t, tr, trPerson } from '../i18n/index.js';
+import { t, tr, trPerson, floorText } from '../i18n/index.js';
 import { hpBarHtml, paintHpBar } from './hpBarView.js';
 
 // Top HUD: HP bar, floor (or practice), gold, owned treasures, kills, enemies left, pause button.
@@ -53,10 +52,11 @@ export class HUD {
   // the language changed: every cached text is written again on the next update
   relabel() { this.last = {}; }
 
-  update(game) {
+  // fx: the Fx beside the game (hp trail)
+  update(game, fx) {
     this.set('kills', this.killsEl, String(game.stats.kills));
     const d = game.dungeon, run = game.mode === 'dungeon';
-    this.set('floor', this.floorEl, !run ? t('hud.practice') : d.roomKind === 'treasure' ? t('hud.treasure', { floor: floorLabel(d.floor) }) : floorLabel(d.floor));
+    this.set('floor', this.floorEl, !run ? t('hud.practice') : d.roomKind === 'treasure' ? t('hud.treasure', { floor: floorText(d.floor) }) : floorText(d.floor));
     this.set('gold', this.goldEl, String(d.gold));
     this.toggle('goldHidden', this.goldWrap, !run);
     this.toggle('pocketHidden', this.pocketWrap, !run);
@@ -76,8 +76,8 @@ export class HUD {
       this.last.relics = key;
       this.relicsEl.innerHTML = owned.map((r) => `<span class="rl" title="${tr(r.name)}">${relicIcon(r.icon, 15)}${r.count > 1 ? `<b>${r.count}</b>` : ''}</span>`).join('');
     }
-    // two layers: red drops at once, the white trail (game.hpTrail) follows after a moment
-    const p = game.player, trail = game.hpTrail ? game.hpTrail.trail : p.hp, red = game.hpTrail ? game.hpTrail.red : p.hp;
+    // two layers: red drops at once, the white trail (fx.hpTrail) follows after a moment
+    const p = game.player, ht = fx && fx.hpTrail, trail = ht ? ht.trail : p.hp, red = ht ? ht.red : p.hp;
     const hpKey = `${p.hp.toFixed(1)}/${p.maxHp}/${trail.toFixed(1)}/${red.toFixed(1)}`;
     if (hpKey !== this.lastHp) {
       this.lastHp = hpKey;

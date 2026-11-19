@@ -18,7 +18,7 @@
 | skill_wave.ogg | "Elemental Magic Spell Impact Outgoing" by RescopicSound — https://pixabay.com/sound-effects/film-special-effects-elemental-magic-spell-impact-outgoing-228342/ | 앞 무음 제거, 0.8초, 모노 |
 | skill_hit.ogg | "Combat Impact" by Universfield — https://pixabay.com/sound-effects/film-special-effects-combat-impact-352458/ | 앞 무음 제거, 0.6초, 모노 |
 
-연쇄 연결음·방향 전환 휙 소리·게임오버음은 Web Audio로 직접 합성한다(`src/systems/AudioSystem.js`).
+연쇄 연결음·방향 전환 휙 소리·게임오버음은 Web Audio로 직접 합성한다(`src/platform/AudioSystem.js`).
 
 ## 배경음악 (Pixabay 콘텐츠 라이선스, 위와 같음)
 

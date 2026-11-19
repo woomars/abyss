@@ -4,8 +4,9 @@ import { t as tx, tr } from '../i18n/index.js';
 
 // Small stacked notices under the top HUD when an item is picked up.
 export class LootToast {
-  constructor(root, cfg) {
+  constructor(root, cfg, look) {
     this.cfg = cfg; // config.items
+    this.look = look; // config.look.items
     this.el = document.createElement('div');
     this.el.className = 'loot-toasts';
     root.appendChild(this.el);
@@ -14,13 +15,14 @@ export class LootToast {
   show(item) {
     const t = document.createElement('div');
     t.className = `loot-toast g-${item.grade}`;
-    t.innerHTML = `${itemCell(item, this.cfg, { size: 14 })}<span style="color:${this.cfg.grades[item.grade].color}">${itemLabel(item, this.cfg)}</span>`;
+    t.innerHTML = `${itemCell(item, this.cfg, this.look, { size: 14 })}<span style="color:${this.look.grades[item.grade].color}">${itemLabel(item, this.cfg, this.look)}</span>`;
     this.el.prepend(t);
     while (this.el.children.length > 3) this.el.lastChild.remove();
     setTimeout(() => t.classList.add('out'), 1800);
     setTimeout(() => t.remove(), 2200);
   }
 
+  // cfg: config.look.medals (tier colours)
   // a medal earned: tier-coloured badge, and a note when this hero is the first of his line to earn it
   medal(m, cfg, first) {
     const t = document.createElement('div'), c = cfg.tiers[m.tier].color;

@@ -1,8 +1,9 @@
 // Language: ko (the source), en, ja. Shared with the woomars hub through localStorage 'woomars.lang'.
 // Order: ?lang= in the address (also saved) -> saved choice -> browser language -> en.
-// UI strings: t(key, params). Data strings from src/data/*.json stay Korean in the json and in saves;
+// UI strings: t(key, params). Data strings from src/data/rules|look json stay Korean in the json and in saves;
 // tr(korean) shows them in the current language (falls back to the Korean when a word is missing).
-import { formatValue } from '../game/Relics.js';
+import { formatValue } from '../logic/progress/Relics.js';
+import { floorLabel } from '../core/floorLabel.js';
 import KO from './ko.js';
 import EN from './en.js';
 import JA from './ja.js';
@@ -61,6 +62,9 @@ export function initLang() {
 }
 
 export function getLang() { return lang; }
+
+// a floor in the current language (지하 N층 / Depth N / 地下N階)
+export const floorText = (n) => floorLabel(n, lang);
 export function locale() { return LOCALES[lang]; }
 
 export function setLang(next, { save = true } = {}) {

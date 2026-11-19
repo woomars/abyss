@@ -7,9 +7,10 @@ import { hpBarHtml, paintHpBar } from './hpBarView.js';
 // cannot pick one by accident.
 export class RelicPicker {
   // hp: () => ({ hp, maxHp }) — shown above the cards so a healing card can be weighed
-  constructor(root, { onPick, onReroll, pickDelay = () => 0.6, relics = () => null, hp = null }) {
+  constructor(root, { onPick, onReroll, pickDelay = () => 0.6, relics = () => null, look = () => null, hp = null }) {
     this.hp = hp;
     this.relics = relics; // config.relics (to show card text in the current language)
+    this.look = look; // config.look.relics (card colours, rarity and tier labels)
     this.onPick = onPick;
     this.onReroll = onReroll;
     this.pickDelay = pickDelay;
@@ -62,16 +63,17 @@ export class RelicPicker {
     this.rerollBtn.disabled = gold < cost;
     this.el.querySelector('.rp-cost').textContent = String(cost);
     this.el.querySelector('.rp-gold b').textContent = String(gold);
+    const lk = this.look(), rar = (o) => lk.rarity[o.rarity], tier = (o) => lk.quality.tiers[o.tier] || lk.quality.tiers[0];
     this.cards.innerHTML = offers.map((o, i) => (o.skillCard ? `
-      <button class="rp-card r-epic sk-card" data-i="${i}" style="--rc:${o.color};--tc:${o.color};--d:${i * 0.12}s">
+      <button class="rp-card r-epic sk-card" data-i="${i}" style="--rc:${lk.skillCard.color};--tc:${lk.skillCard.color};--d:${i * 0.12}s">
         <span class="rp-rarity">${t('sk.card')}</span>
         <span class="rp-icon">${relicIcon(o.icon, 34)}</span>
         <b class="rp-name">${tr(o.name)}</b>
         <span class="rp-desc">${o.stun ? t('sk.rangeStun', { v: `${Math.round(o.value * 100)}%`, s: `${Math.round(o.stun * 100)}%` }) : t(`sk.${o.kind}`, { v: `${Math.round(o.value * 100)}%` })}</span>
         ${o.owned ? `<span class="rp-owned">${t('sk.owned', { n: o.owned })}</span>` : ''}
       </button>` : `
-      <button class="rp-card r-${o.rarity}${o.tier ? ` t-${o.tier}` : ''}" data-i="${i}" style="--rc:${o.color};--tc:${o.tierColor || o.color};--d:${i * 0.12}s">
-        <span class="rp-rarity">${tr(o.rarityLabel)}${o.tierLabel ? ` · <em>${tr(o.tierLabel)}</em>` : ''}</span>
+      <button class="rp-card r-${o.rarity}${o.tier ? ` t-${o.tier}` : ''}" data-i="${i}" style="--rc:${rar(o).color};--tc:${tier(o).color || rar(o).color};--d:${i * 0.12}s">
+        <span class="rp-rarity">${tr(rar(o).label)}${tier(o).label ? ` · <em>${tr(tier(o).label)}</em>` : ''}</span>
         <span class="rp-icon">${relicIcon(o.icon, 34)}</span>
         <b class="rp-name">${tr(o.name)}</b>
         <span class="rp-desc">${relicDesc(o, this.relics())}</span>

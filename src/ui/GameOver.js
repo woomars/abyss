@@ -1,5 +1,4 @@
-import { floorLabel } from '../core/floorLabel.js';
-import { t, fullName, trItemName } from '../i18n/index.js';
+import { t, fullName, trItemName, floorText } from '../i18n/index.js';
 
 
 // Game over overlay: shown when the player's HP reaches 0.
@@ -48,12 +47,12 @@ export class GameOver {
     this.el.querySelector('[data-act="menu"]').textContent = t('go.menu');
     this.el.querySelector('.go-kills').textContent = String(kills);
     this.el.querySelector('.go-combo').textContent = String(bestCombo);
-    this.el.querySelector('.go-floor').textContent = floorLabel(floor);
+    this.el.querySelector('.go-floor').textContent = floorText(floor);
     this.el.querySelector('.go-floor-box').classList.toggle('hidden', !floor);
     const best = this.el.querySelector('.go-best');
     best.textContent = !floor ? ''
       : unranked ? t('go.unranked')
-        : isNew ? t('go.newBest', { floor: floorLabel(bestFloor) }) : t('go.best', { floor: floorLabel(bestFloor) });
+        : isNew ? t('go.newBest', { floor: floorText(bestFloor) }) : t('go.best', { floor: floorText(bestFloor) });
     best.classList.toggle('new', isNew);
     this.el.classList.remove('hidden');
   }

@@ -22,14 +22,14 @@ export function findItem(ctx, id) {
   return null;
 }
 
-// wear an item from the pocket or the stash; the item it replaces goes to the pocket
-// (the pocket may exceed its size at the forge — the size only limits picking up)
+// wear an item from the pocket or the stash; the item it replaces goes to an empty place:
+// the pocket if it has room, else the stash place the worn item just left (never past either size)
 export function equipItem(ctx, id, slot = null) {
   const f = findItem(ctx, id);
   if (!f || f.where === 'equipped') return { ok: false };
   const item = pull(f.where === 'pocket' ? ctx.pocket : ctx.vault.stash, id);
   const displaced = ctx.loadout.equip(item, slot);
-  if (displaced) ctx.pocket.push(displaced);
+  if (displaced) (ctx.pocket.length < ctx.cfg.pocketSize ? ctx.pocket : ctx.vault.stash).push(displaced);
   ctx.vault.markSeen(item);
   return { ok: true, displaced };
 }

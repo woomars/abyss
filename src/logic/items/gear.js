@@ -16,10 +16,10 @@ export function sortItems(items, mode, cfg) {
 const score = (cfg, it) => [it.ringSet ? 1 : 0, cfg.gradeOrder.indexOf(it.grade), it.token ? 1 : 0, it.enhance || 0, it.level || 0, it.quality || 0];
 const better = (cfg) => (a, b) => { const x = score(cfg, a), y = score(cfg, b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return y[i] - x[i]; return a.id - b.id; };
 
-// every item the forge can put on: worn, pocket, stash
+// what auto-equip may put on: worn and pocket (the stash is left alone)
 function allGear(ctx) {
   const worn = LOADOUT_SLOTS.map((s) => ctx.loadout.slots[s]).filter(Boolean);
-  return [...worn, ...ctx.pocket, ...ctx.vault.stash];
+  return [...worn, ...ctx.pocket];
 }
 
 // what auto-equip would wear: { loadoutSlot: itemId | null }.
@@ -48,7 +48,7 @@ export function autoEquipPlan(ctx) {
   return plan;
 }
 
-// wear the plan; what it pushes out goes to the pocket. Returns how many items changed.
+// wear the plan; what it pushes out goes to the pocket (its freed places). Returns how many items changed.
 export function applyAutoEquip(ctx) {
   const plan = autoEquipPlan(ctx), lo = ctx.loadout;
   let changed = 0;

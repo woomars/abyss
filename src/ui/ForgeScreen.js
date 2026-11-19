@@ -1,6 +1,6 @@
 import { relicIcon } from './relicIcons.js';
 import { itemCell, itemDetail } from './itemView.js';
-import { itemStats } from '../logic/items/itemStats.js';
+import { itemStats, baseList } from '../logic/items/itemStats.js';
 import { formatStat, describeItem } from '../look/text/itemText.js';
 import { LOADOUT_SLOTS } from '../logic/items/Loadout.js';
 import {
@@ -370,7 +370,7 @@ export class ForgeScreen {
   // the item as it would be at +to: each line at its new value with the gain beside it
   growCard(it, to, caption) {
     const cfg = this.cfg, d = describeItem(it, cfg, this.look), now = itemStats(it, cfg), next = itemStats({ ...it, enhance: to }, cfg);
-    const keys = [...new Set([it.base.stat, ...it.affixes.map((a) => a.stat)])];
+    const keys = [...new Set([...baseList(it, cfg).map((b) => b.stat), ...it.affixes.map((a) => a.stat)])];
     const lines = keys.map((k) => {
       const int = (this.look.statLabels[k] || [k, 'int'])[1] === 'int';
       const gain = int ? Math.round(next[k]) - Math.round(now[k]) : Math.round((next[k] - now[k]) * 1000) / 10;

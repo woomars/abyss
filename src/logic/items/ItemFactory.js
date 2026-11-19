@@ -84,7 +84,7 @@ export function createItem(cfg, rng, opts) {
     const [a] = rollAffixes(cfg, rng, 'common', 1, []); // grade-limited affixes are filtered by 'common'
     base = { stat: a.stat, value: a.value };
   }
-  const affixes = rollAffixes(cfg, rng, grade, cfg.grades[grade].affixes, [base.stat]);
+  const affixes = rollAffixes(cfg, rng, grade, cfg.grades[grade].affixes, [base.stat, ...((b.stat && cfg.baseExtra && cfg.baseExtra[slot]) || []).map((x) => x.stat)]);
   if (!name) {
     const part = cfg.parts[slot];
     const prefix = affixes.length ? cfg.affixes[affixes[0].stat].prefix + ' ' : '';

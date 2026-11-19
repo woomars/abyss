@@ -49,10 +49,10 @@
       ]
     },
     "gloves": {
-      "label": "장갑",
+      "label": "방패",
       "names": [
-        "장갑",
-        "건틀릿"
+        "방패",
+        "대방패"
       ]
     },
     "boots": {
@@ -142,7 +142,7 @@
       "survive": 0.1
     }
   ],
-  "_base": "부위별 기본 능력치",
+  "_base": "부위별 첫 기본 능력치 (등급·레벨·품질·강화 배율을 받는다). 지금 json 값이 가진 장비 모두에 바로 적용된다. 반지는 없음(무작위 하나)",
   "base": {
     "weapon": {
       "stat": "attackFlat",
@@ -157,8 +157,8 @@
       "value": 0.04
     },
     "gloves": {
-      "stat": "crit",
-      "value": 0.03
+      "stat": "armor",
+      "value": 0.04
     },
     "boots": {
       "stat": "speed",
@@ -172,6 +172,14 @@
       "stat": null,
       "value": 0
     }
+  },
+  "_baseExtra": "부위별 나머지 기본 능력치 (첫 기본 능력치와 같은 배율). 무기 = 공격력·치명타, 투구 = 최대 체력·치명타·받는 피해, 갑옷 = 받는 피해·최대 체력·치명타, 방패 = 받는 피해·최대 체력, 신발 = 이동 속도·치명타 (2026-11-19)",
+  "baseExtra": {
+    "weapon": [{ "stat": "crit", "value": 0.01 }],
+    "helm": [{ "stat": "crit", "value": 0.01 }, { "stat": "armor", "value": 0.02 }],
+    "armor": [{ "stat": "maxHp", "value": 8 }, { "stat": "crit", "value": 0.01 }],
+    "gloves": [{ "stat": "maxHp", "value": 8 }],
+    "boots": [{ "stat": "crit", "value": 0.01 }]
   },
   "_perLevel": "장비 레벨당 기본 능력치 증가 비율",
   "perLevel": 0.05,

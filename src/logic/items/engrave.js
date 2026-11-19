@@ -6,6 +6,7 @@
 // drawn without putting back and refilled when empty — so 90% wins exactly 90 of every 100 tries.
 import { findItem, powderOf } from './Forge.js';
 import { rollAffixes } from './ItemFactory.js';
+import { baseList } from './itemStats.js';
 
 const pick = (list, i) => list[Math.min(i, list.length - 1)];
 
@@ -64,7 +65,7 @@ export function engraveItem(ctx, ecfg, id, hits, rng) {
     if (it.grade !== 'set') { // up to the set grade: more stats (grade mult) and the extra affixes it brings
       it.grade = 'set';
       const want = ctx.cfg.grades.set.affixes - it.affixes.length;
-      if (want > 0) it.affixes.push(...rollAffixes(ctx.cfg, rng, 'set', want, [it.base.stat, ...it.affixes.map((a) => a.stat)]));
+      if (want > 0) it.affixes.push(...rollAffixes(ctx.cfg, rng, 'set', want, [...baseList(it, ctx.cfg).map((b) => b.stat), ...it.affixes.map((a) => a.stat)]));
     }
     it.engraves = (it.engraves || 0) + 1;
     it.passOn = true; // a set engraving also passes it down once

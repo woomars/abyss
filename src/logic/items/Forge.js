@@ -2,6 +2,7 @@
 // strengthen with powder, and what a death keeps. Pure; the screen calls these and re-renders.
 import { LOADOUT_SLOTS } from './Loadout.js';
 import { gradeIndex, rollAffixes } from './ItemFactory.js';
+import { baseList } from './itemStats.js';
 import { josa } from '../../core/josa.js';
 import { floorLabel } from '../../core/floorLabel.js';
 
@@ -281,7 +282,7 @@ export function gradeUpItem(ctx, id) {
   it.enhance = 0;
   it.points = 0; // invested stays: salvaging still gives back what went in
   const want = cfg.grades[it.grade].affixes - it.affixes.length;
-  if (want > 0) it.affixes.push(...rollAffixes(cfg, ctx.rng, it.grade, want, [it.base.stat, ...it.affixes.map((a) => a.stat)]));
+  if (want > 0) it.affixes.push(...rollAffixes(cfg, ctx.rng, it.grade, want, [...baseList(it, cfg).map((b) => b.stat), ...it.affixes.map((a) => a.stat)]));
   // a legendary gets a unique effect of its slot (set pieces keep their set instead)
   if (it.grade === 'legendary' && !it.set && !it.effect) {
     const fits = Object.keys(cfg.legendaries).filter((k) => cfg.legendaries[k].slot === it.slot);

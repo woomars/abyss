@@ -1,5 +1,5 @@
 // How an item reads on screen: name, grade colour and label, stat lines (numbers from logic/items/itemStats).
-import { itemStats } from '../../logic/items/itemStats.js';
+import { itemStats, baseList } from '../../logic/items/itemStats.js';
 import { t, tr, trItemName } from '../../i18n/index.js';
 
 // look: config.look.items (stat labels)
@@ -15,7 +15,7 @@ export function formatStat(cfg, look, stat, v) {
 export function describeItem(item, cfg, look) {
   const g = look.grades[item.grade], q = look.qualities[item.quality];
   const s = itemStats(item, cfg);
-  const keys = [item.base.stat, ...item.affixes.map((a) => a.stat)];
+  const keys = [...new Set([...baseList(item, cfg).map((b) => b.stat), ...item.affixes.map((a) => a.stat)])];
   const ringKeys = item.ringSet && cfg.ringTable && item.enhance > 0 ? Object.keys(cfg.ringTable.perLevel) : [];
   const lines = item.ringSet ? ringKeys.map((k) => formatStat(cfg, look, k, s[k])) : keys.map((k) => formatStat(cfg, look, k, s[k])); // a set ring: only its enhance bonus
   const set = item.set ? cfg.sets[item.set] : null;

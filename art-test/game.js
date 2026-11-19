@@ -10,7 +10,8 @@ const ARENA = { x0: 40, x1: VW * S - 40, y0: 100, y1: VH * S - 24 };
 const P = (w) => Math.round(w / S);
 const $ = (s) => document.querySelector(s);
 
-const atlas = await (await fetch('out/atlas.json')).json();
+const V = '3'; // bump with every upload: sheets keep their names, so stale cached PNGs would not match the atlas
+const atlas = await (await fetch(`out/atlas.json?v=${V}`)).json();
 const app = new PIXI.Application();
 await app.init({ resizeTo: window, background: '#0c0a10', antialias: false, resolution: window.devicePixelRatio || 1, autoDensity: true });
 document.body.prepend(app.canvas);
@@ -19,16 +20,16 @@ document.body.prepend(app.canvas);
 const T = {}, MASK = {};
 const cut = (source, m, i) => new PIXI.Texture({ source, frame: new PIXI.Rectangle((i % m.cols) * m.w, Math.floor(i / m.cols) * m.h, m.w, m.h) });
 for (const [name, m] of Object.entries(atlas)) {
-  const tex = await PIXI.Assets.load(`out/${name}.png`);
+  const tex = await PIXI.Assets.load(`out/${name}.png?v=${V}`);
   const set = { f: [], w: null };
   for (let i = 0; i < m.n; i++) set.f.push(cut(tex.source, m, i));
   if (m.white) {
-    const wt = await PIXI.Assets.load(`out/${name}_white.png`);
+    const wt = await PIXI.Assets.load(`out/${name}_white.png?v=${V}`);
     set.w = []; for (let i = 0; i < m.n; i++) set.w.push(cut(wt.source, m, i));
   }
   T[name] = set;
   if (m.mask) { // the hit test reads these pixels: what you see is what hits
-    const img = new Image(); img.src = `out/${name}.png`; await img.decode();
+    const img = new Image(); img.src = `out/${name}.png?v=${V}`; await img.decode();
     const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
     const g = c.getContext('2d'); g.drawImage(img, 0, 0);
     MASK[name] = { data: g.getImageData(0, 0, c.width, c.height).data, W: c.width };
@@ -155,7 +156,6 @@ function hitEnemy(e, ux, uy, strong) {
   const kb = HERO.kb[k] * (1 - e.T.resist) * 8;
   e.vx = ux * kb; e.vy = uy * kb; e.stun = Math.max(e.stun, HERO.stun[k]);
   stop = Math.max(stop, counter ? 0.16 : 0.08);
-  if (crit) kick(2, 0.25); // shake only on crits (user, 2026-11-19): 4 of the old 1.5-unit pixels = 2 of these
   effect('spark', `d${DIR(ux, uy)}`, e.x - ux * 6, e.y, 20, top, { dy: -Math.round(e.T.head * 0.45) });
   const hy = P(e.y) - e.T.head - 8;
   if (counter) {
@@ -178,6 +178,7 @@ function heroHurt(dmg, from) {
   hero.inv = 0.5;
   if (!hero.dash) Object.assign(hero, { state: 'hurt', t: 0, kx: (dx / l) * 260, ky: (dy / l) * 260 });
   stop = Math.max(stop, 0.08);
+  kick(2, 0.25); // the screen shakes only when the hero is hit, never on the hero's own attacks (user, 2026-11-19)
   number(dmg, P(hero.x), P(hero.y) - 22, 'red');
 }
 

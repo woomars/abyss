@@ -43,6 +43,6 @@
     if (!(de.requestFullscreen || de.webkitRequestFullscreen) || navigator.standalone) fb.style.display = 'none';
     fb.onclick = () => document.fullscreenElement ? document.exitFullscreen() : (de.requestFullscreen || de.webkitRequestFullscreen).call(de).then?.(() => screen.orientation?.lock?.('landscape').catch(() => {}));
   </script>
-  <script type="module" src="game.js?v=4"></script>
+  <script type="module" src="game.js?v=5"></script>
 </body>
 </html>

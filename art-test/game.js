@@ -10,7 +10,7 @@ const ARENA = { x0: 40, x1: VW * S - 40, y0: 100, y1: VH * S - 24 };
 const P = (w) => Math.round(w / S);
 const $ = (s) => document.querySelector(s);
 
-const V = '4'; // bump with every upload: sheets keep their names, so stale cached PNGs would not match the atlas
+const V = '5'; // bump with every upload: sheets keep their names, so stale cached PNGs would not match the atlas
 const atlas = await (await fetch(`out/atlas.json?v=${V}`)).json();
 const app = new PIXI.Application();
 await app.init({ resizeTo: window, background: '#0c0a10', antialias: false, resolution: window.devicePixelRatio || 1, autoDensity: true });

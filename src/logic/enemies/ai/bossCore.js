@@ -396,7 +396,8 @@ export const bossCore = {
       made.push(c);
       game.events.emit('minionSpawn', { pos: q, zone: 'near' });
     }
-    if (made.length) made[Math.floor(game.rng() * made.length) % made.length].real = true;
+    e.ai.realClone = made.length ? made[Math.floor(game.rng() * made.length) % made.length] : null;
+    if (e.ai.realClone) e.ai.realClone.real = true;
   },
 
   pick(e, game) {
@@ -529,6 +530,19 @@ export const bossCore = {
     if (q) game.events.emit('bossGuard', { enemy: e, quest: q, pos: { x: e.pos.x, y: e.pos.y } });
   },
 
+  // the real clone was hit: it vanishes in smoke, and the boss steps out again in the middle of the room
+  cloneReturn(e, game) {
+    const s = e.ai, r = s.realClone, ar = game.arena, c = { x: ar.width / 2, y: ar.height / 2 };
+    if (r) game.events.emit('bossSmoke', { enemy: e, pos: { x: r.pos.x, y: r.pos.y } });
+    game.events.emit('bossSmoke', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } });
+    s.realClone = null;
+    s.vanish = null; // (an assassin's own smoke step is cut short)
+    s.state = 'chase';
+    s.task = null;
+    s.t = Math.max(s.t || 0, e.root.ai.bossCore.cloneReturn);
+    appear(e, game, freeSpot(game, c, 0, Math.min(ar.width, ar.height) / 4, e.radius) || c);
+  },
+
   quest(e, dt, game) {
     const t = e.tcfg, s = e.ai, q = this.questOf(e);
     if (!q || q === 'backWeak') { e.immune = false; return; }
@@ -541,7 +555,10 @@ export const bossCore = {
         s.qt = s.exposedFor || t.exposed || e.root.ai.bossCore.exposedDefault;
         e.immune = false;
         e.guard = 0;
-        if (q === 'clones') for (const c of this.clones(e, game)) { c.dying = true; c.deathTimer = e.root.deathTime; } // the fakes go up in smoke
+        if (q === 'clones') {
+          for (const c of this.clones(e, game)) { c.dying = true; c.deathTimer = e.root.deathTime; } // the fakes go up in smoke
+          if (s.realClone && s.realClone.dying) this.cloneReturn(e, game); // (not when a phase change just cleared them)
+        }
         game.events.emit('bossExposed', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } });
       }
     } else {

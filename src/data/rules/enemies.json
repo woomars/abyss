@@ -3202,6 +3202,18 @@
       "ai": "shieldbearer",
       "shieldArc": 120
     },
+    "buffShaman": {
+      "name": "버프 주술사",
+      "hp": 30,
+      "attack": 0,
+      "speed": 160,
+      "radius": 16,
+      "knockbackResist": 0,
+      "attackRange": 0,
+      "attackWindup": 0.3,
+      "rank": "normal",
+      "ai": "buffShaman"
+    },
     "slime": {
       "name": "분열 점액",
       "hp": 70,
@@ -3215,7 +3227,7 @@
       "ai": "slime"
     },
     "shaman": {
-      "name": "주술사",
+      "name": "전쟁 주술사",
       "hp": 40,
       "attack": 10,
       "speed": 80,
@@ -3400,6 +3412,24 @@
       "behindDistance": 120,
       "_keepBand": "종류 표에 따로 없을 때 지키는 거리 [가까이, 멀리](px)",
       "keepBand": [200, 420]
+    },
+    "buffShaman": {
+      "_radius": "버프가 닿는 거리(px). 이 안의 몹과 자기 자신이 받는다",
+      "radius": 220,
+      "_every": "버프를 거는 간격(초). 계속 다시 건다",
+      "every": 1,
+      "_firstCast": "나타나서 첫 버프까지(초)",
+      "firstCast": 0.4,
+      "_duration": "버프 한 번이 가는 시간(초). 다시 걸리면 처음부터",
+      "duration": 2.5,
+      "_hp": "버프 체력 증가 (0.3 = 최대 체력·남은 체력 +30%)",
+      "hp": 0.3,
+      "_attack": "버프 공격력 증가 (0.3 = +30%)",
+      "attack": 0.3,
+      "_keepFrac": "동료 몹 무리와 두는 거리 = 버프 거리 × 이 값 (용사 반대쪽)",
+      "keepFrac": 0.8,
+      "_arrive": "그 자리에 이만큼(px) 가까우면 멈춤",
+      "arrive": 12
     },
     "shaman": {
       "_bubbleEvery": "주변 적에게 보호막을 씌우는 간격(초)",

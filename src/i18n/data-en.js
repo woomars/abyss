@@ -153,7 +153,8 @@ export default {
     // common mobs (Phase 6)
     "해골 방패병": "Skeleton Shieldbearer",
     "분열 점액": "Splitting Slime",
-    "주술사": "Shaman",
+    "전쟁 주술사": "War Shaman",
+    "버프 주술사": "Buff Shaman",
     // set rings (Phase 6, 8.5)
     "초월": "Transcendent",
     "번개 반지": "Lightning Ring",

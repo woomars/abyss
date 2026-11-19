@@ -186,12 +186,32 @@ export class Enemy {
     return Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) <= (arcDeg * Math.PI) / 360;
   }
 
+  // a buff shaman's blessing (A = ai.buffShaman): hp and attack up while it lasts; cast again, it lasts longer
+  addBuff(A) {
+    if (!this.sbuff) {
+      this.sbuff = { t: 0, hp: 1 + A.hp, atk: 1 + A.attack };
+      this.mods = { ...this.mods, attack: this.mods.attack * this.sbuff.atk };
+      this.maxHp *= this.sbuff.hp;
+      this.hp *= this.sbuff.hp;
+    }
+    this.sbuff.t = A.duration;
+  }
+
+  dropBuff() {
+    const b = this.sbuff;
+    this.sbuff = null;
+    this.mods = { ...this.mods, attack: this.mods.attack / b.atk };
+    this.maxHp /= b.hp;
+    this.hp = Math.min(this.hp, this.maxHp);
+  }
+
   aimAt(p) { const dx = p.x - this.pos.x, dy = p.y - this.pos.y, d = Math.hypot(dx, dy) || 1; return { x: dx / d, y: dy / d }; }
 
   // game: the Game (brains read the player, hazards, view); null in plain melee tests
   update(dt, playerPos, arena, playerRadius = 16, onAttack = null, onStrike = null, game = null) {
     this.prevPos.x = this.pos.x;
     this.prevPos.y = this.pos.y;
+    if (this.sbuff && (this.sbuff.t -= dt) <= 0) this.dropBuff(); // a buff shaman's blessing ran out
     if (this.strikeTime > 0) this.strikeTime -= dt;
     if (this.counterTime > 0) this.counterTime -= dt;
     if (this.rearm > 0) { this.rearm -= dt; if (this.rearm <= 0 && this.counterTime > 0) this.canCounter = true; } // next beat of a mixed counter

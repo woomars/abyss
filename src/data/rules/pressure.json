@@ -18,8 +18,13 @@
       { "_name": "21층~ 폭탄병", "cycle": 1, "type": "bomber", "weight": 0.12 },
       { "_name": "41층~ 해골 방패병", "cycle": 2, "type": "shieldbearer", "weight": 0.12 },
       { "_name": "61층~ 분열 점액 (쓰러지면 둘로 갈라짐, 두 번까지)", "cycle": 3, "type": "slime", "weight": 0.1 },
-      { "_name": "81층~ 주술사", "cycle": 4, "type": "shaman", "weight": 0.08 }
+      { "_name": "81층~ 전쟁 주술사", "cycle": 4, "type": "shaman", "weight": 0.08 },
+      { "_name": "41층~ 버프 주술사 (무리째: 아래 troops)", "cycle": 2, "type": "buffShaman", "weight": 0.04 }
     ],
+    "_troops": "무리로 나오는 몹: 이 몹이 뽑히면 주위에 함께 나온다. ring = 몸에서 gap(px) 떨어져 둘러싼 몹(3px = 1 도트), near = 버프 거리 안 무작위 자리. 무리 전체가 웨이브 수에 들어감",
+    "troops": {
+      "buffShaman": { "ring": { "type": "soldier", "count": 4, "gap": 6 }, "near": { "type": "elite", "count": 1 } }
+    },
     "_slime": "분열 점액: splits = 갈라지는 횟수(큰 것 1 → 중간 2 → 작은 4), 갈라질 때마다 체력·크기·공격력에 shrink를 곱하고 속도에 speedUp을 곱함",
     "slime": { "splits": 2, "shrink": 0.55, "speedUp": 1.25, "spread": 40 },
     "_bomberFuse": "일반 층 폭탄병: 플레이어 가까이(fuseRange) 오면 경고 원을 띄우고 fuse 초 뒤 폭발. 폭발은 적도 다치게 한다",
@@ -81,7 +86,7 @@
       "shieldbearer": [0.3, 0.5, 0.7, 0.9, 1],
       "_slime": "분열 점액 (61층~, 뛰어들기)",
       "slime": [0.3, 0.5, 0.7, 0.9, 1],
-      "_shaman": "주술사 (81층~, 저주 바닥. 보호막은 선공과 상관없이 씀)",
+      "_shaman": "전쟁 주술사 (81층~, 저주 바닥. 보호막은 선공과 상관없이 씀)",
       "shaman": [0.3, 0.5, 0.7, 0.9, 1]
     }
   },

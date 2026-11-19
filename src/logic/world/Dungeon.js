@@ -446,17 +446,42 @@ export class Dungeon {
     while (n > 0) {
       const group = Math.min(n, randInt(c.spawn.groupSize, rng));
       const center = this.spawnPoint();
+      let extra = 0;
       for (let i = 0; i < group; i++) {
         const type = pickWeighted(mix, rng);
         const mods = { ...this.info.mods };
         if (this.variant === 'elite' || (band.enhancedChance && rng() < band.enhancedChance)) {
           mods.hp *= c.enhanced.hp; mods.attack *= c.enhanced.attack; mods.size = c.enhanced.size; mods.enhanced = true; mods.riposte = !!c.enhanced.riposte;
         }
-        const s = c.spawn.groupSpread;
-        g.enemies.spawnAt(type, { x: center.x + (rng() * 2 - 1) * s, y: center.y + (rng() * 2 - 1) * s }, mods);
+        const s = c.spawn.groupSpread, at = { x: center.x + (rng() * 2 - 1) * s, y: center.y + (rng() * 2 - 1) * s };
+        const troop = c.mobs && c.mobs.troops && c.mobs.troops[type];
+        if (troop) { extra += this.spawnTroop(type, troop, at, mods) - 1; continue; } // its company counts in the wave
+        g.enemies.spawnAt(type, at, mods);
       }
-      n -= group;
+      n -= group + extra;
     }
+  }
+
+  // a mob that comes with company (pressure.json mobs.troops): a ring around it gap px off its body, and
+  // more within its buff radius at random spots. Returns how many came.
+  spawnTroop(type, troop, at, mods) {
+    const g = this.game, rng = g.rng, T = g.config.enemies.types;
+    const lead = g.enemies.spawnAt(type, at, mods), c = lead.pos;
+    let n = 1;
+    const r = troop.ring;
+    if (r) for (let i = 0; i < r.count; i++) {
+      const a = (i / r.count) * Math.PI * 2, d = lead.radius + T[r.type].radius * mods.size + r.gap;
+      g.enemies.spawnAt(r.type, { x: c.x + Math.cos(a) * d, y: c.y + Math.sin(a) * d }, mods);
+      n++;
+    }
+    const q = troop.near, A = g.config.enemies.ai[type];
+    if (q) for (let i = 0; i < q.count; i++) {
+      const a = rng() * Math.PI * 2, min = lead.radius + T[q.type].radius * mods.size + (r ? r.gap : 0);
+      const d = min + rng() * Math.max(0, ((A && A.radius) || min) - min);
+      g.enemies.spawnAt(q.type, { x: c.x + Math.cos(a) * d, y: c.y + Math.sin(a) * d }, mods);
+      n++;
+    }
+    return n;
   }
 
   // a free spot away from the player: first try just off-screen within maxDistance,

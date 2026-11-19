@@ -65,12 +65,16 @@ export function drawEnemies(rd, game, alpha) {
       const t = performance.now() / 300 + e.id;
       ctx.beginPath(); ctx.ellipse(x + wob, y + (crouch ? r * 0.2 : 0), r * (1.05 + 0.05 * Math.sin(t)) * (crouch ? 1.15 : 1), r * (0.85 - 0.05 * Math.sin(t)) * (crouch ? 0.7 : 1), 0, 0, Math.PI * 2);
       ctx.fill(); ctx.stroke();
-    } else if (ai === 'shaman') { // a small robe with a glowing staff
+    } else if (ai === 'shaman' || ai === 'buffShaman') { // a small robe with a glowing staff (the buff shaman's orb green)
       ctx.beginPath(); ctx.moveTo(x + wob, y - r * 1.2); ctx.lineTo(x + wob + r * 0.9, y + r); ctx.lineTo(x + wob - r * 0.9, y + r); ctx.closePath();
       ctx.fill(); ctx.stroke();
       ctx.strokeStyle = '#c8b090'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(x + wob + r, y + r); ctx.lineTo(x + wob + r * 1.3, y - r * 1.3); ctx.stroke();
-      ctx.fillStyle = '#d8a0ff'; ctx.beginPath(); ctx.arc(x + wob + r * 1.3, y - r * 1.4, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = ai === 'buffShaman' ? '#9dffb0' : '#d8a0ff'; ctx.beginPath(); ctx.arc(x + wob + r * 1.3, y - r * 1.4, 3.5, 0, Math.PI * 2); ctx.fill();
+      if (ai === 'buffShaman' && !e.dying) { // its buff reach, faint
+        ctx.beginPath(); ctx.arc(x, y, rd.config.enemies.ai.buffShaman.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(125,255,160,0.18)'; ctx.lineWidth = 2; ctx.setLineDash([6, 8]); ctx.stroke(); ctx.setLineDash([]);
+      }
     } else if (ai === 'clone' && e.cloneOf) { // an assassin's decoy: drawn exactly as its boss, so only hitting tells them apart
       const b = e.cloneOf;
       drawBossBody(rd, b, x + wob, y, flash ? '#ffffff' : b.strikeTime > 0 ? '#ff3b30' : rd.lookOf(b).color);
@@ -106,6 +110,10 @@ export function drawEnemies(rd, game, alpha) {
     } else {
       ctx.fillRect(x - size / 2 + wob, y - size / 2, size, size);
       ctx.strokeRect(x - size / 2 + wob, y - size / 2, size, size);
+    }
+    if (e.sbuff && !e.dying) { // a buff shaman's blessing: a green glow underfoot
+      ctx.beginPath(); ctx.ellipse(x, y + r * 0.6, r * 1.1, r * 0.45, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(125,255,160,0.75)'; ctx.lineWidth = 2; ctx.stroke();
     }
     if (e.bubble && !e.dying) { // a shaman's bubble: one blow stopped
       ctx.beginPath(); ctx.arc(x, y, r * 1.45, 0, Math.PI * 2);

@@ -10,7 +10,7 @@ const ARENA = { x0: 40, x1: VW * S - 40, y0: 100, y1: VH * S - 24 };
 const P = (w) => Math.round(w / S);
 const $ = (s) => document.querySelector(s);
 
-const V = '3'; // bump with every upload: sheets keep their names, so stale cached PNGs would not match the atlas
+const V = '4'; // bump with every upload: sheets keep their names, so stale cached PNGs would not match the atlas
 const atlas = await (await fetch(`out/atlas.json?v=${V}`)).json();
 const app = new PIXI.Application();
 await app.init({ resizeTo: window, background: '#0c0a10', antialias: false, resolution: window.devicePixelRatio || 1, autoDensity: true });
@@ -19,22 +19,20 @@ document.body.prepend(app.canvas);
 // ---------------------------------------------------------------- textures
 const T = {}, MASK = {};
 const cut = (source, m, i) => new PIXI.Texture({ source, frame: new PIXI.Rectangle((i % m.cols) * m.w, Math.floor(i / m.cols) * m.h, m.w, m.h) });
-for (const [name, m] of Object.entries(atlas)) {
-  const tex = await PIXI.Assets.load(`out/${name}.png?v=${V}`);
+const img = async (src) => { const i = new Image(); i.src = src; await i.decode(); return i; };
+await Promise.all(Object.entries(atlas).map(async ([name, m]) => { // every sheet at once, not one after another
+  const url = `out/${name}.png?v=${V}`;
+  const [tex, wt, mi] = await Promise.all([PIXI.Assets.load(url), m.white ? PIXI.Assets.load(`out/${name}_white.png?v=${V}`) : null, m.mask ? img(url) : null]);
   const set = { f: [], w: null };
   for (let i = 0; i < m.n; i++) set.f.push(cut(tex.source, m, i));
-  if (m.white) {
-    const wt = await PIXI.Assets.load(`out/${name}_white.png?v=${V}`);
-    set.w = []; for (let i = 0; i < m.n; i++) set.w.push(cut(wt.source, m, i));
-  }
+  if (wt) { set.w = []; for (let i = 0; i < m.n; i++) set.w.push(cut(wt.source, m, i)); }
   T[name] = set;
-  if (m.mask) { // the hit test reads these pixels: what you see is what hits
-    const img = new Image(); img.src = `out/${name}.png?v=${V}`; await img.decode();
-    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
-    const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+  if (mi) { // the hit test reads these pixels: what you see is what hits
+    const c = document.createElement('canvas'); c.width = mi.width; c.height = mi.height;
+    const g = c.getContext('2d'); g.drawImage(mi, 0, 0);
     MASK[name] = { data: g.getImageData(0, 0, c.width, c.height).data, W: c.width };
   }
-}
+}));
 $('#load').remove();
 
 function maskHit(name, fi, dx, dy) {
@@ -110,7 +108,7 @@ function number(v, px, py, col, scale = 1) {
 const HERO = { r: 16, speed: 150, every: 0.35, dmg: 10, crit: 0.15, kb: [60, 180, 260], stun: [0.12, 0.25, 0.35], max: 5,
   dash: { range: 190, cone: 35, speed: 850, max: 0.35, past: 40, links: 3, linkRange: 140, linkMin: 35, linkCone: 45, delay: 0.04, free: 0.18 } };
 const TYPES = {
-  soldier: { art: 'skel', r: 14, hp: 20, atk: 5, speed: 95, range: 22, wind: 0.25, resist: 0, tg: 'tgSoldier', first: 'tgFirstS', slash: 'slashS', burst: 'burstS', shadow: 'shadow', windKey: 'wind', strikeKey: 'strike', head: 11 },
+  soldier: { art: 'skel', r: 14, hp: 20, atk: 5, speed: 95, range: 22, wind: 0.25, resist: 0, tg: 'tgSoldier', first: 'tgFirstS', slash: 'slashS', burst: 'burstS', shadow: 'shadow', windKey: 'wind', strikeKey: 'strike', head: 14 },
   elite: { art: 'orc', r: 26, hp: 90, atk: 20, speed: 70, range: 34, wind: 0.4, resist: 0.75, tg: 'tgOrc', first: 'tgFirstO', slash: 'slashE', burst: 'burstO', shadow: 'shadowBig', windKey: 'windCleave', strikeKey: 'strikeCleave', head: 17, counter: true },
 };
 const FIRST = { warn: 0.6, chance: 0.15, extra: 40, aggressive: 0.3 };
@@ -178,8 +176,8 @@ function heroHurt(dmg, from) {
   hero.inv = 0.5;
   if (!hero.dash) Object.assign(hero, { state: 'hurt', t: 0, kx: (dx / l) * 260, ky: (dy / l) * 260 });
   stop = Math.max(stop, 0.08);
-  kick(2, 0.25); // the screen shakes only when the hero is hit, never on the hero's own attacks (user, 2026-11-19)
-  number(dmg, P(hero.x), P(hero.y) - 22, 'red');
+  kick(4, 0.25); // the screen shakes only when the hero is hit, never on the hero's own attacks (user, 2026-11-19)
+  number(dmg, P(hero.x), P(hero.y) - 26, 'red');
 }
 
 // ---------------------------------------------------------------- hero: auto attack + dash chain

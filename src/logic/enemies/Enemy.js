@@ -101,7 +101,7 @@ export class Enemy {
   takeHit({ damage, knockDir, knockback, stagger, noRiposte = false, passDir = null }) {
     this.lastBlocked = null;
     this.aggressive = true; // struck: a calm mob turns on the hero
-    if (this.immune) { damage = 0; this.lastBlocked = 'immune'; } // a boss quest: minions or sigils still stand
+    if (this.immune) { damage = 0; this.lastBlocked = 'immune'; this.struck = true; } // a boss quest: minions or sigils still stand (struck: an assassin found among its clones)
     else if (this.guard > 0) { // a warrior's guard soaks blows until it breaks; what is left over goes through
       const soak = Math.min(this.guard, damage);
       this.guard -= soak; damage -= soak;

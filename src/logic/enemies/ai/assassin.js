@@ -1,7 +1,18 @@
 // Assassin bosses (Phase 6, 2.1): keep a middle distance and now and then vanish into smoke — a shadow
-// shows behind or beside the player first, then the boss steps out of it. Its quest is its clones:
-// while they stand the boss cannot be hurt; hitting the real one (they all look alike) opens it up.
+// shows behind or beside the player first, then the boss steps out of it. Its quest is its clones: it
+// vanishes and walks among them as the real one (they all look alike), taking no damage; struck, it
+// steps out in the middle of the room, open to harm.
 import { bossCore, keepBand, behindSpot, appear } from './bossCore.js';
+import { cloneStep, cloneState } from './clone.js';
+
+// among its clones the boss is one of them: quest and upkeep go on, it moves and swings like a clone (null: not hiding)
+export function hideAmongClones(e, dt, game) {
+  if (!e.ai.opened || !bossCore.hiding(e)) return null;
+  bossCore.upkeep(e, dt, game);
+  bossCore.quest(e, dt, game);
+  if (!bossCore.hiding(e)) return null;
+  return cloneStep(e, e.ai.cl || (e.ai.cl = cloneState(e)), e, dt, game);
+}
 
 export const assassinAI = {
   init(e) {
@@ -23,7 +34,7 @@ export const assassinAI = {
       if (s.vanish.t <= 0) { appear(e, game, s.vanish.to); s.vanish = null; }
       return { x: 0, y: 0 };
     }
-    return bossCore.update(e, dt, game, assassinAI);
+    return hideAmongClones(e, dt, game) || bossCore.update(e, dt, game, assassinAI);
   },
 
   move(e, game, v, dt) {

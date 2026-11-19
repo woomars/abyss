@@ -4,7 +4,7 @@
 // quest. Page 2 (the last phase, ai 'mirror'): he becomes the hero's mirror — the hero's own moves
 // (chain dashes, 회전 베기, 점프, 질풍 베기) on the hero's own cooldowns, for the hero's own damage.
 import { bossCore, keepBand, appear } from './bossCore.js';
-import { assassinAI } from './assassin.js';
+import { assassinAI, hideAmongClones } from './assassin.js';
 import { golemFront, turnFace } from './golem.js';
 
 export function founderPhase(e) {
@@ -171,7 +171,7 @@ export const founderAI = {
       return { x: 0, y: 0 };
     }
     if (ph.ai === 'golem') turnFace(e, dt, game);
-    return bossCore.update(e, dt, game, founderAI);
+    return hideAmongClones(e, dt, game) || bossCore.update(e, dt, game, founderAI);
   },
   move(e, game, v, dt) {
     const p = e.tcfg.phases[e.ai.phase] || e.tcfg.phases[0], F = e.root.ai.founder;

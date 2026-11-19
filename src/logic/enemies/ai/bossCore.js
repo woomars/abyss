@@ -383,22 +383,35 @@ export const bossCore = {
   // an assassin's clones still standing
   clones(e, game) { return game.enemies.all().filter((m) => m.type === 'clone' && m.cloneOf === e && m.alive && !m.dying); },
 
-  // clones around the player, one of them real (assassin quest)
+  // the assassin quest: the boss vanishes in smoke and comes back as one of its clones around the player -
+  // the real clone is the boss itself (picked at random among the spots); the rest are fakes
   spawnClones(e, game) {
-    const n = ((e.tcfg.clones && e.tcfg.clones.count) || e.root.ai.bossCore.cloneCount) + e.ai.extra, made = [];
+    const n = ((e.tcfg.clones && e.tcfg.clones.count) || e.root.ai.bossCore.cloneCount) + e.ai.extra, spots = [];
     const info = game.dungeon && game.dungeon.info, base = e.root.types.clone, bc = e.root.ai.bossCore;
     for (let i = 0; i < n; i++) {
       const q = freeSpot(game, game.player.pos, bc.cloneSpot[0], bc.cloneSpot[1], e.radius) || freeSpot(game, e.pos, bc.cloneFallback[0], bc.cloneFallback[1], e.radius);
-      if (!q) continue;
+      if (q) spots.push(q);
+    }
+    const me = spots.length ? Math.floor(game.rng() * spots.length) % spots.length : -1;
+    spots.forEach((q, i) => {
+      if (i === me) return;
       const c = game.enemies.spawnAt('clone', q, { ...(info ? info.mods : {}), minion: true, noReward: true, size: e.radius / base.radius });
       c.hp = c.maxHp = 1;
       c.cloneOf = e;
-      made.push(c);
-      game.events.emit('minionSpawn', { pos: q, zone: 'near' });
+    });
+    if (me >= 0) {
+      game.events.emit('bossSmoke', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } });
+      const q = spots[me];
+      e.pos = { x: q.x, y: q.y }; e.prevPos = { x: q.x, y: q.y }; // no blink trail: nothing tells it from the fakes
+      e.hidden = false;
+      e.ai.state = 'chase'; e.ai.task = null; e.ai.vanish = null;
     }
-    e.ai.realClone = made.length ? made[Math.floor(game.rng() * made.length) % made.length] : null;
-    if (e.ai.realClone) e.ai.realClone.real = true;
+    for (const q of spots) game.events.emit('minionSpawn', { pos: q, zone: 'near' });
+    e.struck = false;
   },
+
+  // the boss among its clones: it moves and swings like them (cloneAI) until it is struck
+  hiding(e) { return this.questOf(e) === 'clones' && e.ai.qphase === 'guarded'; },
 
   pick(e, game) {
     const t = e.tcfg, n = this.minions(e, game);
@@ -530,12 +543,11 @@ export const bossCore = {
     if (q) game.events.emit('bossGuard', { enemy: e, quest: q, pos: { x: e.pos.x, y: e.pos.y } });
   },
 
-  // the real clone was hit: it vanishes in smoke, and the boss steps out again in the middle of the room
+  // the boss was struck among its clones (no damage): it vanishes in smoke and steps out in the middle of the room
   cloneReturn(e, game) {
-    const s = e.ai, r = s.realClone, ar = game.arena, c = { x: ar.width / 2, y: ar.height / 2 };
-    if (r) game.events.emit('bossSmoke', { enemy: e, pos: { x: r.pos.x, y: r.pos.y } });
+    const s = e.ai, ar = game.arena, c = { x: ar.width / 2, y: ar.height / 2 };
     game.events.emit('bossSmoke', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } });
-    s.realClone = null;
+    e.struck = false;
     s.vanish = null; // (an assassin's own smoke step is cut short)
     s.state = 'chase';
     s.task = null;
@@ -548,7 +560,7 @@ export const bossCore = {
     if (!q || q === 'backWeak') { e.immune = false; return; }
     if (s.qphase === 'guarded') {
       const done = q === 'minions' ? this.minions(e, game) === 0 : q === 'sigils' ? this.sigils(e, game).length === 0
-        : q === 'clones' ? !this.clones(e, game).some((c) => c.real) : !(e.guard > 0);
+        : q === 'clones' ? !!e.struck : !(e.guard > 0); // clones: the boss itself was struck among them
       e.immune = !done && q !== 'guard';
       if (done) {
         s.qphase = 'exposed';
@@ -557,7 +569,7 @@ export const bossCore = {
         e.guard = 0;
         if (q === 'clones') {
           for (const c of this.clones(e, game)) { c.dying = true; c.deathTimer = e.root.deathTime; } // the fakes go up in smoke
-          if (s.realClone && s.realClone.dying) this.cloneReturn(e, game); // (not when a phase change just cleared them)
+          this.cloneReturn(e, game);
         }
         game.events.emit('bossExposed', { enemy: e, pos: { x: e.pos.x, y: e.pos.y } });
       }

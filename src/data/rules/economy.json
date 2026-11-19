@@ -49,8 +49,8 @@
     "firstPrice": 2000,
     "_growth": "다음 칸 가격 배율. 1.1 = 칸마다 10% 비싸짐",
     "growth": 1.1,
-    "_maxSlots": "최대 칸 수",
-    "maxSlots": 60
+    "_maxSlots": "최대 칸 수. 저장 파일의 보관함이 이보다 많으면 뒤쪽 장비는 버려진다",
+    "maxSlots": 35
   },
 
   "legacyEngrave": {

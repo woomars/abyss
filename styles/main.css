@@ -483,6 +483,8 @@ html, body {
 .icell.sel { box-shadow: 0 0 0 2px #fff, 0 0 12px rgba(255, 255, 255, 0.4); }
 .icell.chk::before { content: "✓"; position: absolute; right: -5px; bottom: -6px; width: 16px; height: 16px; border-radius: 50%; background: #c9a86a; color: #000; font-size: 11px; font-weight: 900; display: flex; align-items: center; justify-content: center; z-index: 2; }
 .fg-empty { color: #6d6380; padding: 10px; }
+.fg-cell { width: 44px; height: 44px; box-sizing: border-box; border: 2px dashed #3a3346; border-radius: 7px; background: rgba(10, 8, 14, 0.5); } /* an empty place */
+.fg-cell.lock { border-style: solid; border-color: #241f2c; background: rgba(0, 0, 0, 0.35); opacity: 0.45; } /* a stash place not bought yet */
 .fg-detail { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
 .fg-detail > * { flex: 1; min-width: 150px; }
 .fg-cmp { border-left: 1px solid #2a2234; padding-left: 8px; }

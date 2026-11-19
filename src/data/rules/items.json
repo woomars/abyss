@@ -498,8 +498,8 @@
     "flyTime": 0.28,
     "scatter": 40
   },
-  "_pocketSize": "주머니 칸 수",
-  "pocketSize": 30,
+  "_pocketSize": "주머니 칸 수 (대장간 화면 격자도 이 칸 수만큼)",
+  "pocketSize": 35,
   "_enhance": "강화: 최대 단계, 가루 점수, 단계별 필요 점수, 단계별 능력치 보너스",
   "enhance": {
     "max": 10,

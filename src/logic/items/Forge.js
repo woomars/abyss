@@ -35,6 +35,7 @@ export function equipItem(ctx, id, slot = null) {
 }
 
 export function unequipItem(ctx, slot) {
+  if (ctx.pocket.length >= ctx.cfg.pocketSize) return { ok: false, reason: 'pocketFull' };
   const it = ctx.loadout.unequip(slot);
   if (!it) return { ok: false };
   ctx.pocket.push(it);
@@ -54,6 +55,7 @@ export function storeItem(ctx, id) {
 
 // stash -> pocket (so it can be carried without wearing it)
 export function takeItem(ctx, id) {
+  if (ctx.pocket.length >= ctx.cfg.pocketSize) return { ok: false, reason: 'pocketFull' };
   const it = pull(ctx.vault.stash, id);
   if (!it) return { ok: false };
   ctx.pocket.push(it);

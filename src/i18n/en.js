@@ -239,6 +239,7 @@ export default {
   'fg.enhance': 'Enhance',
   'fg.enhNote': 'Enhance with powder (any part) and gold. It never fails or breaks. Every stat grows each level (+5: 30%, +10: 100%). At +10 the item can be promoted; a legendary set part at +10 can take a set engraving. An heirloom engraving works at any time.',
   'fg.stashFull': 'The stash is full',
+  'fg.pocketFull': 'The pouch is full',
   'fg.tabEngrave': "Engrave",
   'fg.engNth': "Engraving no. {n}",
   'fg.engChance': "Success chance",

@@ -386,7 +386,10 @@ export class Game {
   attachVault(vault) {
     this.vault = vault;
     const st = this.config.tuning && this.config.tuning.economy && this.config.tuning.economy.stash;
-    if (st) vault.stashSlots = Math.max(vault.stashSlots, st.startSlots); // the free places every family has
+    if (st) {
+      vault.stashSlots = Math.min(st.maxSlots, Math.max(vault.stashSlots, st.startSlots)); // the free places every family has, never past the most
+      if (vault.stash.length > st.maxSlots) vault.stash.length = st.maxSlots; // an old save past the most: the ones at the back are thrown away
+    }
     if (this.config.medals) {
       backfillMedals(vault, this.config.medals);
       checkTrophies(vault, this.config.medals, { roster: bossRoster(this.config.dungeon, this.config.enemies) }); // older families: what they already reached

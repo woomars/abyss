@@ -136,11 +136,23 @@ export class ForgeScreen {
     restoreScroll(this.el, this.scrolls[this.scrollKey]);
   }
 
+  // pocket and stash show every place: empty ones as dashed cells, stash places not bought yet dimmed
   grid(items, { check = false, off = null } = {}) {
-    if (!items.length) return `<div class="fg-empty">${t('fg.empty')}</div>`;
-    return `<div class="fg-grid">${sortItems(items, this.sortMode(), this.cfg).map((it) => itemCell(it, this.cfg, this.look, {
+    const room = this.bagRoom();
+    if (!items.length && !room) return `<div class="fg-empty">${t('fg.empty')}</div>`;
+    const cells = sortItems(items, this.sortMode(), this.cfg).map((it) => itemCell(it, this.cfg, this.look, {
       cls: `${this.sel === it.id ? 'sel' : ''} ${check && this.checked.has(it.id) ? 'chk' : ''} ${off && off(it) ? 'off' : ''}`, size: 22,
-    })).join('')}</div>`;
+    }));
+    if (room) for (let i = items.length; i < room.max; i++) cells.push(`<span class="fg-cell${i >= room.open ? ' lock' : ''}"></span>`);
+    return `<div class="fg-grid">${cells.join('')}</div>`;
+  }
+
+  // { open, max } places of the bag shown (null for worn gear)
+  bagRoom() {
+    const c = this.ctx;
+    if (this.bag === 'pocket') return { open: this.cfg.pocketSize, max: this.cfg.pocketSize };
+    if (this.bag === 'stash') return { open: c.vault.stashSlots, max: c.econ.stash.maxSlots };
+    return null;
   }
 
   bagTabs(list, extra = '') {
@@ -284,7 +296,7 @@ export class ForgeScreen {
       gear = `<div class="fg-h">${t(f.where === 'equipped' ? 'fg.wornItem' : 'fg.pickedItem')}${this.backBtn()}</div>
         <div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg, this.look)}${this.ringButton(it)}</div>${cmp}</div>${delta}`;
     }
-    const items = `${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: `${c.vault.stash.length}/${c.vault.stashSlots}` })]], this.stashBuy())}
+    const items = `${this.bagTabs([['pocket', t('fg.pocketN', { n: `${c.pocket.length}/${this.cfg.pocketSize}` })], ['stash', t('fg.stashN', { n: `${c.vault.stash.length}/${c.vault.stashSlots}` })]], this.stashBuy())}
       <div class="fg-scroll">${this.grid(this.bagItems())}</div>
       ${this.bag === 'pocket' ? `<div class="fg-note">${t('fg.pocketNote')}</div>` : ''}`;
     // left: auto-equip; right: where it is kept, then wearing it — far apart so one is not hit for the other
@@ -532,11 +544,11 @@ export class ForgeScreen {
     else if (a === 'unsel') { this.sel = null; this.render(); }
     else if (a === 'statsOpen') { this.statsOpen = !this.statsOpen; this.render(); }
     else if (a === 'equip') { if (equipItem(c, this.sel, v || null).ok) { this.sel = null; this.changed('equip'); } } // back to the doll
-    else if (a === 'unequip') { const s = c.loadout.find(this.sel); if (s && unequipItem(c, s).ok) { this.sel = null; this.changed('unequip'); } }
+    else if (a === 'unequip') { const s = c.loadout.find(this.sel), r = s ? unequipItem(c, s) : { ok: false }; if (r.ok) { this.sel = null; this.changed('unequip'); } else if (r.reason === 'pocketFull') this.flash(t('fg.pocketFull')); }
     else if (a === 'store') {
       const r = storeItem(c, this.sel);
       if (r.ok) { this.sel = null; this.changed('store'); } else if (r.reason === 'stashFull') this.flash(t('fg.stashFull'));
-    } else if (a === 'take') { if (takeItem(c, this.sel).ok) { this.sel = null; this.changed('take'); } }
+    } else if (a === 'take') { const r = takeItem(c, this.sel); if (r.ok) { this.sel = null; this.changed('take'); } else if (r.reason === 'pocketFull') this.flash(t('fg.pocketFull')); }
     else if (a === 'clearChecks') { this.checked.clear(); this.sel = null; this.confirm = false; this.render(); }
     else if (a === 'checkAll') { for (const id of salvageSelectAll(this.bagItems())) this.checked.add(id); this.confirm = false; this.render(); }
     else if (a === 'salvage') { this.confirm = true; this.render(); } // the question sits in the button panel

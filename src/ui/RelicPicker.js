@@ -25,7 +25,8 @@ export class RelicPicker {
         <div class="rp-cards"></div>
         <div class="rp-bottom">
           <span class="rp-hint" data-i18n="rp.hint">${t('rp.hint')}</span>
-          <button class="rp-reroll"><span data-i18n="rp.reroll">${t('rp.reroll')}</span> <span class="gold-icon">◆</span> <b class="rp-cost">0</b></button>
+          <button class="rp-reroll"><span data-i18n="rp.reroll">${t('rp.reroll')}</span></button>
+          <span class="rp-price"><span data-i18n="rp.price">${t('rp.price')}</span> <span class="gold-icon">◆</span> <b class="rp-cost">0</b></span>
           <span class="rp-gold"><span data-i18n="rp.have">${t('rp.have')}</span> <span class="gold-icon">◆</span> <b>0</b></span>
         </div>
       </div>`;

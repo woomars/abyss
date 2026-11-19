@@ -313,7 +313,7 @@ export class ForgeScreen {
     const v = this.ctx.vault, s = this.ctx.econ.stash;
     if (v.stashSlots >= s.maxSlots) return '';
     const price = stashPrice(this.ctx.econ, v.stashSlots);
-    return `<div class="fg-buyrow"><button class="fg-btn" data-act="buySlot" ${v.gold >= price ? '' : 'disabled'}>${t('fg.buySlot', { n: price })}</button>${v.gold >= price ? '' : `<small class="down">${t('fg.needGold', { n: price - v.gold })}</small>`}</div>`;
+    return `<div class="fg-buyrow"><button class="fg-btn" data-act="buySlot" ${v.gold >= price ? '' : 'disabled'}>${t('fg.buySlot')}</button>${this.costLine(t('fg.slotPrice'), price)}</div>`; // the price beside the button, never on it
   }
 
   deltaLines(a, b) {
@@ -341,9 +341,9 @@ export class ForgeScreen {
       ${[0, 1, 2].map((q) => `<div class="fg-sv"><span><i class="pw t${q}"></i>${t('fg.powderOf', { part: tierLabel(q) })}</span><b>+${pre.powder[q]}</b></div>`).join('')}
       <span class="fg-sp"></span><div class="fg-sv"><span>${t('fg.salvCost')}</span><b class="gold">+◆ ${pre.gold}</b></div>`;
     const btns = this.confirm
-      ? `<span class="fg-act-l fg-askrow"><button class="fg-btn" data-act="salvageNo">${t('no')}</button><span class="fg-warn fg-ask">${ask}</span></span><span class="fg-act-r"><button class="fg-btn red" data-act="salvageYes">${t('fg.salvage')} · +◆${pre.gold}</button></span>`
+      ? `<span class="fg-act-l fg-askrow"><button class="fg-btn" data-act="salvageNo">${t('no')}</button><span class="fg-warn fg-ask">${ask}</span></span><span class="fg-act-r"><button class="fg-btn red" data-act="salvageYes">${t('fg.salvage')}</button></span>`
       : `<span class="fg-act-l"><button class="fg-btn" data-act="checkAll">${t('fg.checkAll')}</button><button class="fg-btn" data-act="clearChecks" ${pre.count ? '' : 'disabled'}>${t('fg.clearChecks')}</button></span>
-        <span class="fg-act-r"><button class="fg-btn red" data-act="salvage" ${pre.count ? '' : 'disabled'}>${t('fg.salvageGoCost', { n: pre.gold })}</button></span>`;
+        <span class="fg-act-r"><button class="fg-btn red" data-act="salvage" ${pre.count ? '' : 'disabled'}>${t('fg.salvageGo')}</button></span>`;
     return { gear, doll: !f, items, gain, btns };
   }
 

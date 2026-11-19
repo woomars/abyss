@@ -248,7 +248,7 @@ html, body {
 .rp-bottom { display: flex; align-items: center; gap: 14px; opacity: 0; transition: opacity 0.3s; }
 .relic-picker.ready .rp-bottom { opacity: 1; }
 .rp-hint { font-size: 12px; color: #9c91ad; }
-.rp-gold { font-size: 12px; color: #b3a8c4; }
+.rp-gold, .rp-price { font-size: 12px; color: #b3a8c4; }
 .rp-gold b, .rp-cost { color: #f0d890; }
 .gold-icon { color: #f0d890; }
 .rp-reroll {
@@ -714,7 +714,7 @@ html:lang(ja), html:lang(ja) body { font-family: system-ui, -apple-system, "Hira
 .hl-tab { font-size: 12px; padding: 0 9px; }
 
 /* special-attack growth cards */
-.relic-picker.skill-mode .rp-reroll, .relic-picker.skill-mode .rp-gold { display: none; }
+.relic-picker.skill-mode .rp-reroll, .relic-picker.skill-mode .rp-gold, .relic-picker.skill-mode .rp-price { display: none; }
 .sk-card .rp-icon { color: #ffd166; }
 
 /* title icons: how to play, story */

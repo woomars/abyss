@@ -2,7 +2,10 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>도트 아트 평가</title>
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; background: #0c0a10; color: #e8e6f0; font: 13px system-ui, "Segoe UI", sans-serif; }
@@ -27,13 +30,19 @@
 <body>
   <div id="bar">
     <div class="g">속도 <button data-speed="1" class="on">1x</button><button data-speed="0.5">0.5x</button><button data-speed="0.25">0.25x</button></div>
-    <div class="g"><button id="pts">판정점</button></div>
+    <div class="g"><button id="pts">판정점</button><button id="full">전체 화면</button></div>
     <span id="desc">1층 · 해골 전사 10 + 오크 전사 1 · 죽으면 1초 뒤 다시 나옴 · 판정은 탑뷰, 그림은 3/4</span>
   </div>
   <div id="hint">좌클릭(누르고 끌기): 이동 · 가까운 적은 마우스 방향으로 자동 공격 · 우클릭 또는 빠르게 튕기기: 돌진 베기(적을 뚫고 지나감, 최대 4연쇄) · 오크 범위가 빨갛고 "!"일 때 맞히면 반격</div>
   <script>if (matchMedia('(pointer: coarse)').matches) { const h = document.getElementById('hint'); h.className = 'touch'; h.textContent = '누르고 끌기: 이동(진행 방향으로 자동 공격) · 빠르게 튕기기: 돌진 베기 · 오크 "!"일 때 맞히면 반격'; }</script>
   <div id="turn">가로로 돌려 주세요</div>
   <div id="load">불러오는 중</div>
+  <script>
+    // Android/desktop: real fullscreen. iPhone Safari has no page fullscreen: "공유 > 홈 화면에 추가" opens it without browser bars
+    const fb = document.getElementById('full'), de = document.documentElement;
+    if (!(de.requestFullscreen || de.webkitRequestFullscreen) || navigator.standalone) fb.style.display = 'none';
+    fb.onclick = () => document.fullscreenElement ? document.exitFullscreen() : (de.requestFullscreen || de.webkitRequestFullscreen).call(de).then?.(() => screen.orientation?.lock?.('landscape').catch(() => {}));
+  </script>
   <script type="module" src="game.js"></script>
 </body>
 </html>

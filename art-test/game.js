@@ -4,7 +4,8 @@
 import * as PIXI from 'https://cdn.jsdelivr.net/npm/pixi.js@8.6.6/dist/pixi.min.mjs';
 
 PIXI.TextureStyle.defaultOptions.scaleMode = 'nearest';
-const S = 1.5, VW = 640, VH = 360;
+const S = 1.5; // world units per art pixel
+let VW = 640, VH = 360; // art pixels on screen; set by layout() so the picture fills the whole screen
 const ARENA = { x0: 40, x1: VW * S - 40, y0: 100, y1: VH * S - 24 };
 const P = (w) => Math.round(w / S);
 const $ = (s) => document.querySelector(s);
@@ -58,16 +59,21 @@ const world = new PIXI.Container();
 const ground = new PIXI.Container(), floorFx = new PIXI.Container(), trail = new PIXI.Container(), actors = new PIXI.Container(), top = new PIXI.Container(), ui = new PIXI.Graphics();
 actors.sortableChildren = true;
 world.addChild(ground, floorFx, trail, actors, top, ui);
-for (let y = 0; y < VH; y += 32) for (let x = 0; x < VW; x += 32) sprite('floor', ground, (x * 7 + y * 3) / 32 % 4 | 0).position.set(x, y);
-const rt = PIXI.RenderTexture.create({ width: VW, height: VH }); rt.source.scaleMode = 'nearest';
-const screen = new PIXI.Sprite(rt); app.stage.addChild(screen);
+let rt = null;
+const screen = new PIXI.Sprite(); app.stage.addChild(screen);
 let Z = 1, OX = 0, OY = 0;
 function layout() {
+  // whole device pixels per art pixel, picked so about 360 art pixels fill the height; the view then
+  // takes as many art pixels as the screen holds, so the picture always fills it edge to edge
   const bar = window.innerHeight < 500 ? 0 : 44; // phones: the bar floats over the picture
-  const dpr = window.devicePixelRatio || 1, W = window.innerWidth, H = window.innerHeight - bar;
-  const zp = Math.max(1, Math.floor(Math.min((W * dpr) / VW, (H * dpr) / VH))); // whole device pixels per art pixel
-  Z = zp / dpr; OX = Math.round((W * dpr - VW * zp) / 2) / dpr; OY = bar + Math.round((H * dpr - VH * zp) / 2) / dpr;
-  screen.scale.set(Z); screen.position.set(OX, OY);
+  const dpr = window.devicePixelRatio || 1, Wd = Math.round(window.innerWidth * dpr), Hd = Math.round((window.innerHeight - bar) * dpr);
+  const zp = Math.max(1, Math.round(Hd / 360));
+  VW = Math.ceil(Wd / zp); VH = Math.ceil(Hd / zp); Z = zp / dpr; OX = 0; OY = bar;
+  Object.assign(ARENA, { x1: VW * S - 40, y1: VH * S - 24 });
+  rt?.destroy(true); rt = PIXI.RenderTexture.create({ width: VW, height: VH }); rt.source.scaleMode = 'nearest';
+  screen.texture = rt; screen.scale.set(Z); screen.position.set(OX, OY);
+  ground.removeChildren().forEach((s) => s.destroy());
+  for (let y = 0; y < VH; y += 32) for (let x = 0; x < VW; x += 32) sprite('floor', ground, (x * 7 + y * 3) / 32 % 4 | 0).position.set(x, y);
 }
 window.addEventListener('resize', layout); layout();
 
@@ -147,7 +153,8 @@ function hitEnemy(e, ux, uy, strong) {
   e.hp -= dmg; e.flash = 0.1; e.dmgd = true; e.angry = ANGRY;
   const kb = HERO.kb[k] * (1 - e.T.resist) * 8;
   e.vx = ux * kb; e.vy = uy * kb; e.stun = Math.max(e.stun, HERO.stun[k]);
-  stop = Math.max(stop, counter ? 0.16 : 0.08); kick(counter ? 9 : P(10), 0.25);
+  stop = Math.max(stop, counter ? 0.16 : 0.08);
+  if (crit) kick(4, 0.25); // shake only on crits, about 4 art pixels (user, 2026-11-19)
   effect('spark', `d${DIR(ux, uy)}`, e.x - ux * 6, e.y, 20, top, { dy: -Math.round(e.T.head * 0.45) });
   const hy = P(e.y) - e.T.head - 8;
   if (counter) {
@@ -169,7 +176,7 @@ function heroHurt(dmg, from) {
   const dx = hero.x - from.x, dy = hero.y - from.y, l = Math.hypot(dx, dy) || 1;
   hero.inv = 0.5;
   if (!hero.dash) Object.assign(hero, { state: 'hurt', t: 0, kx: (dx / l) * 260, ky: (dy / l) * 260 });
-  stop = Math.max(stop, 0.08); kick(P(10), 0.25);
+  stop = Math.max(stop, 0.08);
   number(dmg, P(hero.x), P(hero.y) - 36, 'red');
 }
 

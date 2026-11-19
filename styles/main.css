@@ -552,7 +552,8 @@ html, body {
 /* salvage: select-all / clear at the top left, the red salvage button at the bottom right — far apart */
 .fg-piece small { display: block; font-size: 10px; color: #9c91ad; }
 button.fg-piece.own { cursor: pointer; border: 1px solid #c9a86a; border-radius: 8px; background: rgba(60, 44, 20, 0.5); color: #ff9a3c; font: inherit; }
-.fg-buyrow { display: flex; gap: 8px; align-items: center; }
+.fg-buyrow { display: flex; gap: 8px; align-items: center; margin-left: 4px; font-size: 12px; }
+.fg-bagtab.fg-plus { color: #ffe08a; border-color: #c9a86a; } .fg-bagtab.fg-plus:disabled { opacity: 0.4; }
 .fg-setlist { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
 .fg-setrow { display: flex; align-items: center; gap: 8px; width: 100%; flex: 1 1 0; min-height: 0; max-height: 40px; padding: 0 8px; border: 1px solid #2c2338; border-radius: 7px; background: #140f1a; color: #e8e3d6; font: inherit; text-align: left; }
 .fg-setrow.sel { border-color: #fff; }

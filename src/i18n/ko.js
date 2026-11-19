@@ -242,7 +242,7 @@ export default {
   'fg.wearSet': '세트 착용',
   'fg.autoEquip': '자동 장착',
   'fg.undo': '되돌리기',
-  'fg.buySlot': '보관함 +1칸',
+  'fg.buySlot': '+1칸',
   'fg.slotPrice': '칸 가격',
   'fg.needGold': '금화 {n} 부족',
   'fg.maxGrade': '최고 등급',

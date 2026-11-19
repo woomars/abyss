@@ -229,7 +229,7 @@ export default {
   'fg.wearSet': 'Wear Set',
   'fg.autoEquip': 'Auto Equip',
   'fg.undo': 'Undo',
-  'fg.buySlot': 'Stash +1',
+  'fg.buySlot': '+1 slot',
   'fg.slotPrice': 'Slot price',
   'fg.needGold': '{n} more gold needed',
   'fg.maxGrade': 'Top grade',

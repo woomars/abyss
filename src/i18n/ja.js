@@ -227,7 +227,7 @@ export default {
   'fg.wearSet': 'セット装備',
   'fg.autoEquip': '自動装備',
   'fg.undo': '元に戻す',
-  'fg.buySlot': '保管庫 +1枠',
+  'fg.buySlot': '+1枠',
   'fg.slotPrice': '枠の値段',
   'fg.needGold': '金貨が{n}足りない',
   'fg.maxGrade': '最高等級',

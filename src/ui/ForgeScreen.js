@@ -143,8 +143,8 @@ export class ForgeScreen {
     })).join('')}</div>`;
   }
 
-  bagTabs(list) {
-    return `<div class="fg-bagtabs">${list.map(([k, n]) => `<button class="fg-bagtab${this.bag === k ? ' on' : ''}" data-act="bag" data-v="${k}">${n}</button>`).join('')}</div>`;
+  bagTabs(list, extra = '') {
+    return `<div class="fg-bagtabs">${list.map(([k, n]) => `<button class="fg-bagtab${this.bag === k ? ' on' : ''}" data-act="bag" data-v="${k}">${n}</button>`).join('')}${extra}</div>`;
   }
 
   bagItems() {
@@ -284,8 +284,7 @@ export class ForgeScreen {
       gear = `<div class="fg-h">${t(f.where === 'equipped' ? 'fg.wornItem' : 'fg.pickedItem')}${this.backBtn()}</div>
         <div class="fg-detail"><div class="fg-detail-main">${itemDetail(it, this.cfg, this.look)}${this.ringButton(it)}</div>${cmp}</div>${delta}`;
     }
-    const items = `${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: `${c.vault.stash.length}/${c.vault.stashSlots}` })]])}
-      ${this.bag === 'stash' ? this.stashBuy() : ''}
+    const items = `${this.bagTabs([['pocket', t('fg.pocketN', { n: c.pocket.length })], ['stash', t('fg.stashN', { n: `${c.vault.stash.length}/${c.vault.stashSlots}` })]], this.stashBuy())}
       <div class="fg-scroll">${this.grid(this.bagItems())}</div>
       ${this.bag === 'pocket' ? `<div class="fg-note">${t('fg.pocketNote')}</div>` : ''}`;
     // left: auto-equip; right: where it is kept, then wearing it — far apart so one is not hit for the other
@@ -308,12 +307,12 @@ export class ForgeScreen {
     return `<button class="fg-btn small fg-ringbtn" data-act="forgeRing" data-v="${it.set}">💍 ${esc(tr(this.cfg.sets[it.set].name))}</button>`;
   }
 
-  // stash tab: buy one more place (price grows each time)
+  // beside the stash tab: [+1칸] buys one more place (price grows each time); the price stands beside the button
   stashBuy() {
     const v = this.ctx.vault, s = this.ctx.econ.stash;
     if (v.stashSlots >= s.maxSlots) return '';
     const price = stashPrice(this.ctx.econ, v.stashSlots);
-    return `<div class="fg-buyrow"><button class="fg-btn" data-act="buySlot" ${v.gold >= price ? '' : 'disabled'}>${t('fg.buySlot')}</button>${this.costLine(t('fg.slotPrice'), price)}</div>`; // the price beside the button, never on it
+    return `<span class="fg-buyrow"><button class="fg-bagtab fg-plus" data-act="buySlot" ${v.gold >= price ? '' : 'disabled'}>${t('fg.buySlot')}</button>${this.costLine(t('fg.slotPrice'), price)}</span>`;
   }
 
   deltaLines(a, b) {

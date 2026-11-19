@@ -407,6 +407,10 @@ html, body {
 .fg-btn { min-height: 34px; padding: 0 12px; border-radius: 7px; border: 1px solid #4a3d5c; background: #221a2c; color: #e8e3d6; font: inherit; font-size: 13px; white-space: nowrap; touch-action: manipulation; }
 .fg-btn.pri { background: #3a2f45; border-color: #c9a86a; color: #ffe08a; }
 .fg-btn.red { background: #4a1c1c; border-color: #a8443c; }
+.fg-btns .fg-btn.fix { width: 112px; flex: none; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* the enhance/engrave pair: one size */
+.fg-btns .fg-pair { gap: 28px; } /* far apart, so one is not hit for the other */
+.fg-costs { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 4px 2px 2px; font-size: 12px; }
+.fg-cost { display: flex; align-items: baseline; gap: 6px; } .fg-cost i { font-style: normal; color: #9c91ad; } .fg-cost b { color: #f0d890; } .fg-cost small { font-size: 11px; }
 .fg-btn.promote { background: #4a3a14; border-color: #ffb347; color: #ffd27a; } /* [승급]: +10 */
 .fg-btn.small { min-height: 30px; font-size: 12px; padding: 0 9px; color: #9c91ad; }
 .fg-btn:disabled { opacity: 0.4; }

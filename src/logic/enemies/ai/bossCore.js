@@ -383,10 +383,17 @@ export const bossCore = {
   // an assassin's clones still standing
   clones(e, game) { return game.enemies.all().filter((m) => m.type === 'clone' && m.cloneOf === e && m.alive && !m.dying); },
 
+  // how many figures (the boss among them): by floor band (ai.bossCore.cloneByFloor); the founder keeps his own count
+  cloneCount(e, game) {
+    if (e.tcfg.clones && e.tcfg.clones.count) return e.tcfg.clones.count + e.ai.extra;
+    const t = e.root.ai.bossCore.cloneByFloor, floor = (game.dungeon && game.dungeon.floor) || 1;
+    return t.count[Math.min(t.count.length - 1, Math.floor((floor - 1) / t.every))];
+  },
+
   // the assassin quest: the boss vanishes in smoke and comes back as one of its clones around the player -
   // the real clone is the boss itself (picked at random among the spots); the rest are fakes
   spawnClones(e, game) {
-    const n = ((e.tcfg.clones && e.tcfg.clones.count) || e.root.ai.bossCore.cloneCount) + e.ai.extra, spots = [];
+    const n = this.cloneCount(e, game), spots = [];
     const info = game.dungeon && game.dungeon.info, base = e.root.types.clone, bc = e.root.ai.bossCore;
     for (let i = 0; i < n; i++) {
       const q = freeSpot(game, game.player.pos, bc.cloneSpot[0], bc.cloneSpot[1], e.radius) || freeSpot(game, e.pos, bc.cloneFallback[0], bc.cloneFallback[1], e.radius);

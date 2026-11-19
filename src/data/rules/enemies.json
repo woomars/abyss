@@ -2170,9 +2170,6 @@
       "tier": "mid",
       "minCycle": 0,
       "quest": "clones",
-      "clones": {
-        "count": 3
-      },
       "exposed": 6
     },
     "fangCutthroat": {
@@ -2264,9 +2261,6 @@
       "tier": "mid",
       "minCycle": 2,
       "quest": "clones",
-      "clones": {
-        "count": 3
-      },
       "exposed": 6
     },
     "nightExecutioner": {
@@ -2358,9 +2352,6 @@
       "tier": "region",
       "minCycle": 0,
       "quest": "clones",
-      "clones": {
-        "count": 3
-      },
       "exposed": 6
     },
     "mistSlayer": {
@@ -2452,9 +2443,6 @@
       "tier": "region",
       "minCycle": 2,
       "quest": "clones",
-      "clones": {
-        "count": 3
-      },
       "exposed": 6
     },
     "thousandFaces": {
@@ -2546,9 +2534,6 @@
       "tier": "great",
       "minCycle": 0,
       "quest": "clones",
-      "clones": {
-        "count": 3
-      },
       "exposed": 6
     },
     "abyssShade": {
@@ -2640,9 +2625,6 @@
       "tier": "great",
       "minCycle": 2,
       "quest": "clones",
-      "clones": {
-        "count": 3
-      },
       "exposed": 6
     },
     "stoneGolem": {
@@ -3461,8 +3443,11 @@
       "aggressionStep": 0.25,
       "_retryExtra": "패턴을 못 쓸 때 다시 시도하기까지 retryDelay 에 더하는 시간(초)",
       "retryExtra": 0.6,
-      "_cloneCount": "분신 수: 종류 표에 없을 때",
-      "cloneCount": 3,
+      "_cloneByFloor": "암살자 분신 수 (보스 자신 포함, 그중 하나가 진짜 보스): every 층마다 다음 칸. count[0] = 1~20층, [1] = 21~40층 ... 칸이 모자라면 마지막 값. 시조는 founder.json 의 clones",
+      "cloneByFloor": {
+        "every": 20,
+        "count": [3, 4, 5, 6, 7]
+      },
       "_cloneSpot": "분신이 나타날 자리: 용사에게서 [가까이, 멀리](px)",
       "cloneSpot": [220, 420],
       "_cloneFallback": "위 자리가 없을 때 보스에게서 [가까이, 멀리](px)",

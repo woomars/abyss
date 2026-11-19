@@ -470,13 +470,13 @@ export class Dungeon {
     let n = 1;
     const r = troop.ring;
     if (r) for (let i = 0; i < r.count; i++) {
-      const a = (i / r.count) * Math.PI * 2, d = lead.radius + T[r.type].radius * mods.size + r.gap;
+      const a = (i / r.count) * Math.PI * 2, d = lead.radius + T[r.type].radius * (mods.size || 1) + r.gap;
       g.enemies.spawnAt(r.type, { x: c.x + Math.cos(a) * d, y: c.y + Math.sin(a) * d }, mods);
       n++;
     }
     const q = troop.near, A = g.config.enemies.ai[type];
     if (q) for (let i = 0; i < q.count; i++) {
-      const a = rng() * Math.PI * 2, min = lead.radius + T[q.type].radius * mods.size + (r ? r.gap : 0);
+      const a = rng() * Math.PI * 2, min = lead.radius + T[q.type].radius * (mods.size || 1) + (r ? r.gap : 0);
       const d = min + rng() * Math.max(0, ((A && A.radius) || min) - min);
       g.enemies.spawnAt(q.type, { x: c.x + Math.cos(a) * d, y: c.y + Math.sin(a) * d }, mods);
       n++;

@@ -4,8 +4,8 @@
 import * as PIXI from 'https://cdn.jsdelivr.net/npm/pixi.js@8.6.6/dist/pixi.min.mjs';
 
 PIXI.TextureStyle.defaultOptions.scaleMode = 'nearest';
-const S = 1.5; // world units per art pixel
-let VW = 640, VH = 360; // art pixels on screen; set by layout() so the picture fills the whole screen
+const S = 3; // world units per art pixel (sheets are built at half the drawing's pixels, art.py PX)
+let VW = 320, VH = 180; // art pixels on screen; set by layout() so the picture fills the whole screen
 const ARENA = { x0: 40, x1: VW * S - 40, y0: 100, y1: VH * S - 24 };
 const P = (w) => Math.round(w / S);
 const $ = (s) => document.querySelector(s);
@@ -63,17 +63,18 @@ let rt = null;
 const screen = new PIXI.Sprite(); app.stage.addChild(screen);
 let Z = 1, OX = 0, OY = 0;
 function layout() {
-  // whole device pixels per art pixel, picked so about 360 art pixels fill the height; the view then
+  // whole device pixels per art pixel, picked so about 180 art pixels (540 world, the real game's view height) fill the height; the view then
   // takes as many art pixels as the screen holds, so the picture always fills it edge to edge
   const bar = window.innerHeight < 500 ? 0 : 44; // phones: the bar floats over the picture
   const dpr = window.devicePixelRatio || 1, Wd = Math.round(window.innerWidth * dpr), Hd = Math.round((window.innerHeight - bar) * dpr);
-  const zp = Math.max(1, Math.round(Hd / 360));
+  const zp = Math.max(1, Math.round(Hd / 180));
   VW = Math.ceil(Wd / zp); VH = Math.ceil(Hd / zp); Z = zp / dpr; OX = 0; OY = bar;
   Object.assign(ARENA, { x1: VW * S - 40, y1: VH * S - 24 });
   rt?.destroy(true); rt = PIXI.RenderTexture.create({ width: VW, height: VH }); rt.source.scaleMode = 'nearest';
   screen.texture = rt; screen.scale.set(Z); screen.position.set(OX, OY);
   ground.removeChildren().forEach((s) => s.destroy());
-  for (let y = 0; y < VH; y += 32) for (let x = 0; x < VW; x += 32) sprite('floor', ground, (x * 7 + y * 3) / 32 % 4 | 0).position.set(x, y);
+  const tw = atlas.floor.w;
+  for (let y = 0; y < VH; y += tw) for (let x = 0; x < VW; x += tw) sprite('floor', ground, (x * 7 + y * 3) / tw % 4 | 0).position.set(x, y);
 }
 window.addEventListener('resize', layout); layout();
 
@@ -108,8 +109,8 @@ function number(v, px, py, col, scale = 1) {
 const HERO = { r: 16, speed: 150, every: 0.35, dmg: 10, crit: 0.15, kb: [60, 180, 260], stun: [0.12, 0.25, 0.35], max: 5,
   dash: { range: 190, cone: 35, speed: 850, max: 0.35, past: 40, links: 3, linkRange: 140, linkMin: 35, linkCone: 45, delay: 0.04, free: 0.18 } };
 const TYPES = {
-  soldier: { art: 'skel', r: 14, hp: 20, atk: 5, speed: 95, range: 22, wind: 0.25, resist: 0, tg: 'tgSoldier', first: 'tgFirstS', slash: 'slashS', burst: 'burstS', shadow: 'shadow', windKey: 'wind', strikeKey: 'strike', head: 22 },
-  elite: { art: 'orc', r: 26, hp: 90, atk: 20, speed: 70, range: 34, wind: 0.4, resist: 0.75, tg: 'tgOrc', first: 'tgFirstO', slash: 'slashE', burst: 'burstO', shadow: 'shadowBig', windKey: 'windCleave', strikeKey: 'strikeCleave', head: 34, counter: true },
+  soldier: { art: 'skel', r: 14, hp: 20, atk: 5, speed: 95, range: 22, wind: 0.25, resist: 0, tg: 'tgSoldier', first: 'tgFirstS', slash: 'slashS', burst: 'burstS', shadow: 'shadow', windKey: 'wind', strikeKey: 'strike', head: 11 },
+  elite: { art: 'orc', r: 26, hp: 90, atk: 20, speed: 70, range: 34, wind: 0.4, resist: 0.75, tg: 'tgOrc', first: 'tgFirstO', slash: 'slashE', burst: 'burstO', shadow: 'shadowBig', windKey: 'windCleave', strikeKey: 'strikeCleave', head: 17, counter: true },
 };
 const FIRST = { warn: 0.6, chance: 0.15, extra: 40, aggressive: 0.3 };
 const COUNTER_WIN = 0.35, ANGRY = 1, RESPAWN = 1, DIE = 0.35;
@@ -154,15 +155,15 @@ function hitEnemy(e, ux, uy, strong) {
   const kb = HERO.kb[k] * (1 - e.T.resist) * 8;
   e.vx = ux * kb; e.vy = uy * kb; e.stun = Math.max(e.stun, HERO.stun[k]);
   stop = Math.max(stop, counter ? 0.16 : 0.08);
-  if (crit) kick(4, 0.25); // shake only on crits, about 4 art pixels (user, 2026-11-19)
+  if (crit) kick(2, 0.25); // shake only on crits (user, 2026-11-19): 4 of the old 1.5-unit pixels = 2 of these
   effect('spark', `d${DIR(ux, uy)}`, e.x - ux * 6, e.y, 20, top, { dy: -Math.round(e.T.head * 0.45) });
   const hy = P(e.y) - e.T.head - 8;
   if (counter) {
     effect('counter', '', e.x, e.y, 14, top, { dy: -Math.round(e.T.head * 0.45) });
     Object.assign(e, { state: 'stagger', t: 0 });
-    number(dmg, P(e.x), hy - 8, 'gold', 2);
-    const w = sprite('word', top); w.position.set(P(e.x), hy - 16); words.push({ s: w, t: 0, y0: w.y });
-  } else number(dmg, P(e.x) + rnd(-5, 5), hy, crit ? 'crit' : 'white', crit ? 2 : 1);
+    number(dmg, P(e.x), hy - 2, 'gold');
+    const w = sprite('word', top); w.position.set(P(e.x), hy - 9); words.push({ s: w, t: 0, y0: w.y });
+  } else number(dmg, P(e.x) + rnd(-5, 5), hy, crit ? 'crit' : 'white',  1);
   if (e.hp <= 0) {
     Object.assign(e, { state: 'die', t: 0 });
     effect(e.T.burst, '', e.x, e.y, 12, top, { dy: -Math.round(e.T.head * 0.4) });
@@ -177,7 +178,7 @@ function heroHurt(dmg, from) {
   hero.inv = 0.5;
   if (!hero.dash) Object.assign(hero, { state: 'hurt', t: 0, kx: (dx / l) * 260, ky: (dy / l) * 260 });
   stop = Math.max(stop, 0.08);
-  number(dmg, P(hero.x), P(hero.y) - 36, 'red');
+  number(dmg, P(hero.x), P(hero.y) - 22, 'red');
 }
 
 // ---------------------------------------------------------------- hero: auto attack + dash chain
@@ -346,7 +347,7 @@ function drawEnemy(e, time) {
     e.edge.alpha = open ? (Math.floor(time * 16) % 2 ? 1 : 0.55) : 0.75 + 0.25 * q;
     e.fill.alpha = 0.15 + 0.3 * q;
   }
-  if (e.excl?.visible) { setFrame(e.excl, frameOf('excl', '', Math.floor(time * 12) % 2)); e.excl.position.set(P(e.x), P(e.y) - e.T.head - 6); }
+  if (e.excl?.visible) { setFrame(e.excl, frameOf('excl', '', Math.floor(time * 12) % 2)); e.excl.position.set(P(e.x), P(e.y) - e.T.head - 3); }
   if (e.stars?.visible) { setFrame(e.stars, frameOf('stars', '', Math.floor(time * 10) % 4)); e.stars.position.set(P(e.x), P(e.y) - e.T.head - 2); }
 }
 function draw(time) {
@@ -365,7 +366,7 @@ function draw(time) {
     const w = P(e.T.r * 2.2), bx = P(e.x) - (w >> 1), by = P(e.y) - e.T.head - 4;
     ui.rect(bx - 1, by - 1, w + 2, 4).fill(0x20141a).rect(bx, by, Math.max(0, Math.round((w * e.hp) / e.T.hp)), 2).fill(0xd0453f);
   }
-  ui.rect(VW - 109, 7, 102, 6).fill(0x140f1a).rect(VW - 108, 8, Math.round(hero.hp), 4).fill(0x6ee07a); // top right: the bar floats top left on phones
+  ui.rect(VW - 57, 5, 52, 4).fill(0x140f1a).rect(VW - 56, 6, Math.round(hero.hp / 2), 2).fill(0x6ee07a); // top right: the bar floats top left on phones
   if (showPts) { // top-down hit circles (feet)
     for (const e of enemies) if (alive(e)) ui.circle(P(e.x), P(e.y), P(e.T.r)).stroke({ width: 1, color: 0x00ffff });
     ui.circle(P(hero.x), P(hero.y), P(HERO.r)).stroke({ width: 1, color: 0xff00ff });
@@ -393,7 +394,7 @@ function updateFx(dt) {
   for (let i = words.length - 1; i >= 0; i--) {
     const e = words[i]; e.t += dt;
     if (e.t >= 1) { e.s.destroy(); words.splice(i, 1); continue; }
-    e.s.y = Math.round(e.y0 - 8 * Math.min(1, e.t / 0.2)); e.s.visible = e.t < 0.7 || Math.floor(e.t / 0.05) % 2 === 0;
+    e.s.y = Math.round(e.y0 - 4 * Math.min(1, e.t / 0.2)); e.s.visible = e.t < 0.7 || Math.floor(e.t / 0.05) % 2 === 0;
   }
 }
 

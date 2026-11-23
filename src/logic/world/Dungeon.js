@@ -398,6 +398,13 @@ export class Dungeon {
     return shrink * (this.isDouble(kind) ? this.cfg.doubleBoss.roomScale : 1);
   }
 
+  // foes left at which the next wave comes, by floor range
+  nextWaveAt() {
+    const t = this.cfg.nextWaveAt;
+    if (!t || !t.length) return 0;
+    return (t.find((r) => this.floor <= r.to) || t[t.length - 1]).alive;
+  }
+
   spawnWave() {
     const g = this.game, c = this.cfg, band = this.info.band, rng = g.rng, mix = this.mobMix();
     this.waveIndex += 1;
@@ -570,8 +577,9 @@ export class Dungeon {
       if (this.roomKind === 'combat') {
         this.clock += dt;
         if (this.pending > 0 && alive < this.maxAlive) { const k = Math.min(this.pending, this.maxAlive - alive); this.pending -= k; this.spawnSome(k); }
-        // the next wave only when every foe of this one is down (no timer, no clear-time measuring)
-        if (this.remaining === 0 && this.pending === 0) { if (this.waveIndex < this.waveCount) this.spawnWave(); else this.clear(); }
+        // the next wave when the foes left drop to this floor's limit (rules/dungeon.json nextWaveAt; no timer)
+        if (this.waveIndex < this.waveCount) { if (this.remaining + this.pending <= this.nextWaveAt()) this.spawnWave(); }
+        else if (this.remaining === 0 && this.pending === 0) this.clear();
       } else if (this.roomKind === 'boss' && this.boss && this.bossesDown()) { // (a boss in the smoke is only hidden)
         // the boss falls: its minions fall with it
         const bp = this.boss.pos;

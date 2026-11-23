@@ -33,6 +33,13 @@ export class Camera {
     return { x: fit(p.x, b.w, this.viewW), y: fit(p.y, b.h, this.viewH) };
   }
 
+  // player offset from the view center lies within edgeMargin of the screen edge
+  atEdge(dx, dy) {
+    const m = this.cfg.edgeMargin;
+    if (m == null) return false;
+    return Math.abs(dx) > this.viewW / 2 - m || Math.abs(dy) > this.viewH / 2 - m;
+  }
+
   setViewport(worldW, worldH) { this.viewW = worldW; this.viewH = worldH; }
 
   setMode(mode) {
@@ -64,7 +71,7 @@ export class Camera {
       const R = c.freeRadiusFrac * this.viewW;
       const inside = this.clampPoint(this.pos);
       const out = Math.abs(inside.x - this.pos.x) > 0.5 || Math.abs(inside.y - this.pos.y) > 0.5;
-      if (d <= R && !out) {
+      if (d <= R && !out && !this.atEdge(dx, dy)) {
         // hold: glide to a stop by decaying the current velocity (symmetric in every direction;
         // smoothDamp toward its own position would zero negative velocities in one frame)
         const k = Math.exp(-dt / Math.max(c.combatFollowTime / 3, 1e-4));
@@ -86,6 +93,13 @@ export class Camera {
       } else {
         smooth = c.followTime;
       }
+    }
+    // player near a screen edge: keep it edgeMargin inside, catching up fast (walls still win below)
+    if (this.atEdge(player.pos.x - this.pos.x, player.pos.y - this.pos.y)) {
+      const ex = this.viewW / 2 - c.edgeMargin, ey = this.viewH / 2 - c.edgeMargin;
+      tx = Math.min(player.pos.x + ex, Math.max(player.pos.x - ex, tx));
+      ty = Math.min(player.pos.y + ey, Math.max(player.pos.y - ey, ty));
+      smooth = Math.min(smooth, c.edgeFollowTime);
     }
     ({ x: tx, y: ty } = this.clampPoint({ x: tx, y: ty }));
     this.pos.x = smoothDamp(this.pos.x, tx, this.vx, smooth, dt);

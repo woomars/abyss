@@ -15,5 +15,9 @@
   "_freeRadiusFrac": "전투 중 카메라가 가만히 있는 범위 (화면 가로에 대한 비율)",
   "freeRadiusFrac": 0.25,
   "_boundsMargin": "방 벽 밖으로 더 보여 주는 여백(px)",
-  "boundsMargin": 50
+  "boundsMargin": 50,
+  "_edgeMargin": "캐릭터가 화면 끝에서 이 거리(px) 안으로 오면 카메라가 빠르게 따라감",
+  "edgeMargin": 110,
+  "_edgeFollowTime": "화면 끝에서 따라가는 부드러움(초)",
+  "edgeFollowTime": 0.08
 }

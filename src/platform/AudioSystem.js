@@ -7,6 +7,7 @@ const FALLBACK = {
   slash: 'slash', hit: 'impact', hitHeavy: 'heavyImpact', crit: 'critImpact',
   deathSoldier: 'death', deathElite: 'death', deathBoss: 'death', enemyAttack: 'whoosh', hurt: 'hurt',
   skillSpin: 'skill_spin', skillRush: 'skill_rushStrike', skillWave: 'skill_bladeWave', skillHit: 'heavyImpact',
+  levelUp: 'chime', chest: 'coins', salvage: 'crush', jumpLand: 'crush', blast: 'crush',
 };
 
 export class AudioSystem {
@@ -37,7 +38,7 @@ export class AudioSystem {
     events.on('playerHit', () => this.sample('hurt'));
     events.on('playerDown', () => this.play('down'));
     events.on('exitOpen', () => this.play('chime'));
-    events.on('chestOpen', (e) => this.play('coins', { gain: e.big ? 1.3 : 1 }));
+    events.on('chestOpen', (e) => this.sample('chest', { gain: e.big ? 1.3 : 1 }));
     events.on('floorExit', () => this.play('portal'));
     events.on('enemyShoot', () => this.play('bow'));
     events.on('wraithBlink', () => this.play('blink'));
@@ -52,18 +53,21 @@ export class AudioSystem {
       if (i >= 4) { this.play('portal', { pitch: 1.6, gain: 0.6 }); this.play('chime', { pitch: 1.3, gain: 1.2 }); }
       else this.play('coins', { pitch: 0.8 + i * 0.12, gain: 0.5 + i * 0.15 });
     });
-    events.on('levelUp', () => { this.play('chime', { pitch: 1 }); setTimeout(() => this.play('chime', { pitch: 1.5 }), 120); });
+    events.on('levelUp', () => {
+      if (this.buffers.has('levelUp')) { this.sample('levelUp'); return; }
+      this.play('chime', { pitch: 1 }); setTimeout(() => this.play('chime', { pitch: 1.5 }), 120);
+    });
     events.on('setComplete', () => { this.play('roar', { pitch: 1.4, gain: 0.6 }); this.play('chime', { pitch: 1.2, gain: 1.3 }); });
     events.on('forgeAction', (e) => {
       if (e.kind === 'equip' || e.kind === 'unequip') this.play('clank');
-      else if (e.kind === 'salvage') this.play('crush');
+      else if (e.kind === 'salvage') this.sample('salvage');
       else if (e.kind === 'enhance') this.play('hammer');
       else if (e.kind === 'engrave') { /* the hammer and the result have their own sounds */ }
       else if (e.kind === 'enhanceUp') { this.play('hammer'); setTimeout(() => this.play('chime', { pitch: 1.3 }), 90); }
       else this.play('coins', { gain: 0.5, pitch: 0.7 });
     });
     events.on('hammerBlow', (e) => { this.play('hammer', { pitch: e.good ? 1.25 : 0.75, gain: 1.2 }); if (e.good) setTimeout(() => this.play('chime', { pitch: 1.6, gain: 0.5 }), 60); }); // 각인 hammer
-    events.on('engraveResult', (e) => { if (e.success) { this.play('chime', { pitch: 1.2, gain: 1.3 }); this.play('roar', { pitch: 1.5, gain: 0.5 }); } else this.play('crush', { pitch: 0.8, gain: 1.3 }); });
+    events.on('engraveResult', (e) => { if (e.success) { this.play('chime', { pitch: 1.2, gain: 1.3 }); this.play('roar', { pitch: 1.5, gain: 0.5 }); } else this.sample('salvage', { gain: 1.3 }); });
     events.on('setRing', () => { this.play('roar', { pitch: 1.6, gain: 0.6 }); this.play('chime', { pitch: 0.9, gain: 1.3 }); setTimeout(() => this.play('chime', { pitch: 1.35, gain: 1.2 }), 180); });
     events.on('skillOffer', () => this.play('chime', { pitch: 0.9, gain: 1.1 }));
     events.on('skillUp', () => { this.play('hammer', { pitch: 1.1 }); setTimeout(() => this.play('chime', { pitch: 1.3 }), 120); });
@@ -77,8 +81,8 @@ export class AudioSystem {
     events.on('setBlast', () => this.play('portal', { pitch: 0.7, gain: 0.8 }));
     events.on('meteorPull', (e) => { this.pullTime = e.time > 0.05 ? e.time : 0.12; this.play('pull'); }); // 유성 5세트: foes drawn in before the landing
     events.on('bossExposed', () => { this.play('chime', { pitch: 1.4, gain: 1.2 }); this.play('crush', { pitch: 0.8, gain: 0.6 }); });
-    events.on('jumpLand', () => this.play('crush', { pitch: 0.75, gain: 0.8 }));
-    events.on('bomberBlast', () => this.play('crush', { pitch: 1.3, gain: 0.7 }));
+    events.on('jumpLand', () => this.sample('jumpLand'));
+    events.on('bomberBlast', () => this.sample('blast'));
     events.on('founderPhase', (e) => { if (e.phase > 0) this.play('roar', { pitch: e.ai === 'mirror' ? 0.7 : 1, gain: 0.8 }); });
     events.on('evade', () => this.play('blink', { pitch: 1.2, gain: 0.6 }));
     events.on('relicReroll', () => this.play('coins', { gain: 0.8 }));
@@ -158,6 +162,7 @@ export class AudioSystem {
   }
 
   play(name, { pitch = 1, gain = 1 } = {}) {
+    if (this.buffers.has(name)) { this.sample(name, { pitch, gain }); return; } // a recording of this voice replaces the synth
     if (!this.ctx || !this.enabled || this.ctx.state !== 'running') return;
     if (this.voices >= this.cfg.maxVoices) return;
     const p = pitch * (1 + (this.rng() * 2 - 1) * 0.06);

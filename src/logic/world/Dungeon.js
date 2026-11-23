@@ -10,13 +10,6 @@ const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 // One dungeon run: floors of rooms. Combat rooms spawn waves; clearing opens the exit; walking into
 // the exit fades to the next room. Treasure rooms follow some floors; boss floors spawn a boss.
 // Pure game logic (driven by Game.update), emits events for HUD / sound / music.
-// combat-floor music: a track of n, not the one the last cycle had (prev may be null)
-export function pickStageTrack(n, prev, rng) {
-  if (n <= 1) return 0;
-  if (prev == null) return Math.floor(rng() * n);
-  const k = Math.floor(rng() * (n - 1));
-  return k >= prev ? k + 1 : k;
-}
 
 export class Dungeon {
   constructor(cfg, game) {
@@ -122,9 +115,14 @@ export class Dungeon {
       this.waveCount = info.band.waves.count + (w ? w.extraWavesPerCycle * info.cycle : 0); // one more wave each cycle (9.6)
       this.interval = this.timedInterval();
       this.spawnWave();
-      const stage = g.config.music && g.config.music.playlists && g.config.music.playlists.stage;
-      if (stage && stage.length) {
-        if (this.stageTrack == null || this.stageCycle !== info.cycle) { this.stageTrack = pickStageTrack(stage.length, this.stageTrack, g.rng); this.stageCycle = info.cycle; }
+      const mc = g.config.music, stage = mc && mc.playlists && mc.playlists.stage, cycles = mc && mc.stageByCycle;
+      if (stage && stage.length && cycles && cycles.length) {
+        // the cycle's own tracks (music.stageByCycle): one picked at random on entering the cycle, kept to its end
+        if (this.stageTrack == null || this.stageCycle !== info.cycle) {
+          const list = cycles[Math.min(info.cycle, cycles.length - 1)];
+          this.stageTrack = Math.max(0, stage.indexOf(list[Math.floor(g.rng() * list.length)]));
+          this.stageCycle = info.cycle;
+        }
         music = 'stage';
       }
     } else if (kind === 'boss') {
@@ -162,6 +160,8 @@ export class Dungeon {
         this.bosses.push(boss);
       });
       this.boss = this.bosses[0];
+      const bossMusic = `boss_${types[list[0]].ai}`; // each boss type has its own music (rules/music.json)
+      if (g.config.music && g.config.music.playlists && g.config.music.playlists[bossMusic]) music = bossMusic;
       bossNames = list.map((type) => types[type].name);
       bossName = bossNames.join(' · ');
       title = `${floorLabel(this.floor, 'ko')} ${info.band.title} — ${bossName}`;

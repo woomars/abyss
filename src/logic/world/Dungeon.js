@@ -27,9 +27,6 @@ export class Dungeon {
     this.forceBoss = null;
     this.lastBoss = {}; // tier -> boss met last in this run (not twice in a row)
     this.cycleTypes = { cycle: -1, list: [] }; // attack types met in this 20-floor cycle (no type twice)
-    this.waveTimes = [];  // average seconds to beat one wave, on the last few combat floors (timed waves, C5)
-    this.interval = null; // seconds between timed waves on this floor (21층~); never longer than before
-    this.lastInterval = null;
     this.stageTrack = null; // combat-floor music: one track per 20-floor cycle (music.playlists.stage)
     this.stageCycle = null;
     this.floor = 0;
@@ -48,7 +45,6 @@ export class Dungeon {
     this.pending = 0;  // enemies of this wave still waiting for room (maxAlive)
     this.clock = 0;    // seconds played in this room
     this.waveAt = 0;   // when the current wave came
-    this.waveDur = []; // how long each wave of this floor took
     this.sinceKill = 0;
     this.lastAlive = 0;
   }
@@ -95,8 +91,6 @@ export class Dungeon {
     this.pending = 0;
     this.clock = 0;
     this.waveAt = 0;
-    this.waveDur = [];
-    this.interval = null;
     this.sinceKill = 0;
     this.state = 'fadeIn';
     this.fade = 1;
@@ -113,7 +107,6 @@ export class Dungeon {
       if (this.variant === 'trap') this.layTraps();
       const w = c.waves;
       this.waveCount = info.band.waves.count + (w ? w.extraWavesPerCycle * info.cycle : 0); // one more wave each cycle (9.6)
-      this.interval = this.timedInterval();
       this.spawnWave();
       const mc = g.config.music, stage = mc && mc.playlists && mc.playlists.stage, cycles = mc && mc.stageByCycle;
       if (stage && stage.length && cycles && cycles.length) {
@@ -209,7 +202,6 @@ export class Dungeon {
 
   // down (or up) the rope: the start of that floor; what lies between is passed by
   warpTo(floor) {
-    this.waveTimes = []; // another part of the dungeon: the family's wave time until this run measures its own
     this.floor = floor;
     this.info = floorInfo(floor, this.cfg);
     this.enterRoom(this.info.kind);
@@ -406,31 +398,8 @@ export class Dungeon {
     return shrink * (this.isDouble(kind) ? this.cfg.doubleBoss.roomScale : 1);
   }
 
-  // timed waves (21층~, C5): the measured wave time x ratio (the last few combat floors), else the
-  // family's value, else the fallback; never longer than the last interval. null below fromFloor.
-  timedInterval() {
-    const tw = this.cfg.timedWaves, v = this.game.vault;
-    if (!tw || this.floor < tw.fromFloor) return null;
-    const avg = this.waveTimes.length ? this.waveTimes.reduce((a, b) => a + b, 0) / this.waveTimes.length : null;
-    let t = avg != null ? avg * tw.ratio : (v && v.waveInterval) || tw.fallbackSec;
-    if (tw.neverLonger && this.lastInterval != null) t = Math.min(t, this.lastInterval);
-    this.lastInterval = t;
-    if (tw.saveToFamily && v) v.waveInterval = t;
-    return t;
-  }
-
-  // the floor's waves are beaten: keep its average wave time (the last sampleFloors floors)
-  recordWaves() {
-    const tw = this.cfg.timedWaves;
-    this.waveDur.push(this.clock - this.waveAt);
-    if (!tw || this.variant) return;
-    this.waveTimes.push(this.waveDur.reduce((a, b) => a + b, 0) / this.waveDur.length);
-    if (this.waveTimes.length > tw.sampleFloors) this.waveTimes.shift();
-  }
-
   spawnWave() {
     const g = this.game, c = this.cfg, band = this.info.band, rng = g.rng, mix = this.mobMix();
-    if (this.waveIndex > 0) this.waveDur.push(this.clock - this.waveAt);
     this.waveIndex += 1;
     this.waveAt = this.clock;
     const w = c.waves, mult = w ? w.sizeMult[Math.min(this.info.cycle, w.sizeMult.length - 1)] : 1;
@@ -601,9 +570,8 @@ export class Dungeon {
       if (this.roomKind === 'combat') {
         this.clock += dt;
         if (this.pending > 0 && alive < this.maxAlive) { const k = Math.min(this.pending, this.maxAlive - alive); this.pending -= k; this.spawnSome(k); }
-        const timed = this.interval != null && this.clock - this.waveAt >= this.interval; // 21층~: also on time
-        if (this.waveIndex < this.waveCount && (this.remaining + this.pending <= this.info.band.waves.nextAt || timed)) this.spawnWave();
-        else if (this.waveIndex >= this.waveCount && this.remaining === 0 && this.pending === 0) { this.recordWaves(); this.clear(); }
+        // the next wave only when every foe of this one is down (no timer, no clear-time measuring)
+        if (this.remaining === 0 && this.pending === 0) { if (this.waveIndex < this.waveCount) this.spawnWave(); else this.clear(); }
       } else if (this.roomKind === 'boss' && this.boss && this.bossesDown()) { // (a boss in the smoke is only hidden)
         // the boss falls: its minions fall with it
         const bp = this.boss.pos;

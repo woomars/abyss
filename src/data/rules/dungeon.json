@@ -25,8 +25,7 @@
         "size": [
           4,
           6
-        ],
-        "nextAt": 2
+        ]
       },
       "mix": {
         "soldier": 1
@@ -42,8 +41,7 @@
         "size": [
           5,
           7
-        ],
-        "nextAt": 2
+        ]
       },
       "mix": {
         "soldier": 0.7,
@@ -73,8 +71,7 @@
         "size": [
           6,
           9
-        ],
-        "nextAt": 3
+        ]
       },
       "mix": {
         "soldier": 0.38,
@@ -95,8 +92,7 @@
         "size": [
           8,
           11
-        ],
-        "nextAt": 3
+        ]
       },
       "mix": {
         "soldier": 0.27,

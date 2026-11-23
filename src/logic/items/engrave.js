@@ -64,6 +64,7 @@ export function engraveItem(ctx, ecfg, id, hits, rng) {
     if (!it.legendary) it.name = ctx.cfg.sets[it.set].pieces[it.slot]; // a set piece is named after its new set; a unique keeps its name
     if (it.grade !== 'set') { // up to the set grade: more stats (grade mult) and the extra affixes it brings
       it.grade = 'set';
+      it.enhance = 0; it.points = 0; // legendary +10 -> set +0: enhanced again up to set +10
       const want = ctx.cfg.grades.set.affixes - it.affixes.length;
       if (want > 0) it.affixes.push(...rollAffixes(ctx.cfg, rng, 'set', want, [...baseList(it, ctx.cfg).map((b) => b.stat), ...it.affixes.map((a) => a.stat)]));
     }

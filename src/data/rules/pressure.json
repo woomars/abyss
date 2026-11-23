@@ -39,22 +39,6 @@
     "minScale": 0.7
   },
 
-  "_timedWaves": "시간 웨이브",
-  "timedWaves": {
-    "_fromFloor": "이 층부터 웨이브가 시간으로도 나온다 (C5)",
-    "fromFloor": 21,
-    "_sampleFloors": "기준 시간을 재는 직전 일반 전투층 수 (보스층·보물방 제외). 21층이면 15·17·18·19층",
-    "sampleFloors": 4,
-    "_ratio": "기준 = 웨이브 하나 처치 평균 시간 × 이 값",
-    "ratio": 0.8,
-    "_saveToFamily": "잰 값을 가문에 저장해 로프로 내려간 판에서도 쓴다",
-    "saveToFamily": true,
-    "_fallbackSec": "가문 기록도 없을 때 쓰는 간격(초)",
-    "fallbackSec": 20,
-    "_neverLonger": "간격은 이전 값보다 길어지지 않는다",
-    "neverLonger": true
-  },
-
   "riposte": {
     "_설명": "반격 상태(붉은 고리). 때리고 지나간 방향으로 부채꼴. 각도 = 적마다 angle 사이 무작위 + 층 × perFloor (적의 난이도 = 층 깊이)",
     "_angle": "1층 기준 부채꼴 각도 [최소, 최대] (도)",

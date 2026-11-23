@@ -18,5 +18,8 @@ export class Combo {
     }
   }
 
+  // a running combo waits longer (the jump: its flight time + a little)
+  extend(sec) { if (this.timer > 0) this.timer += sec; }
+
   reset() { this.count = 0; this.timer = 0; }
 }

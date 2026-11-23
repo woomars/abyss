@@ -64,6 +64,10 @@ export class Game {
     this.pendingFlick = null;
     events.on('flick', (f) => { this.pendingFlick = { x: f.dir.x, y: f.dir.y }; });
     events.on('hit', (h) => this.onHit(h));
+    events.on('skill', (e) => { // the jump: the combo waits out the flight (+ jumpComboExtra)
+      const d = e.id === 'rushStrike' && config.skills.defs.rushStrike;
+      if (d) this.combo.extend(d.distance / d.speed + (config.feedback.jumpComboExtra || 0));
+    });
     this.stats = emptyRunStats();
     // equipment on the floor and this run's pocket
     // the save slot in play (main attaches the real one); worn gear; the forge screen when open
@@ -500,10 +504,9 @@ export class Game {
       floor: d.floor, startFloor: d.startFloor || 1, hp: this.player.hp, stageTrack: d.stageTrack, stageCycle: d.stageCycle,
       pocket: this.loot.pocket.slice(), relics: { owned: { ...this.relics.owned }, stats: { ...this.relics.stats } },
       stats: JSON.parse(JSON.stringify(this.stats)),
-      // what the run remembers: boss types met this cycle, the last boss per tier, the timed-wave clock
+      // what the run remembers: boss types met this cycle, the last boss per tier
       memory: {
         ...JSON.parse(JSON.stringify(d.entryMemory || { cycleTypes: d.cycleTypes, lastBoss: d.lastBoss })), // as when this floor began
-        waveTimes: d.waveTimes.slice(), lastInterval: d.lastInterval,
         bossTypes: d.roomKind === 'boss' && d.bosses.length ? d.bosses.map((b) => b.type) : null,
       },
     };
@@ -515,8 +518,6 @@ export class Game {
     if (!m) return;
     if (m.cycleTypes) d.cycleTypes = { ...m.cycleTypes, pairs: m.cycleTypes.pairs || [] };
     if (m.lastBoss) d.lastBoss = { ...m.lastBoss };
-    if (Array.isArray(m.waveTimes)) d.waveTimes = m.waveTimes.slice();
-    if (Number.isFinite(m.lastInterval)) d.lastInterval = m.lastInterval;
     if (Array.isArray(m.bossTypes)) d.forceList = m.bossTypes.slice();
   }
 

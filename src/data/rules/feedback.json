@@ -9,5 +9,7 @@
   "_hitStopScale": "멈춤 동안 시간 배율 (0 = 완전히 멈춤)",
   "hitStopScale": 0,
   "_comboWindow": "이 시간(초) 안에 다음 타격이 없으면 콤보가 끊긴다",
-  "comboWindow": 0.8
+  "comboWindow": 0.8,
+  "_jumpComboExtra": "점프하면 콤보 판정 시간이 (체공 시간 + 이 값)초 늘어난다",
+  "jumpComboExtra": 0.1
 }
